@@ -1,0 +1,86 @@
+{
+    "env": {
+        "name": "shkadov",
+        "obs_clip": false,
+        "obs_norm": true,
+        "obs_noise": 0.0
+    },
+    "name_env": true,
+    "name_agent": true,
+    "name_tag": "",
+    "name_time": false,
+    "n_avg": 1,
+    "n_cpu": 1,
+    "n_stp_max": 100000,
+    "trainer": {
+        "style": "td",
+        "mem_size": 50000,
+        "btc_size": 128,
+        "n_stp_unroll": 1,
+        "render_every": 500
+    },
+    "agent": {
+        "type": "td3",
+        "gamma": 0.99,
+        "rho": 0.995,
+        "n_warmup": 1000,
+        "n_filling": 1000,
+        "p_update": 2,
+        "sigma_act": 0.1,
+        "sigma_tgt": 0.1,
+        "noise_clip": 0.2,
+        "policy": {
+            "type": "deterministic",
+            "network": {
+                "type": "fc",
+                "k_init": "lecun_normal",
+                "trunk": {
+                    "arch": [128,128],
+                    "actv": "relu"
+                },
+                "heads": {
+                    "nb": 1,
+                    "arch": [[]],
+                    "actv": ["relu"],
+                    "final": ["tanh"]
+                }
+            },
+            "optimizer": {
+                "type": "adam",
+                "lr": 5.0e-4,
+                "grd_clip": null
+            },
+            "loss": {
+                "type": "q_pol"
+            }
+        },
+        "value": {
+            "type": "q_value",
+            "network": {
+                "type": "fc",
+                "k_init": "lecun_normal",
+                "trunk": {
+                    "arch": [128,128],
+                    "actv": "relu"
+                },
+                "heads": {
+                    "nb": 1,
+                    "arch": [[]],
+                    "actv": ["relu"],
+                    "final": ["linear"]
+                }
+            },
+            "optimizer": {
+                "type": "adam",
+                "lr": 5.0e-4,
+                "grd_clip": null
+            },
+            "loss": {
+                "type": "mse_td3"
+            }
+        },
+        "termination": {
+            "type": "bootstrap"
+        }
+    }
+}
