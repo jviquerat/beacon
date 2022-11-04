@@ -16,25 +16,25 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0):
+    def __init__(self, cpu=0, n_jets=1, jet_pos=150.0, jet_space=25.0):
 
         # Main parameters
-        self.L          = 300    # length of domain in mm
-        self.nx         = 600    # nb of discretization points
-        self.dt         = 0.005  # timestep
-        self.dt_act     = 0.05   # action timestep
-        self.t_warmup   = 100.0  # warmup time
-        self.t_act      = 20.0   # action time after warmup
-        self.sigma      = 5.0e-4 # input noise
-        self.n_jets     = 5      # nb of jets
-        self.jet_amp    = 5.0    # jet amplitude scaling
-        self.jet_pos    = 150.0  # position of first jet
-        self.jet_hw     = 1.5    # jet half-width
-        self.jet_space  = 25.0   # spacing between jets
-        self.l_obs      = 25.0   # length for upstream observations
-        self.l_rwd      = 10.0   # length for downstream reward
-        self.u_interp   = 0.02   # time on which action is interpolated
-        self.blowup_rwd =-10.0   # reward in case of blow-up
+        self.L          = 300        # length of domain in mm
+        self.nx         = 600        # nb of discretization points
+        self.dt         = 0.005      # timestep
+        self.dt_act     = 0.05       # action timestep
+        self.t_warmup   = 100.0      # warmup time
+        self.t_act      = 20.0       # action time after warmup
+        self.sigma      = 5.0e-4     # input noise
+        self.n_jets     = n_jets     # nb of jets
+        self.jet_amp    = 5.0        # jet amplitude scaling
+        self.jet_pos    = jet_pos    # position of first jet
+        self.jet_hw     = 1.5        # jet half-width
+        self.jet_space  = jet_space  # spacing between jets
+        self.l_obs      = 25.0       # length for upstream observations
+        self.l_rwd      = 10.0       # length for downstream reward
+        self.u_interp   = 0.02       # time on which action is interpolated
+        self.blowup_rwd =-10.0       # reward in case of blow-up
         self.init_file  = "init.dat" # initialization file
 
         # Deduced parameters
@@ -90,7 +90,7 @@ class shkadov(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        self.h_max = 5.0
+        self.h_max = 3.0
         self.q_max = 5.0
         high = np.array([])
         high_h = np.ones((self.n_obs))*self.h_max
@@ -165,6 +165,7 @@ class shkadov(gym.Env):
             done  = True
             trunc = True
         if (np.any((self.h < -self.h_max) | (self.h > self.h_max))):
+            print("Blowup")
             done  = True
             trunc = False
             rwd   = self.blowup_rwd
@@ -352,3 +353,4 @@ def update_o2(u, up, upp, rhs, nx, dt):
 def rhs(dq2h, h, dddh, q, rhsq, nx):
     rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - 2.0*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
                                            - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1]))
+0

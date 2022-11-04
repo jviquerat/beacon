@@ -1,7 +1,7 @@
 {
     "env": {
         "name": "shkadov",
-        "obs_clip": true,
+        "obs_clip": false,
         "obs_norm": true,
         "obs_noise": 0.0
     },
@@ -9,15 +9,15 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 1,
+    "n_avg": 3,
     "n_cpu": 1,
     "n_stp_max": 100000,
     "trainer": {
         "style": "td",
-        "mem_size": 50000,
+        "mem_size": 100000,
         "btc_size": 128,
         "n_stp_unroll": 1,
-        "render_every": 500
+        "render_every": 500000
     },
     "agent": {
         "type": "sac",
@@ -25,18 +25,18 @@
         "rho": 0.995,
         "n_warmup": 1000,
         "n_filling": 2000,
-        "alpha": 0.5,
+        "alpha": 0.01,
         "policy": {
             "type": "normal",
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [64],
+                    "arch": [128],
                     "actv": "relu"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[64],[64]],
+                    "arch": [[128],[128]],
                     "actv": ["relu","relu"],
                     "final": ["tanh","sigmoid"]
                 }
@@ -44,7 +44,7 @@
             "optimizer": {
                 "type": "adam",
                 "lr": 5.0e-4,
-                "grd_clip": 0.1
+                "grd_clip": null
             },
             "loss": {
                 "type": "q_pol_sac"
@@ -56,7 +56,7 @@
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [64,64],
+                    "arch": [128,128],
                     "actv": "relu"
                 },
                 "heads": {

@@ -10,11 +10,11 @@
     "name_tag": "",
     "name_time": false,
     "n_avg": 3,
-    "n_cpu": 4,
-    "n_stp_max": 500000,
+    "n_cpu": 1,
+    "n_stp_max": 100000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 2000,
+        "buff_size": 800,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
@@ -29,12 +29,12 @@
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128],
+                    "arch": [64],
                     "actv": "relu"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[128],[128]],
+                    "arch": [[64],[64]],
                     "actv": ["relu","relu"],
                     "final": ["tanh","sigmoid"]
                 }
@@ -56,7 +56,7 @@
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {
