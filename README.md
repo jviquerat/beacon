@@ -1,5 +1,9 @@
 # beacon
 
+<p align="center">
+  <img align="right" width="350" alt="logo" src="msc/logo.png">
+</p>
+
 This repository proposes benchmark cases for DRL-based flow control. The considered cases are voluntarily limited in CPU requirements, so they can be used for prototyping on local machines while still presenting realistic flow control aspects.
 
 ## `shkadov`
