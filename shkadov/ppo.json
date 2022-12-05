@@ -11,32 +11,30 @@
     "name_time": false,
     "n_avg": 3,
     "n_cpu": 1,
-    "n_stp_max": 100000,
+    "n_stp_max": 200000,
     "trainer": {
-        "style": "td",
-        "mem_size": 100000,
-        "btc_size": 128,
-        "n_stp_unroll": 1,
-        "render_every": 500000
+        "style": "buffer",
+        "buff_size": 400,
+        "n_buff": 1,
+        "batch_frac": 0.5,
+        "n_epochs": 32,
+        "rnd_style": "ascii",
+        "render_every": 10000
     },
     "agent": {
-        "type": "sac",
-        "gamma": 0.99,
-        "rho": 0.995,
-        "n_warmup": 1000,
-        "n_filling": 2000,
-        "alpha": 0.01,
+        "type": "ppo",
         "policy": {
             "type": "normal",
             "network": {
                 "type": "fc",
+                "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128],
+                    "arch": [64],
                     "actv": "relu"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[128],[128]],
+                    "arch": [[64],[64]],
                     "actv": ["relu","relu"],
                     "final": ["tanh","sigmoid"]
                 }
@@ -44,19 +42,21 @@
             "optimizer": {
                 "type": "adam",
                 "lr": 5.0e-4,
-                "grd_clip": null
+                "grd_clip": 0.1
             },
             "loss": {
-                "type": "q_pol_sac"
+                "type": "surrogate",
+                "pol_clip": 0.2,
+                "ent_coef": 0.01
             }
         },
         "value": {
-            "type": "q_value",
+            "type": "v_value",
             "network": {
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {
@@ -68,12 +68,18 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
-                "grd_clip": null
+                "lr": 1.0e-3,
+                "grd_clip": 0.1
             },
             "loss": {
-                "type": "mse_sac"
+                "type": "mse_pg"
             }
+        },
+        "retrn": {
+            "type": "gae",
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "ret_norm": true
         },
         "termination": {
             "type": "bootstrap"

@@ -2,32 +2,34 @@
     "env": {
         "name": "shkadov",
         "obs_clip": false,
-        "obs_norm": true,
+        "obs_norm": false,
         "obs_noise": 0.0
     },
     "name_env": true,
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 1,
     "n_cpu": 1,
-    "n_stp_max": 100000,
+    "n_stp_max": 500000,
     "trainer": {
-        "style": "buffer",
-        "buff_size": 800,
-        "n_buff": 1,
-        "batch_frac": 0.5,
-        "n_epochs": 32,
-        "rnd_style": "ascii",
-        "render_every": 10000
+        "style": "td",
+        "mem_size": 500000,
+        "btc_size": 128,
+        "n_stp_unroll": 1,
+        "render_every": 500000
     },
     "agent": {
-        "type": "ppo",
+        "type": "sac",
+        "gamma": 0.99,
+        "rho": 0.995,
+        "n_warmup": 1000,
+        "n_filling": 2000,
+        "alpha": 0.01,
         "policy": {
             "type": "normal",
             "network": {
                 "type": "fc",
-                "k_init": "lecun_normal",
                 "trunk": {
                     "arch": [64],
                     "actv": "relu"
@@ -42,16 +44,14 @@
             "optimizer": {
                 "type": "adam",
                 "lr": 5.0e-4,
-                "grd_clip": 0.1
+                "grd_clip": null
             },
             "loss": {
-                "type": "surrogate",
-                "pol_clip": 0.2,
-                "ent_coef": 0.01
+                "type": "q_pol_sac"
             }
         },
         "value": {
-            "type": "v_value",
+            "type": "q_value",
             "network": {
                 "type": "fc",
                 "k_init": "lecun_normal",
@@ -68,18 +68,12 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 1.0e-3,
-                "grd_clip": 0.1
+                "lr": 5.0e-4,
+                "grd_clip": null
             },
             "loss": {
-                "type": "mse_pg"
+                "type": "mse_sac"
             }
-        },
-        "retrn": {
-            "type": "gae",
-            "gamma": 0.99,
-            "gae_lambda": 0.95,
-            "ret_norm": true
         },
         "termination": {
             "type": "bootstrap"
