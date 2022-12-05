@@ -16,7 +16,7 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=1, jet_pos=150.0, jet_space=25.0):
+    def __init__(self, cpu=0, n_jets=5, jet_pos=150.0, jet_space=25.0):
 
         # Main parameters
         self.L          = 300        # length of domain in mm
@@ -29,7 +29,7 @@ class shkadov(gym.Env):
         self.n_jets     = n_jets     # nb of jets
         self.jet_amp    = 5.0        # jet amplitude scaling
         self.jet_pos    = jet_pos    # position of first jet
-        self.jet_hw     = 1.5        # jet half-width
+        self.jet_hw     = 2.0        # jet half-width
         self.jet_space  = jet_space  # spacing between jets
         self.l_obs      = 25.0       # length for upstream observations
         self.l_rwd      = 10.0       # length for downstream reward
@@ -211,7 +211,8 @@ class shkadov(gym.Env):
                 s = self.jet_pos + j*self.jet_space - self.jet_hw
                 e = s + 2*self.jet_hw + 1
                 for k in range(s,e):
-                    self.dq[k] += self.jet_amp*u[j]/(self.jet_hw**2)
+                    v = (k-s)*(e-k)*self.dx*self.dx
+                    self.dq[k] += self.jet_amp*u[j]*v/(self.jet_hw**2)
 
             # Compute h third spatial derivative
             d2o2c(self.h, self.ddh, self.nx, self.dx)
