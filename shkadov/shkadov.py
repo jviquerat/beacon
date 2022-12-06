@@ -16,7 +16,7 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=1, jet_pos=150.0, jet_space=25.0):
+    def __init__(self, cpu=0, n_jets=1, jet_pos=150.0, jet_space=25.0, init=True):
 
         # Main parameters
         self.L          = 300        # length of domain in mm
@@ -81,7 +81,7 @@ class shkadov(gym.Env):
         self.qp_init = np.zeros((self.nx)) # qp initialization
 
         # Load initialization file
-        self.load(self.init_file)
+        if (init): self.load(self.init_file)
 
         # Define action space
         self.action_space = gsp.Box(low   =-1.0,
