@@ -16,22 +16,22 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=1, jet_pos=150.0, jet_space=25.0, init=True):
+    def __init__(self, cpu=0, n_jets=2, jet_pos=150.0, jet_space=25.0, init=True):
 
         # Main parameters
         self.L          = 300        # length of domain in mm
-        self.nx         = 600        # nb of discretization points
-        self.dt         = 0.005      # timestep
+        self.nx         = 1200        # nb of discretization points
+        self.dt         = 0.0002     # timestep
         self.dt_act     = 0.05       # action timestep
         self.t_warmup   = 100.0      # warmup time
         self.t_act      = 20.0       # action time after warmup
         self.sigma      = 5.0e-4     # input noise
         self.n_jets     = n_jets     # nb of jets
-        self.jet_amp    = 5.0        # jet amplitude scaling
+        self.jet_amp    = 0.5        # jet amplitude scaling
         self.jet_pos    = jet_pos    # position of first jet
-        self.jet_hw     = 1.5        # jet half-width
+        self.jet_hw     = 2.0        # jet half-width
         self.jet_space  = jet_space  # spacing between jets
-        self.l_obs      = 25.0       # length for upstream observations
+        self.l_obs      = 20.0       # length for upstream observations
         self.l_rwd      = 10.0       # length for downstream reward
         self.u_interp   = 0.02       # time on which action is interpolated
         self.blowup_rwd =-10.0       # reward in case of blow-up
@@ -48,6 +48,8 @@ class shkadov(gym.Env):
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
         self.jet_pos    = int(self.jet_pos/self.dx)      # jet position in lattice units
         self.jet_hw     = int(self.jet_hw/self.dx)       # jet half-width in lattice units
+
+        print(self.jet_hw)
         self.jet_space  = int(self.jet_space/self.dx)    # jet spacing in lattice units
         self.jet_start  = self.jet_pos - self.jet_hw     # jet starting index in lattice units
         self.jet_end    = self.jet_pos + self.jet_hw     # jet ending index in lattice units
@@ -69,6 +71,8 @@ class shkadov(gym.Env):
         self.q       = np.zeros((self.nx)) # current q
         self.hp      = np.zeros((self.nx)) # previous h
         self.qp      = np.zeros((self.nx)) # previous q
+        self.hpp     = np.zeros((self.nx)) # previous h
+        self.qpp     = np.zeros((self.nx)) # previous q
         self.q2h     = np.zeros((self.nx)) # current q**2/h
         self.dq2h    = np.zeros((self.nx)) # 1st-order derivative of q**2/h
         self.dddh    = np.zeros((self.nx)) # 3rd-order derivative of h
@@ -120,10 +124,12 @@ class shkadov(gym.Env):
     def reset_fields(self):
 
         # Initial solution
-        self.h[:]  = 1.0
-        self.q[:]  = 1.0
-        self.hp[:] = 1.0
-        self.qp[:] = 1.0
+        self.h[:]   = 1.0
+        self.q[:]   = 1.0
+        self.hp[:]  = 1.0
+        self.qp[:]  = 1.0
+        self.hpp[:] = 1.0
+        self.qpp[:] = 1.0
 
         # Other fields
         self.q2h[:]  = 0.0
@@ -188,8 +194,10 @@ class shkadov(gym.Env):
         for i in range(self.ndt_act):
 
             # Update previous fields
-            self.hp[:] = self.h[:]
-            self.qp[:] = self.q[:]
+            self.hpp[:] = self.hp[:]
+            self.qpp[:] = self.qp[:]
+            self.hp[:]  = self.h[:]
+            self.qp[:]  = self.q[:]
 
             # Boundary conditions
             self.h[0]    = 1.0 + np.random.uniform(-self.sigma, self.sigma, 1)
@@ -209,9 +217,11 @@ class shkadov(gym.Env):
             for j in range(self.n_jets):
                 u[j] = (1.0-alpha)*self.u_prv[j] + alpha*self.u[j]
                 s = self.jet_pos + j*self.jet_space - self.jet_hw
-                e = s + 2*self.jet_hw + 1
-                for k in range(s,e):
-                    self.dq[k] += self.jet_amp*u[j]/(self.jet_hw**2)
+                e = s + 2*self.jet_hw
+                for k in range(s,e+1):
+                    v = (k-s)*(e-k)/(0.25*(e-s)**2)
+                    #self.dq[k] += self.jet_amp*u[j]/(self.jet_hw**2)
+                    self.dq[k] += self.jet_amp*u[j]*v*self.dx
 
             # Compute h third spatial derivative
             d2o2c(self.h, self.ddh, self.nx, self.dx)
@@ -351,6 +361,7 @@ def update_o2(u, up, upp, rhs, nx, dt):
 # rhs computation
 @jit(cache=True,fastmath=True)
 def rhs(dq2h, h, dddh, q, rhsq, nx):
+
     rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - 2.0*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
                                            - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1]))
-0
+
