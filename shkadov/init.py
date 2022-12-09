@@ -8,13 +8,21 @@ from shkadov import *
 # Generate initial data
 #######################################
 
-plot_freq = 10
+plot_freq = 20
+control = 0.0
 s = shkadov(init=False)
 s.reset_fields()
+n_it = 2*s.n_warmup
 
-for i in range(2*s.n_warmup):
-    obs, rwd, done, trunc, _ = s.step([1.0]*s.n_jets)
-    if (i%plot_freq == 0):
+start_time = time.time()
+
+for it in range(2*s.n_warmup):
+    print("# it = "+str(it)+" / "+str(n_it), end='\r')
+    obs, rwd, done, trunc, _ = s.step([control]*s.n_jets)
+    if (it>0) and (it%plot_freq == 0):
         s.render(show=True)
 
-#s.dump("init.dat")
+end_time = time.time()
+print("# Loop time = {:f}".format(end_time - start_time))
+
+s.dump("init.dat")

@@ -1,13 +1,13 @@
 ### Generic imports
 import os
 import time
+import math
 import gym
 import gym.spaces        as gsp
 import numpy             as np
 import matplotlib.pyplot as plt
 import numba             as nb
 
-from   numba              import jit, njit
 from   matplotlib.patches import Rectangle
 
 ###############################################
@@ -16,16 +16,17 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=2, jet_pos=150.0, jet_space=25.0, init=True):
+    def __init__(self, cpu=0, n_jets=2, jet_pos=50.0, jet_space=25.0, init=True):
 
         # Main parameters
-        self.L          = 300        # length of domain in mm
-        self.nx         = 1200        # nb of discretization points
-        self.dt         = 0.0002     # timestep
+        self.L          = 200        # length of domain in mm
+        self.nx         = 1000        # nb of discretization points
+        self.dt         = 0.001      # timestep
         self.dt_act     = 0.05       # action timestep
         self.t_warmup   = 100.0      # warmup time
         self.t_act      = 20.0       # action time after warmup
-        self.sigma      = 5.0e-4     # input noise
+        self.sigma      = 1.0e-4     # input noise
+        self.delta      = 0.1
         self.n_jets     = n_jets     # nb of jets
         self.jet_amp    = 0.5        # jet amplitude scaling
         self.jet_pos    = jet_pos    # position of first jet
@@ -49,7 +50,6 @@ class shkadov(gym.Env):
         self.jet_pos    = int(self.jet_pos/self.dx)      # jet position in lattice units
         self.jet_hw     = int(self.jet_hw/self.dx)       # jet half-width in lattice units
 
-        print(self.jet_hw)
         self.jet_space  = int(self.jet_space/self.dx)    # jet spacing in lattice units
         self.jet_start  = self.jet_pos - self.jet_hw     # jet starting index in lattice units
         self.jet_end    = self.jet_pos + self.jet_hw     # jet ending index in lattice units
@@ -79,6 +79,8 @@ class shkadov(gym.Env):
         self.ddh     = np.zeros((self.nx)) # 2nd-order derivative of h
         self.dq      = np.zeros((self.nx)) # 1st-order derivative of q
         self.rhsq    = np.zeros((self.nx)) # 3rd-order derivative of h
+        self.dqp      = np.zeros((self.nx)) # 1st-order derivative of q
+        self.rhsqp    = np.zeros((self.nx)) # 3rd-order derivative of h
         self.h_init  = np.zeros((self.nx)) # h initialization
         self.q_init  = np.zeros((self.nx)) # q initialization
         self.hp_init = np.zeros((self.nx)) # hp initialization
@@ -94,7 +96,7 @@ class shkadov(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        self.h_max = 3.0
+        self.h_max = 5.0
         self.q_max = 5.0
         high = np.array([])
         high_h = np.ones((self.n_obs))*self.h_max
@@ -138,6 +140,8 @@ class shkadov(gym.Env):
         self.ddh[:]  = 0.0
         self.dq[:]   = 0.0
         self.rhsq[:] = 0.0
+        self.dqp[:]   = 0.0
+        self.rhsqp[:] = 0.0
 
         # Actions
         self.u     = [0.0]*self.n_jets
@@ -198,6 +202,8 @@ class shkadov(gym.Env):
             self.qpp[:] = self.qp[:]
             self.hp[:]  = self.h[:]
             self.qp[:]  = self.q[:]
+            self.dqp[:] = self.dq[:]
+            self.rhsqp[:] = self.rhsq[:]
 
             # Boundary conditions
             self.h[0]    = 1.0 + np.random.uniform(-self.sigma, self.sigma, 1)
@@ -224,15 +230,26 @@ class shkadov(gym.Env):
                     self.dq[k] += self.jet_amp*u[j]*v*self.dx
 
             # Compute h third spatial derivative
-            d2o2c(self.h, self.ddh, self.nx, self.dx)
-            d1o2u(self.ddh, self.dddh, self.nx, self.dx)
+            #d3o2c(self.dddh, self.h, self.nx, self.dx)
+
+            #d2o2c(self.h, self.ddh, self.nx, self.dx)
+            #d1o2u(self.ddh, self.dddh, self.nx, self.dx)
+            #self.dddh[:] /= 6.0
+
+            d3o2u(self.h, self.dddh, self.nx, self.dx)
 
             # Compute rhs
-            rhs(self.dq2h, self.h, self.dddh, self.q, self.rhsq, self.nx)
+            rhs(self.dq2h, self.h, self.dddh, self.q, self.rhsq, self.nx, self.delta)
 
             # March in time
-            update_o1(self.h, self.hp, self.dq, self.nx, self.dt)
-            update_o1(self.q, self.qp, self.rhsq, self.nx, self.dt)
+            #update_o1(self.h, self.hp, self.dq, self.nx, self.dt)
+            #update_o1(self.q, self.qp, self.rhsq, self.nx, self.dt)
+
+            #update_o2(self.h, self.hp, self.hpp, self.dq, self.nx, self.dt)
+            #update_o2(self.q, self.qp, self.qpp, self.rhsq, self.nx, self.dt)
+
+            adams(self.h, self.hp, self.dq, self.dqp, self.nx, self.dt)
+            adams(self.q, self.qp, self.rhsq, self.rhsqp, self.nx, self.dt)
 
     # Retrieve observations
     def get_obs(self):
@@ -314,26 +331,44 @@ class shkadov(gym.Env):
 
 ###############################################
 # 1st derivative, 1st order upstream
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def d1o1u(u, du, nx, dx):
 
     du[1:nx] = (u[1:nx] - u[0:nx-1])/dx
 
 # 2nd derivative, 2nd order centered
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def d2o2c(u, du, nx, dx):
 
     du[1:nx-1] = (u[2:nx] - 2.0*u[1:nx-1] + u[0:nx-2])/(dx*dx)
 
+# 3rd derivative, 2nd order centered
+@nb.njit(cache=True)
+def d3o2c(u, du, nx, dx):
+
+    du[2:nx-2] = (u[4:nx] - 2.0*u[3:nx-1] + 2.0*u[1:nx-3] - u[0:nx-4])/(2.0*dx*dx)
+    du[1]      = (-u[1] + 3.0*u[2] - 3.0*u[3] + u[4])/(dx*dx)
+    du[nx-2]   = (-u[nx-5] + 3.0*u[nx-4] - 3.0*u[nx-3] + u[nx-2])/(dx*dx)
+
+# 3rd derivative, 2nd order upwind
+@nb.njit(cache=True)
+def d3o2u(u, du, nx, dx):
+
+    du[1:nx-3] = (-u[4:nx] + 6.0*u[3:nx-1] - 12.0*u[2:nx-2]
+                  + 10.0*u[1:nx-3] - 3.0*u[0:nx-4])/(12.0*dx*dx*dx)
+    #du[1]      = (-u[1] + 3.0*u[2] - 3.0*u[3] + u[4])/(dx*dx)
+    du[nx-3]   = (-0.5*u[nx-5] + u[nx-4] - u[nx-2] + 0.5*u[nx-1])/(dx*dx)
+    du[nx-2]   = (-u[nx-5] + 3.0*u[nx-4] - 3.0*u[nx-3] + u[nx-2])/(dx*dx)
+
 # 1st derivative, 2nd order upstream
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def d1o2u(u, du, nx, dx):
 
     du[0:nx-2] = (-u[2:nx] + 4.0*u[1:nx-1] - 3.0*u[0:nx-2])/(2.0*dx)
     du[nx-2]   = (u[nx-1] - u[nx-2])/dx
 
 # 1st derivative, minmod tvd scheme
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def d1tvd(u, du, nx, dx):
 
     phi         = np.zeros((nx))
@@ -347,21 +382,27 @@ def d1tvd(u, du, nx, dx):
     du[1:nx-1] /= dx
 
 # 1st order update in time
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def update_o1(u, up, rhs, nx, dt):
 
     u[1:nx-1] = up[1:nx-1] - dt*rhs[1:nx-1]
 
 # 2nd order update in time
-@jit(cache=True,fastmath=True)
+@nb.njit(cache=True)
 def update_o2(u, up, upp, rhs, nx, dt):
 
     u[1:nx-1] = (4.0*up[1:nx-1] - upp[1:nx-1] - 2.0*dt*rhs[1:nx-1])/3.0
 
-# rhs computation
-@jit(cache=True,fastmath=True)
-def rhs(dq2h, h, dddh, q, rhsq, nx):
+# 2nd order adams-bashforth update in time
+@nb.njit(cache=True)
+def adams(u, up, rhs, rhsp, nx, dt):
 
-    rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - 2.0*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
-                                           - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1]))
+    u[1:nx-1] = up[1:nx-1] - 1.5*dt*rhs[1:nx-1] + 0.5*dt*rhsp[1:nx-1]
+
+# rhs computation
+@nb.njit(cache=True)
+def rhs(dq2h, h, dddh, q, rhsq, nx, delta):
+
+    rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - 1.0/(5.0*delta)*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
+                                                     - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1]))
 
