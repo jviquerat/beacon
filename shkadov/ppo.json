@@ -1,0 +1,88 @@
+{
+    "env": {
+        "name": "shkadov",
+        "obs_clip": false,
+        "obs_norm": true,
+        "obs_noise": 0.0
+    },
+    "name_env": true,
+    "name_agent": true,
+    "name_tag": "",
+    "name_time": false,
+    "n_avg": 2,
+    "n_cpu": 1,
+    "n_stp_max": 100000,
+    "trainer": {
+        "style": "buffer",
+        "buff_size": 800,
+        "n_buff": 1,
+        "batch_frac": 0.5,
+        "n_epochs": 32,
+        "rnd_style": "ascii",
+        "render_every": 10000
+    },
+    "agent": {
+        "type": "ppo",
+        "policy": {
+            "type": "normal",
+            "network": {
+                "type": "fc",
+                "k_init": "lecun_normal",
+                "trunk": {
+                    "arch": [64],
+                    "actv": "relu"
+                },
+                "heads": {
+                    "nb": 2,
+                    "arch": [[64],[64]],
+                    "actv": ["relu","relu"],
+                    "final": ["tanh","sigmoid"]
+                }
+            },
+            "optimizer": {
+                "type": "adam",
+                "lr": 5.0e-4,
+                "grd_clip": 0.1
+            },
+            "loss": {
+                "type": "surrogate",
+                "pol_clip": 0.2,
+                "ent_coef": 0.01
+            }
+        },
+        "value": {
+            "type": "v_value",
+            "network": {
+                "type": "fc",
+                "k_init": "lecun_normal",
+                "trunk": {
+                    "arch": [64,64],
+                    "actv": "relu"
+                },
+                "heads": {
+                    "nb": 1,
+                    "arch": [[]],
+                    "actv": ["relu"],
+                    "final": ["linear"]
+                }
+            },
+            "optimizer": {
+                "type": "adam",
+                "lr": 1.0e-3,
+                "grd_clip": 0.1
+            },
+            "loss": {
+                "type": "mse_pg"
+            }
+        },
+        "retrn": {
+            "type": "gae",
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "ret_norm": true
+        },
+        "termination": {
+            "type": "bootstrap"
+        }
+    }
+}
