@@ -16,25 +16,25 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=1, jet_pos=50.0, jet_space=25.0, init=True):
+    def __init__(self, cpu=0, n_jets=1, jet_pos=75.0, jet_space=25.0, init=True):
 
         # Main parameters
         self.L          = 200        # length of domain in mm
         self.nx         = 1200       # nb of discretization points
-        self.dt         = 0.0005     # timestep
+        self.dt         = 0.001      # timestep
         self.dt_act     = 0.05       # action timestep
         self.t_warmup   = 100.0      # warmup time
         self.t_act      = 20.0       # action time after warmup
-        self.sigma      = 1.0e-4     # input noise
-        self.delta      = 0.1        # shkadov parameter
+        self.sigma      = 5.0e-4     # input noise
+        self.delta      = 0.05       # shkadov parameter
         self.n_jets     = n_jets     # nb of jets
-        self.jet_amp    = 0.5        # jet amplitude scaling
+        self.jet_amp    = 4.0        # jet amplitude scaling
         self.jet_pos    = jet_pos    # position of first jet
         self.jet_hw     = 2.0        # jet half-width
         self.jet_space  = jet_space  # spacing between jets
         self.l_obs      = 20.0       # length for upstream observations
         self.l_rwd      = 10.0       # length for downstream reward
-        self.u_interp   = 0.02       # time on which action is interpolated
+        self.u_interp   = 0.01       # time on which action is interpolated
         self.blowup_rwd =-10.0       # reward in case of blow-up
         self.eps        = 1.0e-2     # avoid division by zero
         self.init_file  = "init.dat" # initialization file
@@ -306,10 +306,6 @@ def d3o2u(u, du, nx, dx):
     du[nx-3]   = ( u[nx-1] - 3.0*u[nx-2] + 3.0*u[nx-3] - u[nx-4])/(6.0*dx*dx*dx)
     du[nx-2]   = (-u[nx-4] + 3.0*u[nx-3] - 3.0*u[nx-2] + u[nx-1])/(6.0*dx*dx*dx)
 
-    #du[1:nx-3] = (-u[1:nx-3] + 3.0*u[2:nx-2] - 3.0*u[3:nx-1] + u[4:nx])/(dx*dx*dx)
-    #du[nx-3]   = (-0.5*u[nx-5] + u[nx-4] - u[nx-2] + 0.5*u[nx-1])/(dx*dx*dx)
-    #du[nx-2]   = (-u[nx-5] + 3.0*u[nx-4] - 3.0*u[nx-3] + u[nx-2])/(dx*dx*dx)
-
 # 1st derivative tvd scheme
 @nb.njit(cache=True)
 def d1tvd(u, du, nx, dx):
@@ -318,7 +314,6 @@ def d1tvd(u, du, nx, dx):
     r           = np.zeros((nx))
     r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
     phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0)) # mindmod
-    #phi[1:nx-1] = 0.0 # upwind
 
     du[1:nx-1]  = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
     du[1:nx-1] -= u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])

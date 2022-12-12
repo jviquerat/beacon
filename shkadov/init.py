@@ -8,7 +8,7 @@ from shkadov import *
 # Generate initial data
 #######################################
 
-plot_freq = 2000000
+plot_freq = 20
 control = 0.0
 s = shkadov(init=False)
 s.reset_fields()
