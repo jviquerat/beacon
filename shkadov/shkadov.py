@@ -335,7 +335,7 @@ def update_o2(u, up, upp, rhs, nx, dt):
 @nb.njit(cache=True)
 def adams(u, rhs, rhsp, nx, dt):
 
-    u[1:nx-1] += -1.5*dt*rhs[1:nx-1] + 0.5*dt*rhsp[1:nx-1]
+    u[1:nx-1] += 0.5*dt*(-3.0*rhs[1:nx-1] + rhsp[1:nx-1])
 
 # rhs computation
 @nb.njit(cache=True)
