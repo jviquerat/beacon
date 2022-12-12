@@ -23,10 +23,10 @@ class shkadov(gym.Env):
         self.nx         = 1200       # nb of discretization points
         self.dt         = 0.001      # timestep
         self.dt_act     = 0.05       # action timestep
-        self.t_warmup   = 100.0      # warmup time
+        self.t_warmup   = 200.0      # warmup time
         self.t_act      = 20.0       # action time after warmup
         self.sigma      = 5.0e-4     # input noise
-        self.delta      = 0.05       # shkadov parameter
+        self.delta      = 0.1        # shkadov parameter
         self.n_jets     = n_jets     # nb of jets
         self.jet_amp    = 4.0        # jet amplitude scaling
         self.jet_pos    = jet_pos    # position of first jet
