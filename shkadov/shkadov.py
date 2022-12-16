@@ -16,28 +16,29 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, n_jets=1, jet_pos=75.0, jet_space=25.0, init=True):
+    def __init__(self, cpu=0, init=True,
+                 L0=150.0, n_jets=1, jet_pos=150.0, jet_space=25.0, delta=0.1):
 
         # Main parameters
-        self.L          = 200        # length of domain in mm
-        self.nx         = 1200       # nb of discretization points
-        self.dt         = 0.001      # timestep
-        self.dt_act     = 0.05       # action timestep
-        self.t_warmup   = 200.0      # warmup time
-        self.t_act      = 20.0       # action time after warmup
-        self.sigma      = 5.0e-4     # input noise
-        self.delta      = 0.1        # shkadov parameter
-        self.n_jets     = n_jets     # nb of jets
-        self.jet_amp    = 4.0        # jet amplitude scaling
-        self.jet_pos    = jet_pos    # position of first jet
-        self.jet_hw     = 2.0        # jet half-width
-        self.jet_space  = jet_space  # spacing between jets
-        self.l_obs      = 20.0       # length for upstream observations
-        self.l_rwd      = 10.0       # length for downstream reward
-        self.u_interp   = 0.01       # time on which action is interpolated
-        self.blowup_rwd =-10.0       # reward in case of blow-up
-        self.eps        = 1.0e-2     # avoid division by zero
-        self.init_file  = "init.dat" # initialization file
+        self.L          = L0 + 50.0*n_jets # length of domain in mm
+        self.nx         = 4*int(self.L)       # nb of discretization points
+        self.dt         = 0.001               # timestep
+        self.dt_act     = 0.05                # action timestep
+        self.t_warmup   = 200.0               # warmup time
+        self.t_act      = 20.0                # action time after warmup
+        self.sigma      = 5.0e-4              # input noise
+        self.delta      = delta               # shkadov parameter
+        self.n_jets     = n_jets              # nb of jets
+        self.jet_amp    = 5.0                 # jet amplitude scaling
+        self.jet_pos    = jet_pos             # position of first jet
+        self.jet_hw     = 2.0                 # jet half-width
+        self.jet_space  = jet_space           # spacing between jets
+        self.l_obs      = 20.0                # length for upstream observations
+        self.l_rwd      = 10.0                # length for downstream reward
+        self.u_interp   = 0.01                # time on which action is interpolated
+        self.blowup_rwd =-10.0                # reward in case of blow-up
+        self.eps        = 1.0e-8              # avoid division by zero
+        self.init_file  = "init.dat"          # initialization file
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -73,9 +74,9 @@ class shkadov(gym.Env):
         self.q2h     = np.zeros((self.nx)) # current q**2/h
         self.dq2h    = np.zeros((self.nx)) # 1st-order derivative of q**2/h
         self.dddh    = np.zeros((self.nx)) # 3rd-order derivative of h
-        self.dq      = np.zeros((self.nx)) # 1st-order derivative of q
+        self.rhsh    = np.zeros((self.nx)) # 1st-order derivative of q
         self.rhsq    = np.zeros((self.nx)) # 3rd-order derivative of h
-        self.dqp     = np.zeros((self.nx)) # 1st-order derivative of q
+        self.rhshp   = np.zeros((self.nx)) # 1st-order derivative of q
         self.rhsqp   = np.zeros((self.nx)) # 3rd-order derivative of h
         self.h_init  = np.zeros((self.nx)) # h initialization
         self.q_init  = np.zeros((self.nx)) # q initialization
@@ -90,7 +91,7 @@ class shkadov(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        self.h_max = 5.0
+        self.h_max = 4.0
         self.q_max = 5.0
         high = np.array([])
         high_h = np.ones((self.n_obs))*self.h_max
@@ -125,9 +126,9 @@ class shkadov(gym.Env):
         self.q2h[:]   = 0.0
         self.dq2h[:]  = 0.0
         self.dddh[:]  = 0.0
-        self.dq[:]    = 0.0
+        self.rhsh[:]  = 0.0
         self.rhsq[:]  = 0.0
-        self.dqp[:]   = 0.0
+        self.rhshp[:] = 0.0
         self.rhsqp[:] = 0.0
 
         # Actions
@@ -185,21 +186,28 @@ class shkadov(gym.Env):
         for i in range(self.ndt_act):
 
             # Update previous fields
-            self.dqp[:]   = self.dq[:]
+            self.rhshp[:] = self.rhsh[:]
             self.rhsqp[:] = self.rhsq[:]
 
             # Boundary conditions
-            self.h[0]    = 1.0 + np.random.uniform(-self.sigma, self.sigma, 1)
-            self.q[0]    = 1.0
+            self.h[0] = 1.0 + np.random.uniform(-self.sigma, self.sigma, 1)
+            self.q[0] = 1.0
             self.h[self.nx-1] = self.h[self.nx-2]
             self.q[self.nx-1] = self.q[self.nx-2]
+
+            # Compute rhs for h
+            d1tvd(self.q, self.rhsh, self.nx, self.dx)
 
             # Compute q2h and first spatial derivative
             self.q2h[:] = self.q[:]*self.q[:]/(self.h[:] + self.eps)
             d1tvd(self.q2h, self.dq2h, self.nx, self.dx)
 
-            # Compute q first spatial derivative
-            d1tvd(self.q, self.dq, self.nx, self.dx)
+            # Compute h third spatial derivative
+            d3o2u(self.h, self.dddh, self.nx, self.dx)
+
+            # Compute rhs for q
+            rhsq(self.dq2h, self.h,  self.dddh,  self.q,
+                 self.rhsq, self.nx, self.delta, self.eps)
 
             # Add control
             alpha = min(float(i)/float(self.n_interp), 1.0)
@@ -208,18 +216,12 @@ class shkadov(gym.Env):
                 s = self.jet_pos + j*self.jet_space - self.jet_hw
                 e = s + 2*self.jet_hw
                 for k in range(s,e+1):
-                    v = (k-s)*(e-k)/(0.25*(e-s)**2)
-                    self.dq[k] += self.jet_amp*u[j]*v*self.dx
-
-            # Compute h third spatial derivative
-            d3o2u(self.h, self.dddh, self.nx, self.dx)
-
-            # Compute rhs
-            rhs(self.dq2h, self.h, self.dddh, self.q,
-                self.rhsq, self.nx, self.delta, self.eps)
+                    v  = (k-s)*(e-k)/(0.25*(e-s)**2)
+                    dq = self.jet_amp*u[j]*v
+                    self.rhsq[k] += dq
 
             # March in time
-            adams(self.h, self.dq,   self.dqp,   self.nx, self.dt)
+            adams(self.h, self.rhsh, self.rhshp, self.nx, self.dt)
             adams(self.q, self.rhsq, self.rhsqp, self.nx, self.dt)
 
     # Retrieve observations
@@ -244,10 +246,9 @@ class shkadov(gym.Env):
         for i in range(self.n_jets):
             s = self.jet_pos + i*self.jet_space
             e = s + self.l_rwd
-            hdiff[:]  = self.h[s:e]
-            hdiff[:] -= 1.0
-            rwd      -= np.sum(np.square(hdiff))/(e-s)
-        rwd /= self.n_jets
+            hdiff[:]  = self.h[s:e] - 1.0
+            rwd      -= np.sum(np.square(hdiff))
+        rwd /= self.n_jets*self.l_rwd
 
         return rwd
 
@@ -266,7 +267,7 @@ class shkadov(gym.Env):
         for i in range(self.n_jets):
             s = self.jet_pos + i*self.jet_space - self.jet_hw
             ax.add_patch(Rectangle((s*self.dx, 1.0),
-                                   2.0*self.jet_hw*self.dx, self.u[i],
+                                   (2*self.jet_hw+1)*self.dx, self.u[i],
                                    facecolor='red', fill=True, lw=1))
         fig.tight_layout()
         plt.grid()
@@ -279,7 +280,8 @@ class shkadov(gym.Env):
     # Dump (h,q)
     def dump(self, filename):
 
-        array = self.h.copy()
+        array = self.x.copy()
+        array = np.vstack((array, self.h))
         array = np.vstack((array, self.q))
         array = np.transpose(array)
 
@@ -289,8 +291,8 @@ class shkadov(gym.Env):
     def load(self, filename):
 
         f = np.loadtxt(filename)
-        self.h_init[:] = f[:,0]
-        self.q_init[:] = f[:,1]
+        self.h_init[:self.nx] = f[:self.nx,1]
+        self.q_init[:self.nx] = f[:self.nx,2]
 
     # Closing
     def close(self):
@@ -302,9 +304,9 @@ class shkadov(gym.Env):
 def d3o2u(u, du, nx, dx):
 
     du[1:nx-3] = (-u[4:nx] + 6.0*u[3:nx-1] - 12.0*u[2:nx-2]
-                  + 10.0*u[1:nx-3] - 3.0*u[0:nx-4])/(12.0*dx*dx*dx)
-    du[nx-3]   = ( u[nx-1] - 3.0*u[nx-2] + 3.0*u[nx-3] - u[nx-4])/(6.0*dx*dx*dx)
-    du[nx-2]   = (-u[nx-4] + 3.0*u[nx-3] - 3.0*u[nx-2] + u[nx-1])/(6.0*dx*dx*dx)
+                  + 10.0*u[1:nx-3] - 3.0*u[0:nx-4])/(2.0*dx*dx*dx)
+    du[nx-3]   = ( u[nx-1] - 3.0*u[nx-2] + 3.0*u[nx-3] - u[nx-4])/(dx*dx*dx)
+    du[nx-2]   = (-u[nx-4] + 3.0*u[nx-3] - 3.0*u[nx-2] + u[nx-1])/(dx*dx*dx)
 
 # 1st derivative tvd scheme
 @nb.njit(cache=True)
@@ -319,29 +321,17 @@ def d1tvd(u, du, nx, dx):
     du[1:nx-1] -= u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
     du[1:nx-1] /= dx
 
-# 1st order update in time
+# rhs computation for q
 @nb.njit(cache=True)
-def update_o1(u, rhs, nx, dt):
+def rhsq(dq2h, h, dddh, q, rhsq, nx, delta, eps):
 
-    u[1:nx-1] += -dt*rhs[1:nx-1]
-
-# 2nd order update in time
-@nb.njit(cache=True)
-def update_o2(u, up, upp, rhs, nx, dt):
-
-    u[1:nx-1] = (4.0*up[1:nx-1] - upp[1:nx-1] - 2.0*dt*rhs[1:nx-1])/3.0
+    p            = 1.0/(5.0*delta)
+    rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - p*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
+                                         - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1] + eps))
 
 # 2nd order adams-bashforth update in time
 @nb.njit(cache=True)
 def adams(u, rhs, rhsp, nx, dt):
 
     u[1:nx-1] += 0.5*dt*(-3.0*rhs[1:nx-1] + rhsp[1:nx-1])
-
-# rhs computation
-@nb.njit(cache=True)
-def rhs(dq2h, h, dddh, q, rhsq, nx, delta, eps):
-
-    p            = 1.0/(5.0*delta)
-    rhsq[1:nx-1] = 1.2*dq2h[1:nx-1] - p*(h[1:nx-1]*(dddh[1:nx-1] + 1.0)
-                                         - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1] + eps))
 
