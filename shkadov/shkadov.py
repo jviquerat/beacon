@@ -20,25 +20,25 @@ class shkadov(gym.Env):
                  L0=150.0, n_jets=1, jet_pos=150.0, jet_space=25.0, delta=0.1):
 
         # Main parameters
-        self.L          = L0 + 50.0*n_jets # length of domain in mm
-        self.nx         = 4*int(self.L)       # nb of discretization points
-        self.dt         = 0.001               # timestep
-        self.dt_act     = 0.05                # action timestep
-        self.t_warmup   = 200.0               # warmup time
-        self.t_act      = 20.0                # action time after warmup
-        self.sigma      = 5.0e-4              # input noise
-        self.delta      = delta               # shkadov parameter
-        self.n_jets     = n_jets              # nb of jets
-        self.jet_amp    = 5.0                 # jet amplitude scaling
-        self.jet_pos    = jet_pos             # position of first jet
-        self.jet_hw     = 2.0                 # jet half-width
-        self.jet_space  = jet_space           # spacing between jets
-        self.l_obs      = 20.0                # length for upstream observations
-        self.l_rwd      = 10.0                # length for downstream reward
-        self.u_interp   = 0.01                # time on which action is interpolated
-        self.blowup_rwd =-10.0                # reward in case of blow-up
-        self.eps        = 1.0e-8              # avoid division by zero
-        self.init_file  = "init.dat"          # initialization file
+        self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
+        self.nx         = 4*int(self.L)    # nb of discretization points
+        self.dt         = 0.001            # timestep
+        self.dt_act     = 0.05             # action timestep
+        self.t_warmup   = 200.0            # warmup time
+        self.t_act      = 20.0             # action time after warmup
+        self.sigma      = 5.0e-4           # input noise
+        self.delta      = delta            # shkadov parameter
+        self.n_jets     = n_jets           # nb of jets
+        self.jet_amp    = 5.0              # jet amplitude scaling
+        self.jet_pos    = jet_pos          # position of first jet
+        self.jet_hw     = 2.0              # jet half-width
+        self.jet_space  = jet_space        # spacing between jets
+        self.l_obs      = 10.0              # length for upstream observations
+        self.l_rwd      = 10.0             # length for downstream reward
+        self.u_interp   = 0.01             # time on which action is interpolated
+        self.blowup_rwd =-10.0             # reward in case of blow-up
+        self.eps        = 1.0e-8           # avoid division by zero
+        self.init_file  = "init_field.dat" # initialization file
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -91,15 +91,22 @@ class shkadov(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
+        self.h_min = 0.0
         self.h_max = 4.0
+        self.q_min = 0.0
         self.q_max = 5.0
+        low  = np.array([])
         high = np.array([])
+        low_h = np.ones((self.n_obs))*self.h_min
+        low_q = np.ones((self.n_obs))*self.q_min
         high_h = np.ones((self.n_obs))*self.h_max
         high_q = np.ones((self.n_obs))*self.q_max
         for i in range(self.n_jets):
+            low  = np.append(low, low_h)
+            low  = np.append(low, low_q)
             high = np.append(high, high_h)
             high = np.append(high, high_q)
-        self.observation_space = gsp.Box(low   =-high,
+        self.observation_space = gsp.Box(low   =-low,
                                          high  = high,
                                          shape = (2*self.n_obs*self.n_jets,),
                                          dtype = np.float32)
@@ -253,7 +260,7 @@ class shkadov(gym.Env):
         return rwd
 
     # Render environment
-    def render(self, mode="human", show=False):
+    def render(self, mode="human", show=False, dump=True):
 
         ### Initialize plot
         if (self.stp_plot == 0):
@@ -275,17 +282,20 @@ class shkadov(gym.Env):
                     bbox_inches='tight')
         if show: plt.pause(0.0001)
         plt.clf()
+        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
+                           self.path+"/jet_"+str(self.stp_plot)+".dat")
         self.stp_plot += 1
 
     # Dump (h,q)
-    def dump(self, filename):
+    def dump(self, field_name, jet_name):
 
         array = self.x.copy()
         array = np.vstack((array, self.h))
         array = np.vstack((array, self.q))
         array = np.transpose(array)
 
-        np.savetxt(filename, array, fmt='%.5e')
+        np.savetxt(field_name, array,  fmt='%.5e')
+        np.savetxt(jet_name,   self.u, fmt='%.5e')
 
     # Load (h,q)
     def load(self, filename):
