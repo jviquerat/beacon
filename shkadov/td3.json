@@ -9,7 +9,7 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 1,
     "n_cpu": 1,
     "n_stp_max": 100000,
     "trainer": {
@@ -17,37 +17,41 @@
         "mem_size": 100000,
         "btc_size": 128,
         "n_stp_unroll": 1,
-        "render_every": 500000
+        "render_every": 500
     },
     "agent": {
-        "type": "sac",
+        "type": "td3",
         "gamma": 0.99,
         "rho": 0.995,
         "n_warmup": 1000,
         "n_filling": 2000,
-        "alpha": 0.01,
+        "p_update": 2,
+        "sigma_act": 0.01,
+        "sigma_tgt": 0.01,
+        "noise_clip": 0.05,
         "policy": {
-            "type": "normal",
+            "type": "deterministic",
             "network": {
                 "type": "fc",
+                "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128],
+                    "arch": [128,128],
                     "actv": "relu"
                 },
                 "heads": {
-                    "nb": 2,
-                    "arch": [[128],[128]],
-                    "actv": ["relu","relu"],
-                    "final": ["tanh","sigmoid"]
+                    "nb": 1,
+                    "arch": [[]],
+                    "actv": ["relu"],
+                    "final": ["tanh"]
                 }
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
+                "lr": 1.0e-3,
                 "grd_clip": null
             },
             "loss": {
-                "type": "q_pol_sac"
+                "type": "q_pol"
             }
         },
         "value": {
@@ -68,11 +72,11 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
+                "lr": 1.0e-3,
                 "grd_clip": null
             },
             "loss": {
-                "type": "mse_sac"
+                "type": "mse_td3"
             }
         },
         "termination": {
