@@ -1,0 +1,39 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+%%%%%%%%%%%%
+\begin{tikzpicture}[	scale=0.8, trim axis left, trim axis right, font=\scriptsize]
+	\begin{axis}[	xmin=0, xmax=300, ymin=0, ymax=2, scale=1.0,
+				xtick={0,50,100,150,200,250,300},
+				width=\textwidth, height=.25\textwidth, scale only axis=true,
+				legend cell align=left, legend pos=north east,
+				grid=major, xlabel=$x$, ylabel=$h$]
+		
+		%\legend{No control, Baseline}
+		
+		\draw[fill=orange3, draw=orange2, thick] 	(148,1) rectangle (152,1+0.351);
+		\draw[fill=purple3, draw=purple2, thick]	(140,0.23) rectangle (150,0.27);
+		\draw[fill=teal3, draw=teal2, thick]		(150,0.23) rectangle (160,0.27);
+		
+		\draw[fill=orange3, draw=orange2, thick] 	(173,1) rectangle (177,1-0.483);
+		\draw[fill=purple3, draw=purple2, thick]	(165,0.23) rectangle (175,0.27);
+		\draw[fill=teal3, draw=teal2, thick]		(175,0.23) rectangle (185,0.27);
+		
+		\draw[fill=orange3, draw=orange2, thick] 	(198,1) rectangle (202,1+0.781);
+		\draw[fill=purple3, draw=purple2, thick]	(190,0.23) rectangle (200,0.27);
+		\draw[fill=teal3, draw=teal2, thick]		(200,0.23) rectangle (210,0.27);
+		
+		\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov_control.dat};
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Example of observation and reward computation areas.} The jets strengths are shown with orange rectangles, while the observation areas (upstream of each jet) and reward areas (downstream of each jet) are shown in purple and green, respectively.} 
+\label{fig:shkadov_jets}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%

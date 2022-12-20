@@ -1,0 +1,374 @@
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Main packages
+%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[a4paper]{geometry}						% manages document dimensions
+\usepackage[utf8]{inputenc}							% translates various input encodings into latex internal language
+\usepackage[T1]{fontenc}								% manages selection of font encoding
+\usepackage[british]{babel}							% manages multilingual typesetting
+\usepackage[osf]{libertine}							% libertine font
+\usepackage[
+	DIV=14,
+	BCOR=2mm,
+	headinclude=true,
+	footinclude=false
+	]{typearea}									% set page margins
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Math packages
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{amsmath}								% for main mathematical features
+\usepackage{amsxtra}								% a few rarely used math-related commands
+\usepackage{amssymb}								% extended symbol collection
+\usepackage{amsthm}								% for theorem-like structures
+\usepackage{ifthen}									% conditional commands
+\usepackage{mathtools}								% extension of amsmath
+\usepackage{stmaryrd} 								% symbols for computer science
+\usepackage{siunitx} 								% formatting numbers with 10^
+\usepackage{textcomp} 								% for many text symbols
+\usepackage{bm} 									% boldmath symbols
+\usepackage{esint} 									% for \oiint symbol and integrals style
+\usepackage{fp}									% complex calculations
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Arrays packages
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{booktabs}								% enhances tables quality
+\usepackage{multirow}								% create tab­u­lar cells span­ning mul­ti­ple rows
+\usepackage{multicol}								% create tab­u­lar cells span­ning mul­ti­ple columns
+\usepackage{bigdelim}								% multi-row delimiters in arrays
+\usepackage{tabularx}								% extends tabular with adjustable-width columns 
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Layout packages
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{hyperref}								% production of hypertext links
+\usepackage{enumitem}								% provides control over itemize and enumerate packages
+\usepackage{ulem} 									% for underlining things
+\usepackage{algorithm}								% typesetting for algorithms
+\usepackage{algpseudocode}							% provides control over algorithm-defined structures
+\usepackage{setspace}								% to set space between lines
+\usepackage{lipsum}									% write random text
+%\usepackage{listings}								% to typeset source code
+\usepackage{bibentry}								% allows to put a full bib entry in the text of a document
+\usepackage{pdflscape}								% to use landscape mode
+\usepackage{fancyhdr}								% construction of headers and footers
+\usepackage{ifoddpage}								% determine if current page is odd or even
+\usepackage{lscape} 								% place selected parts of a document in landscape
+\usepackage{epigraph}								% for epigraph typesetting
+\setlength\epigraphwidth{8cm}							% set epigraph width
+\setlength\epigraphrule{0pt}							% set width of the horizontal line appearing under the epigraph
+\usepackage{titlesec}	 							% alternative section titles
+\usepackage{color} 									% for custom chapter titles
+\usepackage{textcomp} 								% To fix single quotes
+\usepackage{xspace} 								% To handle trailing spaces
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Code typesetting packages
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{minted}									% for code typesetting
+\usepackage{tcolorbox}								% for automatic boxing and framing
+\usepackage{etoolbox}								% for automatic boxing and framing
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Math commands
+%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\R}{\mathbb{R}}									% real set
+\newcommand{\N}{\mathbb{N}}									% natural set
+\newcommand{\C}{\mathbb{C}}									% complex set
+\newcommand\M{\mathbb{M}}									% mass matrix
+\newcommand\K{\mathbb{K}}									% K matrix
+\newcommand\I{\mathbb{I}}									% I matrix
+\newcommand{\Nu}{\mathcal{V}}								% neighbor set for a cell
+\newcommand{\inter}{\bigcap}									% intersection symbol
+\newcommand{\union}{\bigcup}									% union symbol
+\newcommand{\diff}{\text{d}}									% differential operator
+\newcommand{\dpart}[2]{\frac{\partial #1}{\partial #2}}				% single partial differential operator
+\newcommand{\ddpart}[2]{\frac{\partial^2 #1}{\partial {#2}^2}}			% double partial differential operator
+\newcommand{\rot}{\nabla \times}								% curl operator
+\renewcommand{\div}{\nabla \cdot}								% divergence operator
+\newcommand{\module}[1]{\mathopen| #1 \mathclose|}				% modulus operator
+\newcommand{\norm}[1]{\left\| #1 \right\|}							% general norm operator
+\newcommand{\eps}{\varepsilon}								% custom epsilon sign
+\newcommand{\e}{\, \mathrm{e}}								% short exponential notation
+\newcommand{\V}[1]{\bm{#1}}								% vector notation
+\newcommand{\GV}[1]{\boldsymbol{#1}}							% vector notation for complex cases
+\newcommand{\Dt}{\Delta t}									% timestep notation
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Figures packages
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{graphicx}								% graphics support
+\usepackage[font={footnotesize},labelfont={bf}]{caption} 		% style of figure captions
+\usepackage{fp}									% high-precision arithmetic operations
+\usepackage[final]{pdfpages} 							% inclusion of PDF pages (must be put BEFORE pgfplots, tikz and externalize stuff)
+\usepackage{subcaption}								% subfigure support
+\usepackage{animate}								% to create animations
+\usepackage{pgfplots}								% pgfplots support
+\usepackage{pgfplotstable}							% rounding and formatting of numerical tables for pgfplots
+\usepgfplotslibrary{fillbetween}							% filling between curves
+\usepgfplotslibrary{polar}								% polar plots
+\usepgfplotslibrary{patchplots}							% plot triangular or quadrangular patches on graphs
+\usepackage{tikz}									% tikz support
+\usepackage{tikz-3dplot}								% 3D plots
+\usetikzlibrary{calc}									% complex coordinates calculations
+\usetikzlibrary{fadings}								% to apply fadings
+\usetikzlibrary{shapes.misc}							% to define various complex shapes
+\usetikzlibrary{shapes.geometric}						% to define geometric shapes such as polygons or ellipses 
+\usetikzlibrary{3d}									% drawing 3d shapes
+\usetikzlibrary{arrows}								% arrow tips
+\usetikzlibrary{decorations}							% basic decoration stuff
+\usetikzlibrary{decorations.pathmorphing}					% deformation of to-be-decorated paths
+\usetikzlibrary{decorations.text}							% decoration of paths with text
+\usetikzlibrary{decorations.markings}						% putting marks on paths
+\usetikzlibrary{intersections}							% automated calculations of paths intersections
+\usetikzlibrary{patterns}								% defines patterns for filling areas
+\usetikzlibrary{spy}									% to create local close-ups on plots
+\usetikzlibrary{matrix}								% to draw matrices
+\usetikzlibrary{chains}								% to create chains (timeline for example)
+\usetikzlibrary{positioning}								% additional options for placing nodes
+\usetikzlibrary{shapes.multipart}						% to generate multi-parts nodes
+\usetikzlibrary{fit}									% to draw encircling paths
+\pgfplotsset{compat=1.12}								% require a specific version of pgfplots
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Handle tikzExternalize
+% If ever problems appear with tikzexternalize, you should check the preferences of TexShop
+% Go to "Moteur", and add "--shell-escape" to the line pdfTex/Latex, then re-run
+% The prefix file must exist before the compilation (fig/ or ext/ or anything you choose)
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{etex} 									% extends memory
+\usepgfplotslibrary{external} 							% converts each picture as a separate pdf
+\tikzexternalize[optimize command away=\includepdf] 		% the option is for includepdf compatibility (from pdfpages package)
+\tikzsetexternalprefix{ext/}								% put externally compiled figures in ext/	
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Color packages and definitions
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{xcolor}									% driver-independant colors extensions
+\usepackage{color} 									% foreground and background color control 
+
+\definecolor{blue1}		{RGB}{0,177,234}				% deep cyan
+\definecolor{blue2}		{RGB}{76,200,239}				% lighter cyan
+\definecolor{blue3}		{RGB}{127,215,244}				% lighter cyan
+\definecolor{blue4}		{RGB}{178,231,248}				% lighter cyan
+\definecolor{bluegray1}	{RGB}{0,127,167}				% deep cyan/gray mix
+\definecolor{bluegray2}	{RGB}{76,165,193}				% lighter cyan/gray mix
+\definecolor{bluegray3}	{RGB}{127,191,211}				% lighter cyan/gray mix
+\definecolor{bluegray4}	{RGB}{178,216,228}				% lighter cyan/gray mix
+\definecolor{gray1}		{RGB}{76,84,93}				% deep gray
+\definecolor{gray2}		{RGB}{129,135,141}				% lighter gray
+\definecolor{gray3}		{RGB}{165,169,174}				% lighter gray
+\definecolor{gray4}		{RGB}{201,203,206}				% lighter gray
+\definecolor{gray5}		{RGB}{230,230,230}				% lighter gray
+\definecolor{gray6}		{RGB}{245,245,245}				% lighter gray
+\definecolor{orange1}	{RGB}{255,126,46}				% deep orange
+\definecolor{orange2}	{RGB}{255,164,108}				% lighter orange
+\definecolor{orange3}	{RGB}{255,190,150}				% lighter orange
+\definecolor{orange4}	{RGB}{255,216,192}				% lighter orange
+\definecolor{brown1}		{RGB}{205,133,63}				% brown
+\definecolor{green1}		{RGB}{0,168,107}				% green
+\definecolor{purple1}		{RGB}{89,89,171}				% deep purple
+\definecolor{purple2}		{RGB}{159,159,205}				% lighter purple
+\definecolor{purple3}		{RGB}{189,189,235}				% lighter purple
+\definecolor{purple4}		{RGB}{209,209,255}				% lighter purple
+\definecolor{teal1}		{RGB}{0,128,128}				% deep teal
+\definecolor{teal2}		{RGB}{120,188,188}				% deep teal
+\definecolor{teal3}		{RGB}{140,208,208}				% deep teal
+\definecolor{teal4}		{RGB}{160,228,228}				% deep teal
+
+\def\smallopacity	{0.7}								% slightly opaque
+\def\bigopacity		{0.5}								% more opaque
+\def\verybigopacity	{0.3}								% very opaque
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% TikZ customizations
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Figure and tikz sizes
+\newcommand{\tikzscaleforoneplot}		{1.0}						% figure scale for a single tikz plot
+\newcommand{\tikzscalefortwoplots}		{0.8}						% figure scale for two tikz plots side by side
+\newcommand{\tikzscaleforthreeplots}	{0.675}					% figure scale for three tikz plots side by side
+\newcommand{\tikzwidthforoneplot}		{.65\textwidth}				% figure width for a single tikz plots
+\newcommand{\tikzheightforoneplot}		{.4\textwidth}				% figure height for a single tikz plots
+\tikzset{every mark/.append style={scale=0.4}}						% size of tikz marks
+\tikzset{font=\small}											% size of fonts in tikz
+
+\pgfplotsset{legend style={font=\footnotesize}}						% size of legend text
+\pgfplotsset{every tick label/.append style={font=\footnotesize}}			% size of ticks in plots
+
+\newcommand{\scaleforzeroplot}{0.9\textwidth}						% special figure scale
+\newcommand{\scaleforoneplot}{0.67\textwidth}					% figure scale for one plot
+\newcommand{\scalefortwoplots}{.45\textwidth}						% figure scale for two plots side by side
+\newcommand{\scaleforthreeplots}{.28\textwidth}					% figure scale for three plots side by side
+\newcommand{\exceptionalscaleforthreeplots}{.22\textwidth}			% special figure scale
+
+% Tikz styles for arrays and matrices
+\tikzset{
+	mStyle/.style={row sep=-2*\pgflinewidth, column sep=-2*\pgflinewidth},
+	mWH/.style n args={2}{minimum width=#1cm, minimum height=#2cm},
+	mNode/.style n args={1}{draw=blue1, thick, fill=#1, mWH},
+	mRounded/.style n args={5}{append after command={\pgfextra
+        		\draw[mNode={#5}, sharp corners]% 
+    		(\tikzlastnode.west)% 
+    		[rounded corners=#1pt] |- (\tikzlastnode.north)% 
+    		[rounded corners=#2pt] -| (\tikzlastnode.east)% 
+    		[rounded corners=#3pt] |- (\tikzlastnode.south)% 
+    		[rounded corners=#4pt] -| (\tikzlastnode.west);%
+   		\endpgfextra}},
+	mTL/.style n args={1}{mRounded={3}{0}{0}{0}{#1}},
+	mTR/.style n args={1}{mRounded={0}{3}{0}{0}{#1}},
+	mBL/.style n args={1}{mRounded={0}{0}{0}{3}{#1}},
+	mBR/.style n args={1}{mRounded={0}{0}{3}{0}{#1}},
+	mL/.style n args={1}{mRounded={3}{0}{0}{3}{#1}},
+	mR/.style n args={1}{mRounded={0}{3}{3}{0}{#1}},
+	mN/.style n args={1}{mRounded={0}{0}{0}{0}{#1}},
+	mB/.style n args={1}{mRounded={0}{0}{3}{3}{#1}},
+	mT/.style n args={1}{mRounded={3}{3}{0}{0}{#1}}
+}
+
+% Tikz style for mesh-related drawings
+\tikzset{
+	vertex/.style={draw, thick, shape=circle, inner sep=2pt, fill=blue1},
+	edge/.style={draw, thick, gray2}
+}
+
+% Default arrow style
+\tikzset{arrow/.style={thick,gray2,-stealth}}
+
+% Default label style for arrays
+\tikzset{label/.style={text depth=.3\baselineskip, text height=.5\baselineskip}}
+
+% Tikz style for classes
+\tikzset{
+	cpp_class/.style={rectangle, rounded corners, text width=2cm, text centered, draw=blue1, ultra thick, fill=gray6}
+}
+
+% Style of fbox border, usually used to frame jpg/png figures
+\setlength{\fboxsep}{0pt}%
+\setlength{\fboxrule}{1pt}%
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% minted settings, for code typesetting
+% minted requires several things:
+% - the Pygments package must be installed -> pip install Pygments
+% - the --shell-escape must be added to the pdflatex command line
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usemintedstyle{manni}
+\setminted{	fontsize=\scriptsize,
+			fontfamily=courier,
+			fontseries=b,
+			obeytabs=true,
+			tabsize=2}
+\setmintedinline{fontsize=\footnotesize}
+\definecolor{mintedbg}{RGB}{200,200,200}
+\newtcolorbox{mintedbox}{	colframe=mintedbg, 
+						colback=mintedbg, 
+						coltitle=mintedbg}
+\BeforeBeginEnvironment{minted}{\begin{mintedbox}}
+\AfterEndEnvironment{minted}{\end{mintedbox}}
+\newcommand{\codeinline}[1]{\mintinline{cpp}|#1|}
+
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Book customizations
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapter title style
+\titleformat{\chapter}[display] %
+{\bfseries\Large} %
+{ %
+\hfill\fontsize{100}{70}\selectfont\color{lightgray}\textsc{\thechapter}} %
+{0ex} %
+{\filleft\fontsize{40}{45}\selectfont\scshape} %
+[\vspace{0ex}] %
+
+% Custom choice for "veuves et orphelines"
+\widowpenalty=9999
+\clubpenalty=9999
+
+% No indentation when starting paragraphs
+\setlength\parindent{0pt}
+
+% Url style
+\urlstyle{rm}
+
+% Hyperlinks style
+\hypersetup{
+    colorlinks 	= true,										% allow link coloring
+    breaklinks 	= true,										% allow linebreaks for long links
+    urlcolor 		= purple,										% url color
+    linkcolor 	= gray1,									% internal links color
+    citecolor 	= bluegray1,									% bibliographic link color
+    pdfborder 	= {0 0 0}										% border style
+}
+
+% Custom caption fonts
+\DeclareCaptionLabelSeparator*{vbar}{{\bfseries{} | }}
+\captionsetup{labelsep=vbar}
+
+% Custom enumerate style
+\setenumerate{label=\textcolor{bluegray1}{$\bm{\diamond}$},itemsep=1pt,topsep=5pt} 
+
+% Custom displaystyle array
+\newenvironment{disarray}{
+	\everymath{\displaystyle\everymath{}}\array}
+{\endarray}
+
+% Redefine \emph and \complete
+\renewcommand{\emph}[1]{\textbf{\textcolor{teal1}{#1}}}
+\newcommand{\warning}[1]{\textbf{\textcolor{red}{#1}}}
+  
+% A remark environment
+\newenvironment{remark}{\medskip\itshape\noindent\small \textbf{Remark}:}{\medskip}
+
+% Define multicols separation
+\setlength\columnsep{20pt}
+
+% Usual textual things
+\newcommand{\eg}{\textit{e.g.}\;}								% e.g. notation
+\newcommand{\ie}{\textit{i.e.}\;}									% i.e. notation
+\newcommand{\etal}{\textit{et al.}\;}								% et. al. notation
+
+% Algorithms
+\newcommand{\vpg}{\textsc{vpg}\xspace}
+\newcommand{\atc}{\textsc{a2c}\xspace}
+\newcommand{\ppo}{\textsc{ppo}\xspace}
+\newcommand{\dqn}{\textsc{dqn}\xspace}
+\newcommand{\td}{\textsc{td3}\xspace}
+\newcommand{\sac}{\textsc{sac}\xspace}
+\newcommand{\ddpg}{\textsc{ddpg}\xspace}
+
+\newcommand{\gym}{\textsc{gym}\xspace}
+
+% Fancy page style for books
+\fancypagestyle{plain}{
+	\fancyhf{}
+	\fancyfoot[LE]{\footnotesize \sffamily \bfseries \thepage}
+	\fancyfoot[RO]{\footnotesize \sffamily \bfseries \thepage}
+	\renewcommand{\headrulewidth}{0pt}
+	\renewcommand{\footrulewidth}{0pt}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\footnotesize \sffamily \bfseries }
+\fancyhead[RO]{\footnotesize \sffamily \bfseries }
+\fancyfoot[LE]{\footnotesize \sffamily \bfseries \thepage}
+\fancyfoot[RO]{\footnotesize \sffamily \bfseries \thepage}
+	
+\makeatletter
+\def\parsenode[#1]#2\pgf@nil{%
+   	\tikzset{label node/.style={#1}}
+    	\def\nodetext{#2}
+}
+
+% Page insertion and jump
+\newcommand{\insertemptypage}{								%
+	\clearpage \thispagestyle{empty} \strut \newpage}				% insert an empty page	
+\newcommand{\jumpandstartoneven}{							%
+	\clearpage \checkoddpage \ifoddpage \insertemptypage \else \fi}	% go to next even page
+\newcommand{\jumpandstartonodd}{								%
+	\clearpage \checkoddpage \ifoddpage \else \insertemptypage \fi}	% go to next odd page
+	
+%%%%%%%%%%%%%%%%%%%%%%%% 
+% Other customizations
+%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{nicefrac}
+\newcommand\bsfrac[2]{\reflectbox{\scriptsize\nicefrac[\reflectbox]{$#1$}{$#2$}}}

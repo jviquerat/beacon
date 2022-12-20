@@ -1,0 +1,48 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,hmargin=1cm,top=1.5cm,bottom=1cm]{geometry}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% YOU MUST COMPILE ME WITH XeLaTeX %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{fontspec}			% Package to select fonts from the computer-installed fonts
+\setmainfont{Montserrat-Regular}	% Font for title page
+\usepackage[british]{babel}		% For proper hyphenation and multiple languages
+
+\usepackage{graphicx} 			% For figures
+\usepackage{xcolor} 				% For colors
+\usepackage{pagecolor} 			% To make background black
+
+\pagestyle{empty}				% Empty pagestyle
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Background
+\pagecolor{black}
+
+% Inria logo
+%\hfill
+%\includegraphics[height=5.5em]{inria.png}
+%\hfill
+
+% Spacing
+\vspace*{9cm}
+
+% Image and text
+\begin{center}
+	\includegraphics[width=.3\textwidth]{logo.png}
+
+	\vspace*{5cm}
+
+	\Huge \bfseries \textcolor{white}{\textsc{beacon}} \\
+	\Huge \bfseries \textcolor{white}{User guide}
+  
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

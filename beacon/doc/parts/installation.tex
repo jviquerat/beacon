@@ -1,0 +1,21 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Generalities}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{What this library is about}
+
+This library provides self-contained benchmarks for deep reinforcement learning-based flow control. The goal is to provide the community with benchmarks that fall within the range of flow control problems, while following three constraints: (i) be written in Python to ensure a simple coupling with most DRL libraries, (ii) follow the general \gym API (see next section), and (iii) be cheap enough in terms in CPU usage so that trainings can be performed on a standard laptop. Hence, this library serves as a first step for prototyping flow control algorithms, before moving on to larger problems that will require a proper CFD solver and, most probably, a CPU cluster.
+
+In this document, a chapter is devoted to each case. Details are provided on the physics of the problem, its numerical discretization and the general environment parameters. Baseline results with several algorithms are also provided for reference.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The \gym API}
+
+interface + spaces for actions and observations

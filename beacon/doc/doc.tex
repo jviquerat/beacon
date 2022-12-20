@@ -1,0 +1,40 @@
+\documentclass[11pt,a4paper,oneside,openright]{book}
+
+%%% Add paths
+\makeatletter
+	\def\input@path{{layout/}{styles/}{fonts/}{parts/}}
+\makeatother
+
+%%% Load settings
+\input{settings}
+
+%%% Start document
+\begin{document}
+
+%%% Initial stuff : front page, table of contents, etc
+\input{starters}
+
+% Chapter x : installation
+\input{installation}
+
+% Chapter x : shkadov
+\input{shkadov}
+
+% Chapter x : environments
+%\input{environments}
+
+% Chapter x : agents
+%\input{agents}
+
+% Chapter x : FAQ
+%\input{faq}
+
+% Chapter x : benchmarks
+%\input{benchmarks}
+
+% Biblio
+\bibliography{bib}
+\bibliographystyle{alpha}
+
+%%% The end
+\end{document}

@@ -1,0 +1,34 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+%%%%%%%%%%%%
+\begin{tikzpicture}[	scale=0.8, trim axis left, trim axis right, font=\scriptsize]
+	\begin{axis}[	xmin=0, xmax=500, ymin=0.5, ymax=3.5, scale=1.0,
+				width=\textwidth, height=.25\textwidth, scale only axis=true,
+				legend cell align=left, legend pos=north east,
+				grid=major, xlabel=$x$, ylabel=$h$]
+
+		\begin{pgfonlayer}{background}
+			\fill[color=bluegray3,opacity=0.3] (axis cs:0,0.5) rectangle (axis cs:150,5);
+			\fill[color=orange3,opacity=0.3] (axis cs:150,0.5) rectangle (axis cs:275,5);
+			\fill[color=teal3,opacity=0.3] (axis cs:275,0.5) rectangle (axis cs:500,5);
+		\end{pgfonlayer}
+		
+		%\legend{No control, Baseline}
+		
+		\addplot[draw=gray1, very thick, smooth] 			table[x index=0,y index=1] {fig/shkadov_free.dat};
+		\addplot[draw=black, thick, dash pattern=on 2pt] 	coordinates {(150,0.5) (150,5)}; 
+		\addplot[draw=black, thick, dash pattern=on 2pt] 	coordinates {(275,0.5) (275,5)};
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Example of developed flow for the Shkadov equations with $\delta = 0.1$.} Three regions can be identified: a first region where the instability grows from a white noise (blue), a second region with pseudo-periodic waves (orange), and a third region with non-periodic, pulse-like waves (green).} 
+\label{fig:shkadov_free}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%
