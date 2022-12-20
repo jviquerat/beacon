@@ -9,7 +9,7 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 2,
     "n_cpu": 1,
     "n_stp_max": 100000,
     "trainer": {
@@ -25,7 +25,7 @@
         "rho": 0.995,
         "n_warmup": 1000,
         "n_filling": 2000,
-        "alpha": 0.01,
+        "alpha": 0.02,
         "policy": {
             "type": "normal",
             "network": {
@@ -43,7 +43,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
+                "lr": 1.0e-3,
                 "grd_clip": null
             },
             "loss": {
@@ -68,7 +68,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
+                "lr": 1.0e-3,
                 "grd_clip": null
             },
             "loss": {

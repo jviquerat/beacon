@@ -2,6 +2,7 @@
 import os
 import time
 import math
+import random
 import gym
 import gym.spaces        as gsp
 import numpy             as np
@@ -17,7 +18,7 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=1, jet_pos=150.0, jet_space=25.0, delta=0.1):
+                 L0=150.0, n_jets=3, jet_pos=150.0, jet_space=25.0, delta=0.1):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
@@ -33,12 +34,13 @@ class shkadov(gym.Env):
         self.jet_pos    = jet_pos          # position of first jet
         self.jet_hw     = 2.0              # jet half-width
         self.jet_space  = jet_space        # spacing between jets
-        self.l_obs      = 10.0              # length for upstream observations
+        self.l_obs      = 10.0             # length for upstream observations
         self.l_rwd      = 10.0             # length for downstream reward
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-10.0             # reward in case of blow-up
         self.eps        = 1.0e-8           # avoid division by zero
         self.init_file  = "init_field.dat" # initialization file
+        self.rand_init  = False            # random initialization
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -117,6 +119,12 @@ class shkadov(gym.Env):
         self.reset_fields()
         self.h[:] = self.h_init[:]
         self.q[:] = self.q_init[:]
+
+        if (self.rand_init):
+            n = random.randint(0,1000)
+            for i in range(n):
+                self.step(self.u)
+            self.stp = 0
 
         obs = self.get_obs()
 

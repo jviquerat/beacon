@@ -9,9 +9,9 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 1,
     "n_cpu": 1,
-    "n_stp_max": 200000,
+    "n_stp_max": 500000,
     "trainer": {
         "style": "buffer",
         "buff_size": 2000,
@@ -41,7 +41,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 1.0e-3,
+                "lr": 5.0e-4,
                 "grd_clip": 0.1
             },
             "loss": {
@@ -68,7 +68,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 2.0e-3,
+                "lr": 1.0e-3,
                 "grd_clip": 0.1
             },
             "loss": {
