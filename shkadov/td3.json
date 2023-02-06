@@ -15,7 +15,7 @@
     "trainer": {
         "style": "td",
         "mem_size": 100000,
-        "btc_size": 128,
+        "btc_size": 64,
         "n_stp_unroll": 1,
         "render_every": 500
     },
@@ -23,8 +23,8 @@
         "type": "td3",
         "gamma": 0.99,
         "rho": 0.995,
-        "n_warmup": 1000,
-        "n_filling": 2000,
+        "n_warmup": 5000,
+        "n_filling": 1000,
         "p_update": 2,
         "sigma_act": 0.01,
         "sigma_tgt": 0.01,
@@ -35,7 +35,7 @@
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {
@@ -60,7 +60,7 @@
                 "type": "fc",
                 "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {

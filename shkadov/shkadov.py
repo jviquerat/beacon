@@ -18,12 +18,12 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=3, jet_pos=150.0, jet_space=25.0, delta=0.1):
+                 L0=150.0, n_jets=10, jet_pos=150.0, jet_space=10.0, delta=0.1):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
-        self.nx         = 4*int(self.L)    # nb of discretization points
-        self.dt         = 0.001            # timestep
+        self.nx         = 2*int(self.L)    # nb of discretization points
+        self.dt         = 0.005            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 200.0            # warmup time
         self.t_act      = 20.0             # action time after warmup
@@ -36,7 +36,7 @@ class shkadov(gym.Env):
         self.jet_space  = jet_space        # spacing between jets
         self.l_obs      = 10.0             # length for upstream observations
         self.l_rwd      = 10.0             # length for downstream reward
-        self.u_interp   = 0.01             # time on which action is interpolated
+        self.u_interp   = 0.02             # time on which action is interpolated
         self.blowup_rwd =-10.0             # reward in case of blow-up
         self.eps        = 1.0e-8           # avoid division by zero
         self.init_file  = "init_field.dat" # initialization file
@@ -94,23 +94,20 @@ class shkadov(gym.Env):
 
         # Define observation space
         self.h_min = 0.0
-        self.h_max = 4.0
-        self.q_min = 0.0
-        self.q_max = 5.0
-        low  = np.array([])
-        high = np.array([])
-        low_h = np.ones((self.n_obs))*self.h_min
-        low_q = np.ones((self.n_obs))*self.q_min
+        self.h_max = 5.0
+
+        low    = np.array([])
+        high   = np.array([])
+        low_h  = np.ones((self.n_obs))*self.h_min
         high_h = np.ones((self.n_obs))*self.h_max
-        high_q = np.ones((self.n_obs))*self.q_max
+
         for i in range(self.n_jets):
             low  = np.append(low, low_h)
-            low  = np.append(low, low_q)
             high = np.append(high, high_h)
-            high = np.append(high, high_q)
+
         self.observation_space = gsp.Box(low   =-low,
                                          high  = high,
-                                         shape = (2*self.n_obs*self.n_jets,),
+                                         shape = (self.n_obs*self.n_jets,),
                                          dtype = np.float32)
 
     # Reset environment
@@ -243,12 +240,11 @@ class shkadov(gym.Env):
     def get_obs(self):
 
         obs = np.array([])
-        tmp = np.zeros((2*self.n_obs))
+        tmp = np.zeros((self.n_obs))
         for i in range(self.n_jets):
             s = self.jet_pos + i*self.jet_space - self.l_obs
             e = s + self.l_obs
-            tmp[:self.n_obs] = self.h[s:e]
-            tmp[self.n_obs:] = self.q[s:e]
+            tmp[:self.n_obs] = self.q[s:e]
             obs = np.append(obs, tmp)
 
         return obs

@@ -14,9 +14,9 @@
     "n_stp_max": 500000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 2000,
+        "buff_size": 4000,
         "n_buff": 1,
-        "batch_frac": 0.5,
+        "batch_frac": 0.25,
         "n_epochs": 32,
         "rnd_style": "ascii",
         "render_every": 10000
@@ -27,21 +27,20 @@
             "type": "normal",
             "network": {
                 "type": "fc",
-                "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128],
-                    "actv": "relu"
+                    "arch": [64],
+                    "actv": "tanh"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[128],[128]],
-                    "actv": ["relu","relu"],
+                    "arch": [[64],[64]],
+                    "actv": ["tanh","tanh"],
                     "final": ["tanh","sigmoid"]
                 }
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 5.0e-4,
+                "lr": 1.0e-3,
                 "grd_clip": 0.1
             },
             "loss": {
@@ -54,9 +53,8 @@
             "type": "v_value",
             "network": {
                 "type": "fc",
-                "k_init": "lecun_normal",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {
@@ -68,7 +66,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 1.0e-3,
+                "lr": 5.0e-3,
                 "grd_clip": 0.1
             },
             "loss": {

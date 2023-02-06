@@ -9,25 +9,26 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 2,
+    "n_avg": 1,
     "n_cpu": 1,
     "n_stp_max": 100000,
     "trainer": {
         "style": "td",
         "mem_size": 100000,
-        "btc_size": 128,
+        "btc_size": 64,
         "n_stp_unroll": 1,
-        "render_every": 500000
+        "render_every": 500000,
+        "rnd_style": "ascii"
     },
     "agent": {
         "type": "sac",
         "gamma": 0.99,
         "rho": 0.995,
-        "n_warmup": 1000,
-        "n_filling": 2000,
-        "alpha": 0.02,
+        "n_warmup": 5000,
+        "n_filling": 1000,
+        "alpha": 0.01,
         "policy": {
-            "type": "normal",
+            "type": "tanh_normal",
             "network": {
                 "type": "fc",
                 "trunk": {

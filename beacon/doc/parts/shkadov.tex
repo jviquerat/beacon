@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{shkadov}
+\chapter{\codeinline{shkadov-v0}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ with $\eps \ll 1$ being the noise level. As shown in figure \ref{fig:shkadov_fre
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discretization}
 
-Equations (\ref{eq:shkadov}) are discretized using a finite difference approach. Due to the existence of sharp gradients, the convective terms are discretized using a TVD scheme with minmod flux limiter. The discretized third-order derivative is obtained by chaining a second-order centered difference for the second derivative, chained with a second-order forward difference, leading to the following second-order approximation:
+Equations (\ref{eq:shkadov}) are discretized using a finite difference approach. Due to the existence of sharp gradients, the convective terms are discretized using a TVD scheme with a minmod flux limiter. The discretized third-order derivative is obtained by chaining a second-order centered difference for the second derivative, chained with a second-order forward difference, leading to the following second-order approximation:
 
 \begin{equation}
 \label{eq:shkadov_fd}
@@ -70,15 +70,15 @@ Finally, the time derivatives are discretized using a second-order Adams-Bashfor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The proposed environment is reworked from the original publication of Belus \textit{et al.} \cite{belus2019}, although with several major differences. It is noted that the translational invariance feature introduced in \cite{belus2019} is \emph{not} exploited here. Contrarily, this control problem is seen as an opportunity to test algorithms with a problem of arbitrarily high action dimensionality.
+The proposed environment is re-implemented based on the original publication of Belus \textit{et al.} \cite{belus2019}, although with some significant differences. It is noted that the translational invariance feature introduced in \cite{belus2019} is \emph{not} exploited here. Contrarily, this control problem is seen as an opportunity to test algorithms with a problem of arbitrarily high action dimensionality.
 
-The control of the system (\ref{eq:shkadov}) is performed by adding a forcing term $\delta q_j$ to the equation driving the temporal evolution of the flow rate. In practice, this is achieved by adding localized jets at certain positions in the domain, as shown in figure \ref{fig:shkadov_jets}, which strengths are to be controlled by the DRL agent. The first jet is positioned by default at $x_0=150$, with jet spacing being by default set to $\Delta x_\text{jets} = 25$. To save computational time, the length of the domain is a function of the number of jets $n_\text{jets}$ and their spacing:
+The control of the system (\ref{eq:shkadov}) is performed by adding a forcing term $\delta q_j$ to the equation driving the temporal evolution of the flow rate. In practice, this is achieved by adding localized jets at certain positions in the domain, as shown in figure \ref{fig:shkadov_jets}, which strengths are to be controlled by the DRL agent. The first jet is positioned by default at $x_0=150$, with jet spacing being by default set to $\Delta x_\text{jets} = 10$, similarly to \cite{belus2019}. To save computational time, the length of the domain is a function of the number of jets $n_\text{jets}$ and their spacing:
 
 \begin{equation}
 	L = L_0 + \left( n_\text{jets} + 2\right) \Delta x_\text{jets}.
 \end{equation}
 
-By default, $L_0 = 150$ (which corresponds to the start of the pseudo-periodic region for $\delta = 0.1$), and $n_\text{jets}$ is set equal to 1. The spatial discretization step is set as $\Delta x = 0.25$, while the time step is $\Delta t = 0.001$. The inlet noise level is set as $\eps = \num{5e-4}$, similarly to \cite{belus2019}. The injected flow rate $\delta q_j$ has the following form:
+By default, $L_0 = 150$ (which corresponds to the start of the pseudo-periodic region for $\delta = 0.1$), and $n_\text{jets}$ is set equal to 1. The spatial discretization step is set as $\Delta x = 0.5$, while the numerical time step is $\Delta t = 0.005$. The inlet noise level is set as $\eps = \num{5e-4}$, similarly to \cite{belus2019}. The injected flow rate $\delta q_j$ has the following form:
 
 \begin{equation}
 \label{eq:shkadov_jets}
@@ -92,11 +92,11 @@ with $A=5$ an \textit{ad-hoc} non-dimensional amplitude factor, $x_j^l$ and $x_j
 	u_j(t) = (1-\alpha(t)) u_j^{n-1} + \alpha(t) u_j^n \text{, with } \alpha(t) = \min \left( \frac{t-t_n}{\Delta t_\text{int}}, 1 \right),
 \end{equation}
 
-Hence, when the actor provides a new action to the environment at time $t=t_n$, the real imposed action is a linear interpolation between the previous action $u_j^{n-1}$ and the new action $u_j^n$ over a time $\Delta t_\text{int}$ (here taken equal to $0.1$ time units), after what the new action is imposed over the remaining action time $\Delta t_\text{const}$ (here taken equal to $0.4$ time units). The total action time-step is therefore $\Delta t_\text{act} = \Delta t_\text{int} + \Delta t_\text{const}$, which value is therefore equal to $0.05$ time units. The total episode time is fixed to $20$ time units, corresponding to $400$ actions.
+Hence, when the actor provides a new action to the environment at time $t=t_n$, the real imposed action is a linear interpolation between the previous action $u_j^{n-1}$ and the new action $u_j^n$ over a time $\Delta t_\text{int}$ (here taken equal to $0.01$ time units), after what the new action is imposed over the remaining action time $\Delta t_\text{const}$ (here taken equal to $0.04$ time units). The total action time-step is therefore $\Delta t_\text{act} = \Delta t_\text{int} + \Delta t_\text{const}$, which value is therefore equal to $0.05$ time units. The total episode time is fixed to $20$ time units, corresponding to $400$ actions.
 
 \input{fig/shkadov_jets}
 
-Similarly to \cite{belus2019}, the observations provided to the agent are the heights and flow rates collected in the union of regions $A^j_\text{obs}$ of length $l_\text{obs} = 10$ located upstream of each jet, as shown in figure \ref{fig:shkadov_jets}. Contrarily to the original article, these observations are \emph{not} clipped.
+The observations provided to the agent are the heights collected in the union of regions $A^j_\text{obs}$ of length $l_\text{obs} = 10$ located upstream of each jet, as shown in figure \ref{fig:shkadov_jets}. Contrarily to the original article, the flow rates of this region are not provided to the agent, and the observations are not clipped.
 
 The reward for each jet $j$ is computed on a region $A^j_\text{rwd}$ of length $l_\text{rwd} = 10$ located downstream of it (see figure \ref{fig:shkadov_jets}), the global reward consisting of a weighted sum of each individual reward:
 
@@ -114,6 +114,47 @@ Finally, each episode starts with the loading of a fully developed initial state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The score curves obtained by training the Shkadov environment are presented in figure \ref{fig:shkadov_1_jet}.
+The environment as described in the previous section is referred to as \codeinline{shkadov-v0}, in the fashion of the \textsc{gym} environments. In this section, we provide some results related to its resolution. For each curve, we plot the average (solid color) and the standard deviation (shaded color) obtained from $5$ different runs. First, we consider the training of a \textsc{ppo} agent on the environment using $1$, $5$ and $10$ jets, the training being performed on $500k$ steps (see figure \ref{fig:shkadov_base}). This figure is complemented by a scalability study, which consists in using parallel environments to gather samples simultaneously, therefore saving computational time.
 
-\input{fig/shkadov/score_1_jet}
+We also consider the use of \textsc{TD3} and \textsc{SAC} algorithms.
+
+
+%\input{fig/shkadov/score_1_jet}
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}
+    \footnotesize
+    \caption{\textbf{Default parameters used for the \textsc{ppo} agent.}}
+    \label{table:parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        --					& agent type					& PPO-clip\\
+	$\gamma$ 			& discount factor				& 0.99\\
+	$\lambda_a$ 			& actor learning rate				& \num{1e-3}\\
+	$\lambda_c$ 			& critic learning rate				& \num{5e-3}\\
+	--		 			& optimizer					& adam\\
+	--					& weights initialization			& orthogonal\\
+	--	 				& activation (actor hidden layers)	& tanh\\
+	-- 					& activation (actor final layer)		& tanh, sigmoid\\
+	--	 				& activation (critic hidden layers)	& relu\\
+	-- 					& activation (critic final layer)		& linear\\
+	$\epsilon$ 			& PPO clip value				& 0.2\\
+	$\beta$				& entropy bonus				& 0.01\\
+	$g$					& gradient clipping value			& 0.1\\	
+	-- 					& actor network					& $[64, [[64],[64]]]$\\
+	-- 					& critic network					& $[64, 64]$\\
+	--					& observation normalization		& yes\\
+	--					& observation clipping			& no\\
+	--					& advantage type				& GAE\\
+	$\lambda_\text{GAE}$	& bias-variance trade-off			& 0.95\\
+	--					& advantage normalization		& yes\\\midrule
+	$n_\text{rollout}$ 		& nb. of transitions per update		& 4000\\
+	$n_\text{batch}$ 		& nb. of minibatches per update 	& 2\\
+	$n_\text{epoch}$		& nb. of epochs per update		& 32\\
+	$n_\text{max}$			& total nb. of transitions per training	& \num{500000}\\
+	$n_\text{training}$		& total nb. of averaged trainings	& 5\\\midrule
+        \bottomrule
+    \end{tabular}
+\end{table}

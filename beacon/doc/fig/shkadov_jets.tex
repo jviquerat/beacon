@@ -12,20 +12,28 @@
 				width=\textwidth, height=.25\textwidth, scale only axis=true,
 				legend cell align=left, legend pos=north east,
 				grid=major, xlabel=$x$, ylabel=$h$]
+				
+		\def\x{150}
+		\def\w{2}
+		\def\lobs{10}
+		\def\lrwd{10}
+		\def\s{10}
 		
-		%\legend{No control, Baseline}
+		\def\y{0.30}
+		\def\h{0.02}
+		\def\p{0.07}
 		
-		\draw[fill=orange3, draw=orange2, thick] 	(148,1) rectangle (152,1+0.351);
-		\draw[fill=purple3, draw=purple2, thick]	(140,0.23) rectangle (150,0.27);
-		\draw[fill=teal3, draw=teal2, thick]		(150,0.23) rectangle (160,0.27);
+		\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.351);
+		\draw[fill=purple2, draw=gray2]			(\x+0*\s-\lobs,\y-0*\p-\h) rectangle (\x+0*\s,\y-0*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+0*\s,\y-0*\p-\h) rectangle (\x+0*\s+\lrwd,\y-0*\p+\h);
 		
-		\draw[fill=orange3, draw=orange2, thick] 	(173,1) rectangle (177,1-0.483);
-		\draw[fill=purple3, draw=purple2, thick]	(165,0.23) rectangle (175,0.27);
-		\draw[fill=teal3, draw=teal2, thick]		(175,0.23) rectangle (185,0.27);
+		\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1-0.483);
+		\draw[fill=purple2, draw=gray2]			(\x+1*\s-\lobs,\y-1*\p-\h) rectangle (\x+1*\s,\y-1*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+1*\s,\y-1*\p-\h) rectangle (\x+1*\s+\lrwd,\y-1*\p+\h);
 		
-		\draw[fill=orange3, draw=orange2, thick] 	(198,1) rectangle (202,1+0.781);
-		\draw[fill=purple3, draw=purple2, thick]	(190,0.23) rectangle (200,0.27);
-		\draw[fill=teal3, draw=teal2, thick]		(200,0.23) rectangle (210,0.27);
+		\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1+0.781);
+		\draw[fill=purple2, draw=gray2]			(\x+2*\s-\lobs,\y-2*\p-\h) rectangle (\x+2*\s,\y-2*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+2*\s,\y-2*\p-\h) rectangle (\x+2*\s+\lrwd,\y-2*\p+\h);
 		
 		\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov_control.dat};
 			
