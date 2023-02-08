@@ -18,9 +18,7 @@
 			\fill[color=teal3,opacity=0.3] (axis cs:275,0.5) rectangle (axis cs:500,5);
 		\end{pgfonlayer}
 		
-		%\legend{No control, Baseline}
-		
-		\addplot[draw=gray1, very thick, smooth] 			table[x index=0,y index=1] {fig/shkadov_free.dat};
+		\addplot[draw=gray1, very thick, smooth] 			table[x index=0,y index=1] {fig/shkadov/shkadov_free.dat};
 		\addplot[draw=black, thick, dash pattern=on 2pt] 	coordinates {(150,0.5) (150,5)}; 
 		\addplot[draw=black, thick, dash pattern=on 2pt] 	coordinates {(275,0.5) (275,5)};
 			

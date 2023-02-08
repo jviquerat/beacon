@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{\codeinline{shkadov-v0}}
+\chapter{Shkadov}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +39,7 @@ The first focus on vertically falling fluid films was performed by Kapitza \& Ka
 
 with $\eps \ll 1$ being the noise level. As shown in figure \ref{fig:shkadov_free}, the introduction of a random uniform noise at the inlet triggers the development of exponentially-growing instabilities (blue region) which eventually develop a pseudo-periodic behavior (orange region). Then, the periodicity of the waves break, and the instabilities transition into pulse-like structures, presenting a steep front preceded by small ripples \cite{chang2002book}. It is observed that some of these steep pulses, called solitary pulses, travel faster than others, and can capture upstream pulses in coalescence events. The dynamics of these solitary pulses are fully determined by the $\delta$ parameter, while the location of the transition regions also depends on the inlet noise level \cite{chang2002}.
 
-\input{fig/shkadov_free}
+\input{fig/shkadov/shkadov_free}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,19 +114,16 @@ Finally, each episode starts with the loading of a fully developed initial state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The environment as described in the previous section is referred to as \codeinline{shkadov-v0}, in the fashion of the \textsc{gym} environments. In this section, we provide some results related to its resolution. For each curve, we plot the average (solid color) and the standard deviation (shaded color) obtained from $5$ different runs. First, we consider the training of a \textsc{ppo} agent on the environment using $1$, $5$ and $10$ jets, the training being performed on $500k$ steps (see figure \ref{fig:shkadov_base}). This figure is complemented by a scalability study, which consists in using parallel environments to gather samples simultaneously, therefore saving computational time.
+The environment as described in the previous section is referred to as \codeinline{shkadov-v0}, in the fashion of the \textsc{gym} environments. In this section, we provide some results related to its resolution. First, we consider the training of a \textsc{ppo} agent on the environment using $1$, $5$ and $10$ jets, the training being performed on $300k$ steps (see figure \ref{fig:shkadov_base}). The set of \textsc{ppo} hyperparameters used for the resolution is provided in table \ref{table:shkadov_parameters}. As could be expected, training is faster for small number of jets. For larger amount of jets, training with regular \textsc{ppo} algorithm under this set of hyperparameters becomes extremely slow, or does not happen at all.
 
-We also consider the use of \textsc{TD3} and \textsc{SAC} algorithms.
-
-
-%\input{fig/shkadov/score_1_jet}
+\input{fig/shkadov/score}
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 \begin{table}
     \footnotesize
     \caption{\textbf{Default parameters used for the \textsc{ppo} agent.}}
-    \label{table:parameters}
+    \label{table:shkadov_parameters}
     \centering
     \begin{tabular}{rll}
         \toprule
@@ -153,7 +150,7 @@ We also consider the use of \textsc{TD3} and \textsc{SAC} algorithms.
 	$n_\text{rollout}$ 		& nb. of transitions per update		& 4000\\
 	$n_\text{batch}$ 		& nb. of minibatches per update 	& 2\\
 	$n_\text{epoch}$		& nb. of epochs per update		& 32\\
-	$n_\text{max}$			& total nb. of transitions per training	& \num{500000}\\
+	$n_\text{max}$			& total nb. of transitions per training	& \num{300000}\\
 	$n_\text{training}$		& total nb. of averaged trainings	& 5\\\midrule
         \bottomrule
     \end{tabular}

@@ -9,13 +9,13 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 1,
+    "n_avg": 2,
     "n_cpu": 1,
-    "n_stp_max": 100000,
+    "n_stp_max": 300000,
     "trainer": {
         "style": "td",
-        "mem_size": 100000,
-        "btc_size": 64,
+        "mem_size": 300000,
+        "btc_size": 100,
         "n_stp_unroll": 1,
         "render_every": 500000,
         "rnd_style": "ascii"
@@ -24,7 +24,7 @@
         "type": "sac",
         "gamma": 0.99,
         "rho": 0.995,
-        "n_warmup": 5000,
+        "n_warmup": 10000,
         "n_filling": 1000,
         "alpha": 0.01,
         "policy": {
@@ -55,7 +55,6 @@
             "type": "q_value",
             "network": {
                 "type": "fc",
-                "k_init": "lecun_normal",
                 "trunk": {
                     "arch": [128,128],
                     "actv": "relu"
