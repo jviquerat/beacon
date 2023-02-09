@@ -94,7 +94,7 @@ with $A=5$ an \textit{ad-hoc} non-dimensional amplitude factor, $x_j^l$ and $x_j
 
 Hence, when the actor provides a new action to the environment at time $t=t_n$, the real imposed action is a linear interpolation between the previous action $u_j^{n-1}$ and the new action $u_j^n$ over a time $\Delta t_\text{int}$ (here taken equal to $0.01$ time units), after what the new action is imposed over the remaining action time $\Delta t_\text{const}$ (here taken equal to $0.04$ time units). The total action time-step is therefore $\Delta t_\text{act} = \Delta t_\text{int} + \Delta t_\text{const}$, which value is therefore equal to $0.05$ time units. The total episode time is fixed to $20$ time units, corresponding to $400$ actions.
 
-\input{fig/shkadov_jets}
+\input{fig/shkadov/shkadov_jets}
 
 The observations provided to the agent are the heights collected in the union of regions $A^j_\text{obs}$ of length $l_\text{obs} = 10$ located upstream of each jet, as shown in figure \ref{fig:shkadov_jets}. Contrarily to the original article, the flow rates of this region are not provided to the agent, and the observations are not clipped.
 
@@ -114,16 +114,34 @@ Finally, each episode starts with the loading of a fully developed initial state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The environment as described in the previous section is referred to as \codeinline{shkadov-v0}, in the fashion of the \textsc{gym} environments. In this section, we provide some results related to its resolution. First, we consider the training of a \textsc{ppo} agent on the environment using $1$, $5$ and $10$ jets, the training being performed on $300k$ steps (see figure \ref{fig:shkadov_base}). The set of \textsc{ppo} hyperparameters used for the resolution is provided in table \ref{table:shkadov_parameters}. As could be expected, training is faster for small number of jets. For larger amount of jets, training with regular \textsc{ppo} algorithm under this set of hyperparameters becomes extremely slow, or does not happen at all.
+The environment as described in the previous section is referred to as \codeinline{shkadov-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:shkadov_parameters}). In this section, we provide some results related to its resolution using a \textsc{ppo} agent (the set of hyperparameters used for the resolution is provided in table \ref{table:shkadov_ppo_parameters}). First, we consider the training on the environment using $1$, $5$ and $10$ jets, the training being performed on $300k$ steps (see figure \ref{fig:shkadov_score}). As could be expected, training is faster for small number of jets, while for larger amount of jets, training with regular \textsc{ppo} algorithm under this set of hyperparameters becomes extremely slow, or does not happen at all. In figure \ref{fig:shkadov_fields}, we present the evolution of the field in time under the control of the agent for 10 jets using the default parameters. As can be observed, the agent quickly constrains the height of the fluid around $h=1$, before entering a quasi-stationary state in which a set of minimal, quasi constant jet actuations keeps the flow from developing instabilities.
 
-\input{fig/shkadov/score}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}
+    \footnotesize
+    \caption{\textbf{Default parameters used for the \codeinline{shkadov-v0} environment.}}
+    \label{table:shkadov_parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        \codeinline{L0}			& base length of domain					& $150$\\
+	\codeinline{n_jets}		& number of jets						& $5$\\
+	\codeinline{jet_pos}		& position of first jet						& $150$\\
+	\codeinline{jet_space}	& spacing between jets					& $10$\\
+	\codeinline{delta}		& physical parameter (\ref{eq:shkadov_delta})	& $0.1$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 \begin{table}
     \footnotesize
     \caption{\textbf{Default parameters used for the \textsc{ppo} agent.}}
-    \label{table:shkadov_parameters}
+    \label{table:shkadov_ppo_parameters}
     \centering
     \begin{tabular}{rll}
         \toprule
@@ -151,7 +169,13 @@ The environment as described in the previous section is referred to as \codeinli
 	$n_\text{batch}$ 		& nb. of minibatches per update 	& 2\\
 	$n_\text{epoch}$		& nb. of epochs per update		& 32\\
 	$n_\text{max}$			& total nb. of transitions per training	& \num{300000}\\
-	$n_\text{training}$		& total nb. of averaged trainings	& 5\\\midrule
+	$n_\text{training}$		& total nb. of averaged trainings	& 5\\
         \bottomrule
     \end{tabular}
 \end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+
+\input{fig/shkadov/score}
+
+\input{fig/shkadov/fields}

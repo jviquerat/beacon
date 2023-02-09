@@ -32,12 +32,12 @@
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [128],
+                    "arch": [256],
                     "actv": "relu"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[128],[128]],
+                    "arch": [[256],[256]],
                     "actv": ["relu","relu"],
                     "final": ["tanh","sigmoid"]
                 }
@@ -56,7 +56,7 @@
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [128,128],
+                    "arch": [256,256],
                     "actv": "relu"
                 },
                 "heads": {

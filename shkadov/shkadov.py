@@ -18,7 +18,7 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=10, jet_pos=150.0, jet_space=10.0, delta=0.1):
+                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
