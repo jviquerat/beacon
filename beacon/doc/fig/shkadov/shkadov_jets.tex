@@ -1,0 +1,55 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+%%%%%%%%%%%%
+\begin{tikzpicture}[	scale=0.8, trim axis left, trim axis right, font=\scriptsize]
+	\begin{axis}[	xmin=0, xmax=217.5, ymin=0, ymax=2, scale=1.0,
+				xtick={0,50,100,150,200,250,300},
+				width=\textwidth, height=.25\textwidth, scale only axis=true,
+				legend cell align=left, legend pos=north east,
+				grid=major, xlabel=$x$, ylabel=$h$]
+				
+		\def\x{150}
+		\def\w{2}
+		\def\lobs{10}
+		\def\lrwd{10}
+		\def\s{10}
+		
+		\def\y{0.40}
+		\def\h{0.02}
+		\def\p{0.07}
+		
+		\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1-0.089);
+		\draw[fill=purple2, draw=gray2]			(\x+0*\s-\lobs,\y-0*\p-\h) rectangle (\x+0*\s,\y-0*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+0*\s,\y-0*\p-\h) rectangle (\x+0*\s+\lrwd,\y-0*\p+\h);
+		
+		\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1-0.343);
+		\draw[fill=purple2, draw=gray2]			(\x+1*\s-\lobs,\y-1*\p-\h) rectangle (\x+1*\s,\y-1*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+1*\s,\y-1*\p-\h) rectangle (\x+1*\s+\lrwd,\y-1*\p+\h);
+		
+		\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.602);
+		\draw[fill=purple2, draw=gray2]			(\x+2*\s-\lobs,\y-2*\p-\h) rectangle (\x+2*\s,\y-2*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+2*\s,\y-2*\p-\h) rectangle (\x+2*\s+\lrwd,\y-2*\p+\h);
+		
+		\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1-0.403);
+		\draw[fill=purple2, draw=gray2]			(\x+3*\s-\lobs,\y-3*\p-\h) rectangle (\x+3*\s,\y-3*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+3*\s,\y-3*\p-\h) rectangle (\x+3*\s+\lrwd,\y-3*\p+\h);
+		
+		\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.284);
+		\draw[fill=purple2, draw=gray2]			(\x+4*\s-\lobs,\y-4*\p-\h) rectangle (\x+4*\s,\y-4*\p+\h);
+		\draw[fill=teal2, draw=gray2]			(\x+4*\s,\y-4*\p-\h) rectangle (\x+4*\s+\lrwd,\y-4*\p+\h);
+		
+		\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/shkadov_control.dat};
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Example of observation and reward computation areas.} The jets strengths are shown with green rectangles, while the observation areas (upstream of each jet) and reward areas (downstream of each jet) are shown in purple and teal, respectively.} 
+\label{fig:shkadov_jets}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%
