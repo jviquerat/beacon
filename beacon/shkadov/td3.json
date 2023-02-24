@@ -9,7 +9,7 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 2,
+    "n_avg": 1,
     "n_cpu": 1,
     "n_stp_max": 300000,
     "trainer": {
@@ -26,9 +26,9 @@
         "n_warmup": 10000,
         "n_filling": 1000,
         "p_update": 2,
-        "sigma_act": 0.2,
+        "sigma_act": 0.1,
         "sigma_tgt": 0.2,
-        "noise_clip": 0.2,
+        "noise_clip": 0.5,
         "policy": {
             "type": "deterministic",
             "network": {
@@ -70,7 +70,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 1.0e-3,
+                "lr": 5.0e-3,
                 "grd_clip": null
             },
             "loss": {

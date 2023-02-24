@@ -22,8 +22,8 @@ class shkadov(gym.Env):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
-        self.nx         = 2*int(self.L)    # nb of discretization points
-        self.dt         = 0.005            # timestep
+        self.nx         = 5*int(self.L)    # nb of discretization points
+        self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 200.0            # warmup time
         self.t_act      = 20.0             # action time after warmup
@@ -37,7 +37,7 @@ class shkadov(gym.Env):
         self.l_obs      = 10.0             # length for upstream observations
         self.l_rwd      = 10.0             # length for downstream reward
         self.u_interp   = 0.02             # time on which action is interpolated
-        self.blowup_rwd =-10.0             # reward in case of blow-up
+        self.blowup_rwd =-1.0              # reward in case of blow-up
         self.eps        = 1.0e-8           # avoid division by zero
         self.init_file  = "init_field.dat" # initialization file
         self.rand_init  = False            # random initialization
@@ -58,12 +58,12 @@ class shkadov(gym.Env):
         self.jet_start  = self.jet_pos - self.jet_hw     # jet starting index in lattice units
         self.jet_end    = self.jet_pos + self.jet_hw     # jet ending index in lattice units
         self.l_rwd      = int(self.l_rwd/self.dx)        # length of rwd zone in lattice units
+        self.n_obs      = int(self.l_obs)                # nb of lattice points in obs zone
         self.l_obs      = int(self.l_obs/self.dx)        # length of obs zone in lattice units
         self.rwd_start  = self.jet_pos                   # start of rwd zone in lattice units
         self.rwd_end    = self.jet_pos + self.l_rwd      # end of rwd zone in lattice units
         self.obs_start  = self.jet_pos - self.l_obs      # start of obs zone in lattice units
         self.obs_end    = self.jet_pos                   # end of obs zone in lattice units
-        self.n_obs      = self.obs_end - self.obs_start  # nb of lattice points in obs zone
 
         ### Path
         self.path = "png"
@@ -174,7 +174,7 @@ class shkadov(gym.Env):
         if (self.stp == self.n_act-1):
             done  = True
             trunc = True
-        if (np.any((self.h < -self.h_max) | (self.h > self.h_max))):
+        if (np.any((self.h < -5.0*self.h_max) | (self.h > 5.0*self.h_max))):
             print("Blowup")
             done  = True
             trunc = False
@@ -244,7 +244,9 @@ class shkadov(gym.Env):
         for i in range(self.n_jets):
             s = self.jet_pos + i*self.jet_space - self.l_obs
             e = s + self.l_obs
-            tmp[:self.n_obs] = self.q[s:e]
+            stp = int(1.0/self.dx)
+            tmp[:self.n_obs] = self.q[s:e:stp]
+            #tmp[:self.n_obs] = self.q[s:e]
             obs = np.append(obs, tmp)
 
         return obs
@@ -258,7 +260,7 @@ class shkadov(gym.Env):
             s = self.jet_pos + i*self.jet_space
             e = s + self.l_rwd
             hdiff[:]  = self.h[s:e] - 1.0
-            rwd      -= np.sum(np.square(hdiff))
+            rwd      -= np.sum(np.square(hdiff))*self.dx
         rwd /= self.n_jets*self.l_rwd
 
         return rwd
