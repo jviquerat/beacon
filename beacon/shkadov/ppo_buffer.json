@@ -7,56 +7,54 @@
     },
     "name_env": true,
     "name_agent": true,
-    "name_tag": "",
+    "name_tag": "gae",
     "name_time": false,
-    "n_avg": 2,
+    "n_avg": 3,
     "n_cpu": 1,
-    "n_stp_max": 300000,
+    "n_stp_max": 200000,
     "trainer": {
-        "style": "td",
-        "mem_size": 300000,
-        "btc_size": 100,
-        "n_stp_unroll": 1,
-        "render_every": 500000,
-        "rnd_style": "ascii"
+        "style": "buffer",
+        "buff_size": 3200,
+        "n_buff": 1,
+        "batch_frac": 0.5,
+        "n_epochs": 32,
+        "rnd_style": "ascii",
+        "render_every": 10000
     },
     "agent": {
-        "type": "sac",
-        "gamma": 0.99,
-        "rho": 0.995,
-        "n_warmup": 10000,
-        "n_filling": 1000,
-        "alpha": 0.01,
+        "type": "ppo",
         "policy": {
-            "type": "tanh_normal",
+            "type": "normal",
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [256],
-                    "actv": "relu"
+                    "arch": [64],
+                    "actv": "tanh"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[256],[256]],
-                    "actv": ["relu","relu"],
+                    "arch": [[64],[64]],
+                    "actv": ["tanh","tanh"],
                     "final": ["tanh","sigmoid"]
                 }
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 1.0e-3,
-                "grd_clip": null
+                "lr": 5.0e-4,
+                "grd_clip": 0.1
             },
             "loss": {
-                "type": "q_pol_sac"
+                "type": "surrogate",
+                "pol_clip": 0.2,
+                "ent_coef": 0.01
             }
         },
         "value": {
-            "type": "q_value",
+            "type": "v_value",
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [256,256],
+                    "arch": [64,64],
                     "actv": "relu"
                 },
                 "heads": {
@@ -67,13 +65,19 @@
                 }
             },
             "optimizer": {
-                "type": "adam",
-                "lr": 1.0e-3,
-                "grd_clip": null
+                "type": "nadam",
+                "lr": 5.0e-3,
+                "grd_clip": 0.1
             },
             "loss": {
-                "type": "mse_sac"
+                "type": "mse_pg"
             }
+        },
+        "retrn": {
+            "type": "gae",
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "ret_norm": true
         },
         "termination": {
             "type": "bootstrap"
