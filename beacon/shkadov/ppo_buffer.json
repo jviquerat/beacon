@@ -7,9 +7,9 @@
     },
     "name_env": true,
     "name_agent": true,
-    "name_tag": "gae",
+    "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 5,
     "n_cpu": 1,
     "n_stp_max": 200000,
     "trainer": {
@@ -76,7 +76,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.95,
+            "gae_lambda": 0.99,
             "ret_norm": true
         },
         "termination": {

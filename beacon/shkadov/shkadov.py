@@ -40,7 +40,8 @@ class shkadov(gym.Env):
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.eps        = 1.0e-8           # avoid division by zero
         self.init_file  = "init_field.dat" # initialization file
-        self.rand_init  = False            # random initialization
+        self.rand_init  = True            # random initialization
+        self.rand_steps = 400              # nb of rand. steps for random initialization
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -118,7 +119,7 @@ class shkadov(gym.Env):
         self.q[:] = self.q_init[:]
 
         if (self.rand_init):
-            n = random.randint(0,1000)
+            n = random.randint(0,self.rand_steps)
             for i in range(n):
                 self.step(self.u)
             self.stp = 0
@@ -246,7 +247,6 @@ class shkadov(gym.Env):
             e = s + self.l_obs
             stp = int(1.0/self.dx)
             tmp[:self.n_obs] = self.q[s:e:stp]
-            #tmp[:self.n_obs] = self.q[s:e]
             obs = np.append(obs, tmp)
 
         return obs

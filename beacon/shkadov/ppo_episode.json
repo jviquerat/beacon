@@ -17,7 +17,7 @@
         "n_ep_unroll": 1,
         "n_ep_train": 32,
         "batch_frac": 0.5,
-        "n_epochs": 32,
+        "n_epochs": 128,
         "rnd_style": "ascii",
         "render_every": 10000
     },
@@ -66,7 +66,7 @@
             },
             "optimizer": {
                 "type": "adam",
-                "lr": 2.0e-3,
+                "lr": 5.0e-3,
                 "grd_clip": 0.1
             },
             "loss": {
@@ -76,7 +76,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.95,
+            "gae_lambda": 0.99,
             "ret_norm": true
         },
         "termination": {
