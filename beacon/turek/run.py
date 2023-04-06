@@ -5,18 +5,10 @@ import matplotlib.pyplot as plt
 
 ###############################################
 ### Turek class
-### Numbering of cell boundaries is as follows
-###             2
-###          -------
-###         |       |
-###       1 |       | 0
-###         |       |
-###          -------
-###             3
 class turek():
 
     ### Initialize
-    def __init__(self, l=22.0, h=4.1, dx=0.1, dy=0.1, t_max=1.0):
+    def __init__(self, l=22.0, h=4.1, dx=0.1, dy=0.1, t_max=1.0, cfl=0.1):
 
         # Set parameters
         self.l     = l
@@ -25,8 +17,9 @@ class turek():
         self.dy    = dy
         self.idx   = 1.0/dx
         self.idy   = 1.0/dy
-        self.ifdxy = 1.0/(dx**2+dy**2)
+        self.ifdxy = 0.5/(dx**2+dy**2)
         self.t_max = t_max
+        self.cfl   = cfl
 
         # Check compatibility
         self.eps = 1.0e-8
@@ -39,7 +32,8 @@ class turek():
         self.nc  = self.nx*self.ny
 
         # Compute timestep
-        self.dt  = 0.0001
+        self.dt   = self.cfl*min(self.dx,self.dy)
+        self.n_dt = round(self.t_max/self.dt)
 
         # Set fluid properties
         self.rho = 1.0
@@ -71,25 +65,29 @@ class turek():
     ### Set boundary conditions
     def set_bc(self):
 
+        nx = self.nx
+        ny = self.ny
+
         # Poiseuille at inlet
         for j in range(self.ny):
-            y           = j*self.dy
-            u_pois      = 4.0*(self.h-y)*y/(self.h**2)
-            self.u[0,j] = u_pois
-        self.v[0,:] =-self.v[1,:]
+            y             = j*self.dy
+            u_pois        = 4.0*(self.h-y)*y/(self.h**2)
+            self.u[0,j+1] = u_pois
+        self.v[0,1:ny+1] =-self.v[1,1:ny+1]
 
         # No-slip BC at top
-        self.u[:,-1] =-self.u[:,-2]
-        self.v[:,-1] = 0.0
+        self.u[1:nx+1,-1] =-self.u[1:nx+1,-2]
+        self.v[1:nx+1,-1] = 0.0
 
         # No-slip BC at bottom
-        self.u[:,0] =-self.u[:,1]
-        self.v[:,0] = 0.0
+        self.u[1:nx+1,0] =-self.u[1:nx+1,1]
+        self.v[1:nx+1,0] = 0.0
+        self.v[1:nx+1,1] = 0.0
 
         # Output BC at outlet
-        self.u[-1,:] = self.u[-2,:] # Neumann   for u
-        self.v[-1,:] =-self.v[-2,:] # Dirichlet for v
-        self.p[-1,:] =-self.p[-2,:] # Free boundary for pressure
+        self.u[-1,1:ny+1] = self.u[-2,1:ny+1] # Neumann   for u
+        self.v[-1,1:ny+1] =-self.v[-2,1:ny+1] # Dirichlet for v
+        self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Free boundary for pressure
 
     ### Compute starred fields
     def predictor(self):
@@ -104,12 +102,12 @@ class turek():
         vloc = np.zeros((self.nx+2,self.ny+2))
         us   = np.zeros((self.nx+2,self.ny+2))
 
-        d2ux[1:nx+1,:] = (self.u[0:nx,:] - 2.0*self.u[1:nx+1,:] + self.u[2:nx+2,:])*self.idx*self.idx
-        d2uy[:,1:ny+1] = (self.u[:,0:ny] - 2.0*self.u[:,1:ny+1] + self.u[:,2:ny+2])*self.idy*self.idy
+        d2ux[1:nx+1,1:ny+1] = (self.u[0:nx,1:ny+1] - 2.0*self.u[1:nx+1,1:ny+1] + self.u[2:nx+2,1:ny+1])*self.idx*self.idx
+        d2uy[1:nx+1,1:ny+1] = (self.u[1:nx+1,0:ny] - 2.0*self.u[1:nx+1,1:ny+1] + self.u[1:nx+1,2:ny+2])*self.idy*self.idy
 
         vloc[1:nx+1,1:ny+1] = 0.25*(self.v[0:nx,1:ny+1] + self.v[1:nx+1,1:ny+1] + self.v[0:nx,2:ny+2] + self.v[1:nx+1,2:ny+2])
-        udux[1:nx+1,:]      =    self.u[1:nx+1,:]*(self.u[2:nx+2,:] - self.u[0:nx,:])*0.5*self.idx
-        vduy[:,1:ny+1]      = vloc[:,1:ny+1]*(self.u[:,2:ny+2] - self.u[:,0:ny])*0.5*self.idy
+        udux[1:nx+1,1:ny+1] = self.u[1:nx+1,1:ny+1]*(self.u[2:nx+2,1:ny+1] - self.u[0:nx,1:ny+1])*0.5*self.idx
+        vduy[1:nx+1,1:ny+1] = vloc[1:nx+1,1:ny+1]*(self.u[1:nx+1,2:ny+2] - self.u[1:nx+1,0:ny])*0.5*self.idy
 
         self.us = self.u + self.dt*((d2ux + d2uy)/self.re - (udux + vduy))
 
@@ -120,12 +118,12 @@ class turek():
         uloc = np.zeros((self.nx+2,self.ny+2))
         vs   = np.zeros((self.nx+2,self.ny+2))
 
-        d2vx[1:nx+1,:] = (self.v[0:nx,:] - 2.0*self.v[1:nx+1,:] + self.v[2:nx+2,:])*self.idx*self.idx
-        d2vy[:,1:ny+1] = (self.v[:,0:ny] - 2.0*self.v[:,1:ny+1] + self.v[:,2:ny+2])*self.idy*self.idy
+        d2vx[1:nx+1,1:ny+1] = (self.v[0:nx,1:ny+1] - 2.0*self.v[1:nx+1,1:ny+1] + self.v[2:nx+2,1:ny+1])*self.idx*self.idx
+        d2vy[1:nx+1,1:ny+1] = (self.v[1:nx+1,0:ny] - 2.0*self.v[1:nx+1,1:ny+1] + self.v[1:nx+1,2:ny+2])*self.idy*self.idy
 
         uloc[1:nx+1,1:ny+1] = 0.25*(self.u[1:nx+1,0:ny] + self.u[1:nx+1,1:ny+1] + self.u[2:nx+2,0:ny] + self.u[2:nx+2,1:ny+1])
-        udvx[1:nx+1,:]      = uloc[1:nx+1,:]*(self.v[2:nx+2,:] - self.v[0:nx,:])*0.5*self.idx
-        vdvy[:,1:ny+1]      =    self.v[:,1:ny+1]*(self.v[:,2:ny+2] - self.v[:,0:ny])*0.5*self.idy
+        udvx[1:nx+1,1:ny+1] = uloc[1:nx+1,1:ny+1]*(self.v[2:nx+2,1:ny+1] - self.v[0:nx,1:ny+1])*0.5*self.idx
+        vdvy[1:nx+1,1:ny+1] = self.v[1:nx+1,1:ny+1]*(self.v[1:nx+1,2:ny+2] - self.v[1:nx+1,0:ny])*0.5*self.idy
 
         self.vs = self.v + self.dt*((d2vx + d2vy)/self.re - (udvx + vdvy))
 
@@ -136,19 +134,28 @@ class turek():
         ny = self.ny
 
         b = np.zeros((self.nx+2,self.ny+2))
-        b[1:nx+1,1:ny+1] = ((self.u[2:nx+2,1:ny+1] - self.u[0:nx,1:ny+1])*0.5*self.idx +
-                            (self.v[1:nx+1,2:ny+2] - self.v[1:nx+1,0:ny])*0.5*self.idy)
+        b[1:nx+1,1:ny+1] = ((self.u[2:nx+2,1:ny+1] - self.u[1:nx+1,1:ny+1])*self.idx +
+                            (self.v[1:nx+1,2:ny+2] - self.v[1:nx+1,1:ny+1])*self.idy)/self.dt
 
-        for i in range(100):
+
+        tol = 1.0e-3
+        err = 1.0e10
+        itp = 0
+        while(err > tol):
             p_old = self.p.copy()
-            self.p[1:nx+1,1:ny+1] = ((p_old[2:nx+2,1:ny+1] + p_old[0:nx,1:ny+1])*self.dx*self.dx +
-                                     (p_old[1:nx+1,2:ny+2] + p_old[1:nx+1,0:ny])*self.dy*self.dy -
+            self.p[1:nx+1,1:ny+1] = ((p_old[2:nx+2,1:ny+1] + p_old[0:nx,1:ny+1])*self.dy*self.dy +
+                                     (p_old[1:nx+1,2:ny+2] + p_old[1:nx+1,0:ny])*self.dx*self.dx -
                                      b[1:nx+1,1:ny+1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
 
-            self.p[nx+1,:] = self.p[nx,:]
-            self.p[0,:]    = self.p[1,:]
-            self.p[:,0]    = self.p[:,1]
-            self.p[:,ny+1] = self.p[:,ny]
+            err = np.amax(abs(self.p-p_old))
+
+            self.p[-1,1:ny+1]  = self.p[-2,1:ny+1]
+            self.p[ 0,1:ny+1]  = self.p[ 1,1:ny+1]
+            #self.p[ 1:nx+1, 0] = self.p[ 1:nx+1, 1]
+            #self.p[ 1:nx+1,-1] = self.p[ 1:nx+1,-2]
+
+            itp += 1
+        print(itp)
 
     ### Compute updated fields
     def corrector(self):
@@ -159,8 +166,8 @@ class turek():
         dpx = np.zeros((self.nx+2,self.ny+2))
         dpy = np.zeros((self.nx+2,self.ny+2))
 
-        dpx[1:nx+1,:] = (self.p[1:nx+1,:] - self.p[0:nx,:])*self.idx
-        dpy[:,1:ny+1] = (self.p[:,1:ny+1] - self.p[:,0:ny])*self.idy
+        dpx[1:nx+1,1:ny+1] = (self.p[1:nx+1,1:ny+1] - self.p[0:nx,1:ny+1])*self.idx
+        dpy[1:nx+1,1:ny+1] = (self.p[1:nx+1,1:ny+1] - self.p[1:nx+1,0:ny])*self.idy
 
         self.u[1:nx+1,1:ny+1] = self.us[1:nx+1,1:ny+1] - self.dt*dpx[1:nx+1,1:ny+1]
         self.v[1:nx+1,1:ny+1] = self.vs[1:nx+1,1:ny+1] - self.dt*dpy[1:nx+1,1:ny+1]
@@ -186,9 +193,16 @@ class turek():
         # Copy without ghots cells
         u = self.u[1:self.nx+1,1:self.nx+1].copy()
         v = self.v[1:self.nx+1,1:self.nx+1].copy()
+        p = self.p[1:self.nx+1,1:self.nx+1].copy()
+
+        # u = self.u.copy()
+        # v = self.v.copy()
+        # p = self.p.copy()
 
         # Compute norm
         nrm = np.rot90(np.sqrt(u**2+v**2))
+
+        #nrm = np.rot90(p)
 
         # Mask obstacles
         #v[np.where(lattice.lattice > 0.0)] = -1.0
@@ -210,7 +224,7 @@ class turek():
         plt.savefig(filename, dpi=200)
         plt.close()
 
-t = turek()
-for i in range(3):
+t = turek(t_max=10.0, dx=0.1, dy=0.1, cfl=0.09)
+for i in range(t.n_dt):
     t.step()
 t.plot()
