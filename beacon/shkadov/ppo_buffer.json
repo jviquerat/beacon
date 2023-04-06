@@ -9,12 +9,12 @@
     "name_agent": true,
     "name_tag": "",
     "name_time": false,
-    "n_avg": 3,
+    "n_avg": 5,
     "n_cpu": 1,
-    "n_stp_max": 300000,
+    "n_stp_max": 200000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 4000,
+        "buff_size": 3200,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
@@ -65,7 +65,7 @@
                 }
             },
             "optimizer": {
-                "type": "adam",
+                "type": "nadam",
                 "lr": 5.0e-3,
                 "grd_clip": 0.1
             },
@@ -76,7 +76,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.95,
+            "gae_lambda": 0.99,
             "ret_norm": true
         },
         "termination": {
