@@ -9,7 +9,7 @@ from turek import *
 #######################################
 
 # Initialize
-t = turek(cfl=0.05, re=100.0, t_max=40.0)
+t = turek(cfl=0.05, re=1.0, t_max=40.0)
 t.reset_fields()
 
 # Set parameters for control-free run
@@ -25,6 +25,7 @@ for i in range(t.n_dt):
     if (i==t.n_dt-1): end="\n"
     print("# Iteration "+str(i)+" over "+str(t.n_dt),end=end)
 t.plot()
+t.plot_iterations()
 
 e_time = time.time()
 print("# Loop time = {:f}".format(e_time - s_time))

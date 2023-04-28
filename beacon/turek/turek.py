@@ -62,7 +62,8 @@ class turek():
         self.vs = np.zeros((self.nx+2, self.ny+2))
 
         # Array to store iterations of poisson resolution
-        self.n_itp = np.zeros((self.n_dt,2), dtype=np.int16)
+        self.n_itp = np.array([], dtype=np.int16)
+        #np.zeros((self.n_dt,2), dtype=np.int16)
 
         # Set time
         self.it = 0
@@ -132,11 +133,19 @@ class turek():
     ### Compute pressure
     def poisson(self):
 
-        n_itp = poisson(self.us, self.vs, self.p,
-                        self.dx, self.dy, self.idx, self.idy,
-                        self.nx, self.ny, self.dt,  self.ifdxy)
-        self.n_itp[self.it,0] = self.it
-        self.n_itp[self.it,1] = n_itp
+        ovf, n_itp = poisson(self.us, self.vs, self.p,
+                             self.dx, self.dy, self.idx, self.idy,
+                             self.nx, self.ny, self.dt,  self.ifdxy)
+        self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
+
+        if (ovf):
+            print("\n")
+            print("Exceeded max number of iterations in solver")
+            self.plot_iterations()
+            exit(1)
+
+        #self.n_itp[self.it,0] = self.it
+        #self.n_itp[self.it,1] = n_itp
 
     ### Compute updated fields
     def corrector(self):
@@ -195,9 +204,14 @@ class turek():
         plt.savefig(filename, dpi=200)
         plt.close()
 
+    ### Plot nb of solver iterations
+    def plot_iterations(self):
+
+        n_itp = np.reshape(self.n_itp, (-1,2))
+
         plt.clf()
         fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(self.n_itp[:,0], self.n_itp[:,1], color='blue')
+        ax.plot(n_itp[:,0], n_itp[:,1], color='blue')
         ax.grid(True)
         fig.tight_layout()
         filename = "iterations.png"
@@ -245,12 +259,16 @@ def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
 def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy):
 
     b = np.zeros((nx+2,ny+2))
-    b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
-                        (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
+    b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[1:nx+1,1:ny+1])*idx +
+                        (vs[1:nx+1,2:ny+2] - vs[1:nx+1,1:ny+1])*idy)/dt
+
+    #b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
+    #                    (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
 
     tol = 1.0e-2
     err = 1.0e10
     itp = 0
+    ovf = False
     while(err > tol):
         p_old = p.copy()
         p[1:nx+1,1:ny+1] = ((p_old[2:nx+2,1:ny+1] + p_old[0:nx,1:ny+1])*dy*dy +
@@ -264,9 +282,11 @@ def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy):
         p[ 0,1:ny+1] = p[ 1,1:ny+1]
 
         itp += 1
-        if (itp > 10000): break
+        if (itp > 10000):
+            ovf = True
+            break
 
-    return itp
+    return ovf, itp
 
 ###############################################
 # Corrector step
