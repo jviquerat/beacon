@@ -86,43 +86,47 @@ class turek():
         for j in range(self.ny):
             y             = j*self.dy
             u_pois        = 4.0*(self.h-y)*y/(self.h**2)
-            self.u[0,j+1] = u_pois
-        self.v[0,1:ny+1] =-self.v[1,1:ny+1]
+            self.u[0,j+1] = u_pois          # Dirichlet for u
+            self.u[1,j+1] = u_pois          # Dirichlet for u
+        self.v[0,1:ny+1] =-self.v[1,1:ny+1] # Dirichlet for v
+        self.p[0,1:ny+1] = self.p[1,1:ny+1] # Neumann   for p
 
         # No-slip BC at top
-        self.u[1:nx+1,-1] =-self.u[1:nx+1,-2]
-        self.v[1:nx+1,-1] = 0.0
+        self.u[1:nx+1,-1] =-self.u[1:nx+1,-2] # Dirichlet for u
+        self.v[1:nx+1,-1] = 0.0               # Dirichlet for v
+        self.p[1:nx+1,-1] = self.p[1:nx+1,-2] # Neumann   for p
 
         # No-slip BC at bottom
-        self.u[1:nx+1,0] =-self.u[1:nx+1,1]
-        self.v[1:nx+1,0] = 0.0
-        self.v[1:nx+1,1] = 0.0
+        self.u[1:nx+1,0] =-self.u[1:nx+1,1] # Dirichlet for u
+        self.v[1:nx+1,0] = 0.0              # Dirichlet for v
+        self.v[1:nx+1,1] = 0.0              # Dirichlet for v
+        self.p[1:nx+1,0] = self.p[1:nx+1,1] # Neumann   for p
 
         # Output BC at outlet
         self.u[-1,1:ny+1] = self.u[-2,1:ny+1] # Neumann   for u
         self.v[-1,1:ny+1] =-self.v[-2,1:ny+1] # Dirichlet for v
-        self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Free boundary for pressure
+        self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
 
-        # Set zero in obstacle
-        self.u[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
-        self.v[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
-        self.p[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
+        # # Set zero in obstacle
+        # self.u[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
+        # self.v[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
+        # self.p[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
 
-        # No-slip BC on obstacle bottom
-        self.u[self.c_xmin:self.c_xmax,self.c_ymin+1] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymin+1] = 0.0
+        # # No-slip BC on obstacle bottom
+        # self.u[self.c_xmin:self.c_xmax,self.c_ymin+1] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin]
+        # self.v[self.c_xmin:self.c_xmax,self.c_ymin+1] = 0.0
 
-        # No-slip BC on obstacle top
-        self.u[self.c_xmin:self.c_xmax,self.c_ymax] =-self.u[self.c_xmin:self.c_xmax,self.c_ymax]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymax] = 0.0
+        # # No-slip BC on obstacle top
+        # self.u[self.c_xmin:self.c_xmax,self.c_ymax] =-self.u[self.c_xmin:self.c_xmax,self.c_ymax]
+        # self.v[self.c_xmin:self.c_xmax,self.c_ymax] = 0.0
 
-        # No-slip BC on obstacle left
-        self.u[self.c_xmin+1,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmin+1,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin,self.c_ymin:self.c_ymax]
+        # # No-slip BC on obstacle left
+        # self.u[self.c_xmin+1,self.c_ymin:self.c_ymax] = 0.0
+        # self.v[self.c_xmin+1,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin,self.c_ymin:self.c_ymax]
 
-        # No-slip BC on obstacle right
-        self.u[self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmax,self.c_ymin:self.c_ymax] =-self.v[self.c_xmax,self.c_ymin:self.c_ymax]
+        # # No-slip BC on obstacle right
+        # self.u[self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
+        # self.v[self.c_xmax,self.c_ymin:self.c_ymax] =-self.v[self.c_xmax,self.c_ymin:self.c_ymax]
 
     ### Compute starred fields
     def predictor(self):
@@ -141,6 +145,7 @@ class turek():
         if (ovf):
             print("\n")
             print("Exceeded max number of iterations in solver")
+            self.plot_fields()
             self.plot_iterations()
             exit(1)
 
@@ -170,7 +175,7 @@ class turek():
         print('# t = '+str(self.t)+' / '+str(self.t_max), end='\r')
 
     ### Plot field norm
-    def plot(self):
+    def plot_fields(self):
 
         nx = self.nx
         ny = self.ny
@@ -186,8 +191,8 @@ class turek():
         vn = np.sqrt(u**2+v**2)
 
         # Mask obstacles
-        vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -1.0
-        vn = np.ma.masked_where((vn < 0.0), vn)
+        # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -1.0
+        # vn = np.ma.masked_where((vn < 0.0), vn)
         vn = np.rot90(vn)
 
         # Plot
@@ -259,11 +264,14 @@ def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
 def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy):
 
     b = np.zeros((nx+2,ny+2))
-    b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[1:nx+1,1:ny+1])*idx +
-                        (vs[1:nx+1,2:ny+2] - vs[1:nx+1,1:ny+1])*idy)/dt
 
-    #b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
-    #                    (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
+    # first order upwind ?
+    #b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[1:nx+1,1:ny+1])*idx +
+    #                    (vs[1:nx+1,2:ny+2] - vs[1:nx+1,1:ny+1])*idy)/dt
+
+    # second order centered ?
+    b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
+                        (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
 
     tol = 1.0e-2
     err = 1.0e10
