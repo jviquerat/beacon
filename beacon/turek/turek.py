@@ -108,9 +108,9 @@ class turek():
         self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
 
         # Set zero in obstacle
-        self.u[self.c_xmin+1:self.c_xmax,self.c_ymin:self.c_ymax  ] = 0.0
-        self.v[self.c_xmin:self.c_xmax,  self.c_ymin+1:self.c_ymax] = 0.0
-        self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
+        #self.u[self.c_xmin+1:self.c_xmax,self.c_ymin:self.c_ymax  ] = 0.0
+        #self.v[self.c_xmin:self.c_xmax,  self.c_ymin+1:self.c_ymax] = 0.0
+        #self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
 
         # No-slip BC on obstacle bottom
         self.u[self.c_xmin:self.c_xmax,self.c_ymin] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin-1]
@@ -130,7 +130,7 @@ class turek():
         # No-slip BC on obstacle right
         self.u[self.c_xmax+1,self.c_ymin:self.c_ymax] = 0.0
         self.v[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.v[self.c_xmax+1,self.c_ymin:self.c_ymax]
-        self.p[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.p[self.c_xmax+1,self.c_ymin:self.c_ymax]
+        self.p[self.c_xmax,  self.c_ymin:self.c_ymax] = self.p[self.c_xmax+1,self.c_ymin:self.c_ymax]
 
     ### Compute starred fields
     def predictor(self):
@@ -143,7 +143,8 @@ class turek():
 
         ovf, n_itp = poisson(self.us, self.vs, self.p,
                              self.dx, self.dy, self.idx, self.idy,
-                             self.nx, self.ny, self.dt,  self.ifdxy)
+                             self.nx, self.ny, self.dt,  self.ifdxy,
+                             self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
         self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
 
         if (ovf):
@@ -265,7 +266,8 @@ def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
 ###############################################
 # Poisson step
 @nb.njit(cache=True)
-def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy):
+def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy,
+            c_xmin, c_xmax, c_ymin, c_ymax):
 
     b = np.zeros((nx+2,ny+2))
 
@@ -290,8 +292,29 @@ def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy):
         dp  = np.reshape(p - p_old, (-1))
         err = np.dot(dp,dp)
 
-        p[-1,1:ny+1] = p[-2,1:ny+1]
-        p[ 0,1:ny+1] = p[ 1,1:ny+1]
+        # Domain left (neumann)
+        #p[ 0,1:ny+1] = p[ 1,1:ny+1]
+
+        # Domain right (dirichlet)
+        #p[-1,1:ny+1] =-p[-2,1:ny+1]
+
+        # Domain top (neumann)
+        #p[1:nx+1,-1] = p[1:nx+1,-2]
+
+        # Domain bottom (neumann)
+        #p[1:nx+1, 0] = p[1:nx+1, 1]
+
+        # Obstacle left (neumann)
+        #p[c_xmin,c_ymin:c_ymax] = p[c_xmin-1,c_ymin:c_ymax]
+
+        # Obstacle right (neumann)
+        #p[c_xmax,  c_ymin:c_ymax] = p[c_xmax+1,c_ymin:c_ymax]
+
+        # Obstacle top (neumann)
+        #p[c_xmin:c_xmax,c_ymax]   = p[c_xmin:c_xmax,c_ymax+1]
+
+        # Obstacle bottom (neumann)
+        #p[c_xmin:c_xmax,c_ymin] = p[c_xmin:c_xmax,c_ymin-1]
 
         itp += 1
         if (itp > 10000):
