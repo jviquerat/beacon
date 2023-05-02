@@ -54,9 +54,10 @@ class turek():
 
         # Set fields
         # Accound for boundary cells
-        self.u  = np.zeros((self.nx+2, self.ny+2))
-        self.v  = np.zeros((self.nx+2, self.ny+2))
-        self.p  = np.zeros((self.nx+2, self.ny+2))
+        self.u     = np.zeros((self.nx+2, self.ny+2))
+        self.v     = np.zeros((self.nx+2, self.ny+2))
+        self.p     = np.zeros((self.nx+2, self.ny+2))
+        self.p_old = np.zeros((self.nx+2, self.ny+2))
 
         self.us = np.zeros((self.nx+2, self.ny+2))
         self.vs = np.zeros((self.nx+2, self.ny+2))
@@ -135,13 +136,15 @@ class turek():
     ### Compute starred fields
     def predictor(self):
 
-        predictor(self.u,   self.v,   self.us, self.vs,
+        self.p_old[:,:] = self.p[:,:]
+
+        predictor(self.u,   self.v,   self.us, self.vs, self.p,
                   self.idx, self.idy, self.nx, self.ny, self.dt, self.re)
 
     ### Compute pressure
     def poisson(self):
 
-        ovf, n_itp = poisson(self.us, self.vs, self.p,
+        ovf, n_itp = poisson(self.us, self.vs, self.p, self.p_old,
                              self.dx, self.dy, self.idx, self.idy,
                              self.nx, self.ny, self.dt,  self.ifdxy,
                              self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
@@ -160,7 +163,7 @@ class turek():
     ### Compute updated fields
     def corrector(self):
 
-        corrector(self.u,   self.v,   self.us, self.vs, self.p,
+        corrector(self.u,   self.v,   self.us, self.vs, self.p, self.p_old,
                   self.idx, self.idy, self.nx, self.ny, self.dt)
 
     ### Take one step
@@ -231,13 +234,14 @@ class turek():
 ###############################################
 # Predictor step
 @nb.njit(cache=True)
-def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
+def predictor(u, v, us, vs, p, idx, idy, nx, ny, dt, re):
 
     d2ux = np.zeros((nx+2,ny+2))
     d2uy = np.zeros((nx+2,ny+2))
     udux = np.zeros((nx+2,ny+2))
     vduy = np.zeros((nx+2,ny+2))
     vloc = np.zeros((nx+2,ny+2))
+    dpx  = np.zeros((nx+2,ny+2))
 
     d2ux[1:nx+1,1:ny+1] = (u[0:nx,1:ny+1] - 2.0*u[1:nx+1,1:ny+1] + u[2:nx+2,1:ny+1])*idx*idx
     d2uy[1:nx+1,1:ny+1] = (u[1:nx+1,0:ny] - 2.0*u[1:nx+1,1:ny+1] + u[1:nx+1,2:ny+2])*idy*idy
@@ -246,13 +250,16 @@ def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
     udux[1:nx+1,1:ny+1] = u[1:nx+1,1:ny+1]*(u[2:nx+2,1:ny+1] - u[0:nx,1:ny+1])*0.5*idx
     vduy[1:nx+1,1:ny+1] = vloc[1:nx+1,1:ny+1]*(u[1:nx+1,2:ny+2] - u[1:nx+1,0:ny])*0.5*idy
 
-    us[:,:] = u[:,:] + dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]))
+    dpx [1:nx+1,1:ny+1] = (p[2:nx+2,1:ny+1] - p[0:nx,1:ny+1])*0.5*idx
+
+    us[:,:] = u[:,:] + dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:])
 
     d2vx = np.zeros((nx+2,ny+2))
     d2vy = np.zeros((nx+2,ny+2))
     udvx = np.zeros((nx+2,ny+2))
     vdvy = np.zeros((nx+2,ny+2))
     uloc = np.zeros((nx+2,ny+2))
+    dpy  = np.zeros((nx+2,ny+2))
 
     d2vx[1:nx+1,1:ny+1] = (v[0:nx,1:ny+1] - 2.0*v[1:nx+1,1:ny+1] + v[2:nx+2,1:ny+1])*idx*idx
     d2vy[1:nx+1,1:ny+1] = (v[1:nx+1,0:ny] - 2.0*v[1:nx+1,1:ny+1] + v[1:nx+1,2:ny+2])*idy*idy
@@ -261,12 +268,14 @@ def predictor(u, v, us, vs, idx, idy, nx, ny, dt, re):
     udvx[1:nx+1,1:ny+1] = uloc[1:nx+1,1:ny+1]*(v[2:nx+2,1:ny+1] - v[0:nx,1:ny+1])*0.5*idx
     vdvy[1:nx+1,1:ny+1] = v[1:nx+1,1:ny+1]*(v[1:nx+1,2:ny+2] - v[1:nx+1,0:ny])*0.5*idy
 
-    vs[:,:] = v[:,:] + dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]))
+    dpy [1:nx+1,1:ny+1] = (p[1:nx+1,2:ny+2] - p[1:nx+1,0:ny])*0.5*idy
+
+    vs[:,:] = v[:,:] + dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:])
 
 ###############################################
 # Poisson step
 @nb.njit(cache=True)
-def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy,
+def poisson(us, vs, p, p_old, dx, dy, idx, idy, nx, ny, dt, ifdxy,
             c_xmin, c_xmax, c_ymin, c_ymax):
 
     b = np.zeros((nx+2,ny+2))
@@ -279,24 +288,32 @@ def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy,
     b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
                         (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
 
-    tol = 1.0e-2
+    # term from previous pressure field
+    #gp = np.zeros((nx+2,ny+2))
+    #gp[1:nx+1,1:ny+1] = ((p_old[2:nx+2,1:ny+1] + p_old[0:nx,1:ny+1])*dy*dy +
+    #                     (p_old[1:nx+1,2:ny+2] + p_old[1:nx+1,0:ny])*dx*dx)
+
+    pp     = np.zeros((nx+2,ny+2))
+    pp_old = np.zeros((nx+2,ny+2))
+
+    tol = 1.0e-3
     err = 1.0e10
     itp = 0
     ovf = False
     while(err > tol):
-        p_old = p.copy()
-        p[1:nx+1,1:ny+1] = ((p_old[2:nx+2,1:ny+1] + p_old[0:nx,1:ny+1])*dy*dy +
-                            (p_old[1:nx+1,2:ny+2] + p_old[1:nx+1,0:ny])*dx*dx -
-                            b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
+        pp_old[:,:] = pp[:,:]
+        pp[1:nx+1,1:ny+1] = ((pp_old[2:nx+2,1:ny+1] + pp_old[0:nx,1:ny+1])*dy*dy +
+                             (pp_old[1:nx+1,2:ny+2] + pp_old[1:nx+1,0:ny])*dx*dx -
+                             b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
 
-        dp  = np.reshape(p - p_old, (-1))
+        dp  = np.reshape(pp - pp_old, (-1))
         err = np.dot(dp,dp)
 
         # Domain left (neumann)
-        #p[ 0,1:ny+1] = p[ 1,1:ny+1]
+        #pp[ 0,1:ny+1] = pp[ 1,1:ny+1]
 
         # Domain right (dirichlet)
-        #p[-1,1:ny+1] =-p[-2,1:ny+1]
+        #pp[-1,1:ny+1] = pp[-2,1:ny+1]
 
         # Domain top (neumann)
         #p[1:nx+1,-1] = p[1:nx+1,-2]
@@ -320,13 +337,17 @@ def poisson(us, vs, p, dx, dy, idx, idy, nx, ny, dt, ifdxy,
         if (itp > 10000):
             ovf = True
             break
+    p[:,:] = pp[:,:] + p_old[:,:]
 
     return ovf, itp
 
 ###############################################
 # Corrector step
 @nb.njit(cache=True)
-def corrector(u, v, us, vs, p, idx, idy, nx, ny, dt):
+def corrector(u, v, us, vs, p, p_old, idx, idy, nx, ny, dt):
 
-    u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - dt*(p[1:nx+1,1:ny+1] - p[0:nx,1:ny+1])*idx
-    v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - dt*(p[1:nx+1,1:ny+1] - p[1:nx+1,0:ny])*idy
+    pp      = np.zeros((nx+2,ny+2))
+    pp[:,:] = p[:,:] - p_old[:,:]
+
+    u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - dt*(pp[1:nx+1,1:ny+1] - pp[0:nx,1:ny+1])*idx
+    v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - dt*(pp[1:nx+1,1:ny+1] - pp[1:nx+1,0:ny])*idy
