@@ -165,9 +165,6 @@ class turek():
             self.plot_iterations()
             exit(1)
 
-        #self.n_itp[self.it,0] = self.it
-        #self.n_itp[self.it,1] = n_itp
-
     ### Compute updated fields
     def corrector(self):
 
@@ -199,19 +196,24 @@ class turek():
         # Recreate fields at cells centers
         u = np.zeros((self.nx, self.ny))
         v = np.zeros((self.nx, self.ny))
+        p = np.zeros((self.nx, self.ny))
 
         u[0:nx,0:ny] = 0.5*(self.u[0:nx,1:ny+1] + self.u[1:nx+1,1:ny+1])
         v[0:nx,0:ny] = 0.5*(self.v[1:nx+1,0:ny] + self.u[1:nx+1,1:ny+1])
+        p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
 
-        # Compute norm
+        # Compute vecloity norm
         vn = np.sqrt(u**2+v**2)
 
         # Mask obstacles
-        vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -1.0
-        vn = np.ma.masked_where((vn < 0.0), vn)
+        vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
+        vn = np.ma.masked_where((vn < -10.0), vn)
         vn = np.rot90(vn)
+        p [self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
+        p = np.ma.masked_where((p < -10.0), p)
+        p = np.rot90(p)
 
-        # Plot
+        # Plot velocity
         plt.clf()
         fig, ax = plt.subplots(figsize=plt.figaspect(vn))
         fig.subplots_adjust(0,0,1,1)
@@ -220,7 +222,21 @@ class turek():
                    vmin = 0.0,
                    vmax = 1.5)
 
-        filename = "field.png"
+        filename = "velocity.png"
+        plt.axis('off')
+        plt.savefig(filename, dpi=200)
+        plt.close()
+
+        # Plot pressure
+        plt.clf()
+        fig, ax = plt.subplots(figsize=plt.figaspect(vn))
+        fig.subplots_adjust(0,0,1,1)
+        plt.imshow(p,
+                   cmap = 'RdBu_r',
+                   vmin = 0.0,
+                   vmax = 1.0)
+
+        filename = "pressure.png"
         plt.axis('off')
         plt.savefig(filename, dpi=200)
         plt.close()
@@ -290,7 +306,6 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
     b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
                         (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
 
-    #pp     = np.zeros((nx+2,ny+2))
     phi_old = np.zeros((nx+2,ny+2))
 
     tol = 1.0e-3
