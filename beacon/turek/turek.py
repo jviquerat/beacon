@@ -107,26 +107,30 @@ class turek():
         self.v[-1,1:ny+1] =-self.v[-2,1:ny+1] # Dirichlet for v
         self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
 
-        # # Set zero in obstacle
-        # self.u[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
-        # self.v[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
-        # self.p[self.c_xmin:self.c_xmax+1,self.c_ymin:self.c_ymax+1] = 0.0
+        # Set zero in obstacle
+        self.u[self.c_xmin+1:self.c_xmax,self.c_ymin:self.c_ymax  ] = 0.0
+        self.v[self.c_xmin:self.c_xmax,  self.c_ymin+1:self.c_ymax] = 0.0
+        self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
 
-        # # No-slip BC on obstacle bottom
-        # self.u[self.c_xmin:self.c_xmax,self.c_ymin+1] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin]
-        # self.v[self.c_xmin:self.c_xmax,self.c_ymin+1] = 0.0
+        # No-slip BC on obstacle bottom
+        self.u[self.c_xmin:self.c_xmax,self.c_ymin] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin-1]
+        self.v[self.c_xmin:self.c_xmax,self.c_ymin] = 0.0
+        self.p[self.c_xmin:self.c_xmax,self.c_ymin] = self.p[self.c_xmin:self.c_xmax,self.c_ymin-1]
 
-        # # No-slip BC on obstacle top
-        # self.u[self.c_xmin:self.c_xmax,self.c_ymax] =-self.u[self.c_xmin:self.c_xmax,self.c_ymax]
-        # self.v[self.c_xmin:self.c_xmax,self.c_ymax] = 0.0
+        # No-slip BC on obstacle top
+        self.u[self.c_xmin:self.c_xmax,self.c_ymax]   =-self.u[self.c_xmin:self.c_xmax,self.c_ymax+1]
+        self.v[self.c_xmin:self.c_xmax,self.c_ymax+1] = 0.0
+        self.p[self.c_xmin:self.c_xmax,self.c_ymax]   = self.p[self.c_xmin:self.c_xmax,self.c_ymax+1]
 
-        # # No-slip BC on obstacle left
-        # self.u[self.c_xmin+1,self.c_ymin:self.c_ymax] = 0.0
-        # self.v[self.c_xmin+1,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin,self.c_ymin:self.c_ymax]
+        # No-slip BC on obstacle left
+        self.u[self.c_xmin,self.c_ymin:self.c_ymax] = 0.0
+        self.v[self.c_xmin,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin-1,self.c_ymin:self.c_ymax]
+        self.p[self.c_xmin,self.c_ymin:self.c_ymax] = self.p[self.c_xmin-1,self.c_ymin:self.c_ymax]
 
-        # # No-slip BC on obstacle right
-        # self.u[self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        # self.v[self.c_xmax,self.c_ymin:self.c_ymax] =-self.v[self.c_xmax,self.c_ymin:self.c_ymax]
+        # No-slip BC on obstacle right
+        self.u[self.c_xmax+1,self.c_ymin:self.c_ymax] = 0.0
+        self.v[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.v[self.c_xmax+1,self.c_ymin:self.c_ymax]
+        self.p[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.p[self.c_xmax+1,self.c_ymin:self.c_ymax]
 
     ### Compute starred fields
     def predictor(self):
@@ -191,8 +195,8 @@ class turek():
         vn = np.sqrt(u**2+v**2)
 
         # Mask obstacles
-        # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -1.0
-        # vn = np.ma.masked_where((vn < 0.0), vn)
+        vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -1.0
+        vn = np.ma.masked_where((vn < 0.0), vn)
         vn = np.rot90(vn)
 
         # Plot
