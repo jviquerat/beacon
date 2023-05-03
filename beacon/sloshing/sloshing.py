@@ -2,8 +2,6 @@ import numpy as np
 import scipy.sparse as sparse
 import matplotlib.pyplot as plt
 
-from Visualization import plot1D, printProgressBar, TimeSeries1D
-
 import numpy as np
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -207,12 +205,12 @@ class TimeSeries1D():
 # Macros "aka implementation cancera"
 G = 9.81
 L = 1
-N = 40
+N = 100
 T = 4
-N_T = 100
 DX = L/(N+1)
-DT = 5e-4
+DT = 1e-4
 MU = 0.0
+N_PRNT = 10
 
 BDF = 2
 DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
@@ -226,44 +224,50 @@ DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 
 
 def solveConservative(v_d):
-    h = np.ones(N)
-    v = np.zeros(N)
-    hv = np.ones(N)
-    flux_mass = np.zeros(N-2)
-    flux_momentum = np.zeros(N-2)
+    h             = np.ones(N)
+    v             = np.zeros(N)
+    hv            = np.zeros(N)
+    hgv2          = np.zeros(N)
+    flux_mass     = np.zeros(N)
+    flux_momentum = np.zeros(N)
 
     result = [h]
-    time = [0.0]
+    time   = [0.0]
 
-    def d1tvd(u, du, dx):
-        nx = len(u) - 2
+    def d1tvd(u, du, nx, dx):
         phi = np.zeros((nx))
-        r = np.zeros((nx))
-        r[1:nx-1] = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-        phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
-        # phi[1:nx-1] = (np.abs(r[1:nx-1]) + r[1:nx-1]) / (1 + np.abs(r[1:nx-1]))  # vanLeer
+        r   = np.zeros((nx))
 
-        du[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx] - u[1:nx-1])
+        r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
+        phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
+
+        du[1:nx-1]  = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
         du[1:nx-1] -= u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
         du[1:nx-1] /= dx
-        return
 
     # To reach the desired time
     t = 0.0
+    it = 0
     while T > t:
 
-        v[0] = v_d(t)
+        v[0]  = v_d(t)
         v[-1] = v_d(t)
-        h[0] = h[1]
+        h[0]  = h[1]
         h[-1] = h[-2]
 
-        d1tvd(h*(v-v_d(t)), flux_mass, DX)
-        d1tvd(h*(v-v_d(t))**2 + G/2*h**2, flux_momentum, DX)
+        #d1tvd(h*(v-v_d(t)), flux_mass, DX)
+        #d1tvd(h*(v-v_d(t))**2 + G/2*h**2, flux_momentum, DX)
 
-        hv = h*v
-        h[1:-1] -= DT*flux_mass
-        hv[1:-1] -= DT*flux_momentum
-        v[1:-1] /= h[1:-1]
+        hv[:]   = h[:]*v[:]
+        hgv2[:] = h[:]*v[:]*v[:] + 0.5*G*h[:]*h[:]
+
+        d1tvd(hv, flux_mass, N, DX)
+        d1tvd(hgv2, flux_momentum, N, DX)
+
+        #hv[:]      = h[:]*v[:]
+        h[1:N-1]  -= DT*flux_mass[1:N-1]
+        hv[1:N-1] -= DT*flux_momentum[1:N-1]
+        v[1:N-1]   = hv[1:N-1] / h[1:N-1]
 
         t += DT
 
@@ -272,6 +276,15 @@ def solveConservative(v_d):
                              suffix='dt = '+str(DT), length=50)
         result.append(np.copy(h))
         time.append(t)
+
+        if (it%N_PRNT == 0):
+            fig, ax = plt.subplots()
+            x = np.linspace(0, L, N)
+            ax.plot(x, v)
+            plt.pause(0.1)
+            plt.clf()
+
+        it += 1
 
     return np.array(time), np.array(result)
 
@@ -412,10 +425,11 @@ def solveNonLinearLongWave(v_d):
 def main():
 
     def v_d(t):
-        if t < 1:
-            return np.sin(np.pi*t)
-        else:
-            return 0
+        return np.sin(np.pi*t)
+        # if t < 1:
+        #     return np.sin(np.pi*t)
+        # else:
+        #     return 0o
 
     x = np.linspace(0, L, N)
     t, h = solveConservative(v_d)
