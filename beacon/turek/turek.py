@@ -34,8 +34,7 @@ class turek():
         self.nc = self.nx*self.ny
 
         # Compute timestep
-        self.dt   = self.cfl*min(self.dx,self.dy)
-        self.n_dt = round(self.t_max/self.dt)
+        #self.dt   = self.cfl*min(self.dx,self.dy)
 
         # Compute obstacle position
         self.x0 = 2.0
@@ -56,6 +55,8 @@ class turek():
         # Accound for boundary cells
         self.u     = np.zeros((self.nx+2, self.ny+2))
         self.v     = np.zeros((self.nx+2, self.ny+2))
+        self.u_old = np.zeros((self.nx+2, self.ny+2))
+        self.v_old = np.zeros((self.nx+2, self.ny+2))
         self.p     = np.zeros((self.nx+2, self.ny+2))
         self.p_old = np.zeros((self.nx+2, self.ny+2))
         self.phi   = np.zeros((self.nx+2, self.ny+2))
@@ -65,7 +66,6 @@ class turek():
 
         # Array to store iterations of poisson resolution
         self.n_itp = np.array([], dtype=np.int16)
-        #np.zeros((self.n_dt,2), dtype=np.int16)
 
         # Set time
         self.it = 0
@@ -101,7 +101,7 @@ class turek():
         # No-slip BC at bottom
         self.u[1:nx+1,0] =-self.u[1:nx+1,1] # Dirichlet for u
         self.v[1:nx+1,0] = 0.0              # Dirichlet for v
-        self.v[1:nx+1,1] = 0.0              # Dirichlet for v
+        #self.v[1:nx+1,1] = 0.0              # Dirichlet for v
         self.p[1:nx+1,0] = self.p[1:nx+1,1] # Neumann   for p
 
         # Output BC at outlet
@@ -137,8 +137,10 @@ class turek():
     ### Compute starred fields
     def predictor(self):
 
-        predictor(self.u,   self.v,   self.us, self.vs, self.p,
-                  self.idx, self.idy, self.nx, self.ny, self.dt, self.re)
+        predictor(self.u,   self.v,   self.u_old, self.v_old,
+                  self.us,  self.vs,  self.p,
+                  self.idx, self.idy, self.nx,
+                  self.ny,  self.dt,  self.re)
 
     ### Compute pressure
     def poisson(self):
@@ -168,12 +170,24 @@ class turek():
     ### Compute updated fields
     def corrector(self):
 
+        self.u_old[:,:] = self.u[:,:]
+        self.v_old[:,:] = self.v[:,:]
+
         corrector(self.u,   self.v,   self.us, self.vs, self.phi,
                   self.idx, self.idy, self.nx, self.ny, self.dt)
+
+    ### Compute timestep
+    def compute_dt(self):
+
+        vn      = np.sqrt(self.u**2+self.v**2)
+        vmax    = np.amax(vn)
+        vmax    = max(vmax, 1.0)
+        self.dt = self.cfl*min(self.dx,self.dy)/vmax
 
     ### Take one step
     def step(self):
 
+        self.compute_dt()
         self.set_bc()
         self.predictor()
         self.poisson()
@@ -202,7 +216,7 @@ class turek():
         v[0:nx,0:ny] = 0.5*(self.v[1:nx+1,0:ny] + self.u[1:nx+1,1:ny+1])
         p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
 
-        # Compute vecloity norm
+        # Compute velocity norm
         vn = np.sqrt(u**2+v**2)
 
         # Mask obstacles
@@ -258,7 +272,7 @@ class turek():
 ###############################################
 # Predictor step
 @nb.njit(cache=True)
-def predictor(u, v, us, vs, p, idx, idy, nx, ny, dt, re):
+def predictor(u, v, u_old, v_old, us, vs, p, idx, idy, nx, ny, dt, re):
 
     d2ux = np.zeros((nx+2,ny+2))
     d2uy = np.zeros((nx+2,ny+2))
@@ -276,6 +290,7 @@ def predictor(u, v, us, vs, p, idx, idy, nx, ny, dt, re):
 
     dpx [1:nx+1,1:ny+1] = (p[2:nx+2,1:ny+1] - p[0:nx,1:ny+1])*0.5*idx
 
+    #us[:,:] = (1.0/3.0)*(4.0*u[:,:] - u_old[:,:] + 2.0*dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:]))
     us[:,:] = u[:,:] + dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:])
 
     d2vx = np.zeros((nx+2,ny+2))
@@ -294,6 +309,7 @@ def predictor(u, v, us, vs, p, idx, idy, nx, ny, dt, re):
 
     dpy [1:nx+1,1:ny+1] = (p[1:nx+1,2:ny+2] - p[1:nx+1,0:ny])*0.5*idy
 
+    #vs[:,:] = (1.0/3.0)*(4.0*v[:,:] - v_old[:,:] + 2.0*dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:]))
     vs[:,:] = v[:,:] + dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:])
 
 ###############################################
@@ -310,15 +326,22 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
     b = np.zeros((nx+2,ny+2))
     b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
                         (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
+    #(vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)*3.0/(2.0*dt)
+
 
     #b[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
 
-    tol = 1.0e-3
+    tol = 1.0e-2
     err = 1.0e10
     itp = 0
     ovf = False
     phi_old = np.zeros((nx+2,ny+2))
     while(err > tol):
+
+        phi_old[:,:] = phi[:,:]
+        phi[1:nx+1,1:ny+1] = ((phi_old[2:nx+2,1:ny+1] + phi_old[0:nx,1:ny+1])*dy*dy +
+                              (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
+                              b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
 
         # # Domain left (neumann)
         phi[ 0,1:ny+1] = phi[ 1,1:ny+1]
@@ -344,11 +367,6 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
         # # Obstacle bottom (neumann)
         # phi[c_xmin:c_xmax,c_ymin] = phi[c_xmin:c_xmax,c_ymin-1]
 
-        phi_old[:,:] = phi[:,:]
-        phi[1:nx+1,1:ny+1] = ((phi_old[2:nx+2,1:ny+1] + phi_old[0:nx,1:ny+1])*dy*dy +
-                              (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
-                              b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
-
         dp  = np.reshape(phi - phi_old, (-1))
         err = np.dot(dp,dp)
 
@@ -363,6 +381,9 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
 # Corrector step
 @nb.njit(cache=True)
 def corrector(u, v, us, vs, phi, idx, idy, nx, ny, dt):
+
+    #u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - (2.0*dt/3.0)*(phi[1:nx+1,1:ny+1] - phi[0:nx,1:ny+1])*idx
+    #v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - (2.0*dt/3.0)*(phi[1:nx+1,1:ny+1] - phi[1:nx+1,0:ny])*idy
 
     u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[0:nx,1:ny+1])*idx
     v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[1:nx+1,0:ny])*idy

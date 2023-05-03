@@ -9,7 +9,7 @@ from turek import *
 #######################################
 
 # Initialize
-t = turek(cfl=0.2, re=100.0, t_max=40.0)
+t = turek(cfl=0.1, re=10.0, t_max=20.0)
 t.reset_fields()
 
 # Set parameters for control-free run
@@ -19,11 +19,14 @@ s_time   = time.time()
 # plt_freq = 50   # plotting frequency
 # show     = True # set to True to show while running
 
-for i in range(t.n_dt):
+#for i in range(t.n_dt):
+while(t.t < t.t_max):
     t.step()
     end = "\r"
-    if (i==t.n_dt-1): end="\n"
-    print("# Iteration "+str(i)+" over "+str(t.n_dt),end=end)
+    #if (i==t.n_dt-1): end="\n"
+    #print("# t= "+str(t.t)+", dt="+str(t.dt)+"                         ", end=end)#+" over "+str(t.n_dt),end=end)
+
+    print('# t= '+'{:f}'.format(t.t)+', dt= '+'{:f}'.format(t.dt), end=end)
 t.plot_fields()
 t.plot_iterations()
 
