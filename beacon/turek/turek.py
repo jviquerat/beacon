@@ -110,8 +110,8 @@ class turek():
         self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
 
         # Set zero in obstacle
-        #self.u[self.c_xmin+1:self.c_xmax,self.c_ymin:self.c_ymax  ] = 0.0
-        #self.v[self.c_xmin:self.c_xmax,  self.c_ymin+1:self.c_ymax] = 0.0
+        self.u[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
+        self.v[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
         #self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
 
         # No-slip BC on obstacle bottom
@@ -137,17 +137,17 @@ class turek():
     ### Compute starred fields
     def predictor(self):
 
-        # Save previous pressure field
-        self.p_old[:,:] = self.p[:,:]
-
         predictor(self.u,   self.v,   self.us, self.vs, self.p,
                   self.idx, self.idy, self.nx, self.ny, self.dt, self.re)
 
     ### Compute pressure
     def poisson(self):
 
+        # Save previous pressure field
+        self.p_old[:,:] = self.p[:,:]
+
         # Set pressure difference
-        self.phi[:,:] = self.p_old[:,:] - self.p[:,:]
+        self.phi[:,:] = 0.0
 
         ovf, n_itp = poisson(self.us, self.vs, self.phi,
                              self.dx, self.dy, self.idx, self.idy,
@@ -206,11 +206,11 @@ class turek():
         vn = np.sqrt(u**2+v**2)
 
         # Mask obstacles
-        vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        vn = np.ma.masked_where((vn < -10.0), vn)
+        # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
+        # vn = np.ma.masked_where((vn < -10.0), vn)
         vn = np.rot90(vn)
-        p [self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        p = np.ma.masked_where((p < -10.0), p)
+        # p [self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
+        # p = np.ma.masked_where((p < -10.0), p)
         p = np.rot90(p)
 
         # Plot velocity
@@ -233,8 +233,8 @@ class turek():
         fig.subplots_adjust(0,0,1,1)
         plt.imshow(p,
                    cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = 1.0)
+                   vmin =-2.0,
+                   vmax = 4.0)
 
         filename = "pressure.png"
         plt.axis('off')
@@ -302,17 +302,48 @@ def predictor(u, v, us, vs, p, idx, idy, nx, ny, dt, re):
 def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
             c_xmin, c_xmax, c_ymin, c_ymax):
 
+    # Set zero in obstacle
+    us[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+    vs[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+
+    # Term including starred velocities
     b = np.zeros((nx+2,ny+2))
     b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
                         (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
 
-    phi_old = np.zeros((nx+2,ny+2))
+    #b[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
 
     tol = 1.0e-3
     err = 1.0e10
     itp = 0
     ovf = False
+    phi_old = np.zeros((nx+2,ny+2))
     while(err > tol):
+
+        # # Domain left (neumann)
+        phi[ 0,1:ny+1] = phi[ 1,1:ny+1]
+
+        # # Domain right (dirichlet)
+        phi[-1,1:ny+1] =-phi[-2,1:ny+1]
+
+        # # Domain top (neumann)
+        #phi[1:nx+1,-1] = phi[1:nx+1,-2]
+
+        # # Domain bottom (neumann)
+        #phi[1:nx+1, 0] = phi[1:nx+1, 1]
+
+        # # Obstacle left (neumann)
+        #phi[c_xmin,c_ymin:c_ymax] = phi[c_xmin-1,c_ymin:c_ymax]
+
+        # # Obstacle right (neumann)
+        # phi[c_xmax,c_ymin:c_ymax] = phi[c_xmax+1,c_ymin:c_ymax]
+
+        # # Obstacle top (neumann)
+        # phi[c_xmin:c_xmax,c_ymax] = phi[c_xmin:c_xmax,c_ymax+1]
+
+        # # Obstacle bottom (neumann)
+        # phi[c_xmin:c_xmax,c_ymin] = phi[c_xmin:c_xmax,c_ymin-1]
+
         phi_old[:,:] = phi[:,:]
         phi[1:nx+1,1:ny+1] = ((phi_old[2:nx+2,1:ny+1] + phi_old[0:nx,1:ny+1])*dy*dy +
                               (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
@@ -321,35 +352,10 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
         dp  = np.reshape(phi - phi_old, (-1))
         err = np.dot(dp,dp)
 
-        # Domain left (neumann)
-        #pp[ 0,1:ny+1] = pp[ 1,1:ny+1]
-
-        # Domain right (dirichlet)
-        #pp[-1,1:ny+1] = pp[-2,1:ny+1]
-
-        # Domain top (neumann)
-        #p[1:nx+1,-1] = p[1:nx+1,-2]
-
-        # Domain bottom (neumann)
-        #p[1:nx+1, 0] = p[1:nx+1, 1]
-
-        # Obstacle left (neumann)
-        #p[c_xmin,c_ymin:c_ymax] = p[c_xmin-1,c_ymin:c_ymax]
-
-        # Obstacle right (neumann)
-        #p[c_xmax,  c_ymin:c_ymax] = p[c_xmax+1,c_ymin:c_ymax]
-
-        # Obstacle top (neumann)
-        #p[c_xmin:c_xmax,c_ymax]   = p[c_xmin:c_xmax,c_ymax+1]
-
-        # Obstacle bottom (neumann)
-        #p[c_xmin:c_xmax,c_ymin] = p[c_xmin:c_xmax,c_ymin-1]
-
         itp += 1
         if (itp > 10000):
             ovf = True
             break
-        #p[:,:] = pp[:,:] + p_old[:,:]
 
     return ovf, itp
 
