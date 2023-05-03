@@ -208,7 +208,7 @@ L = 1
 N = 100
 T = 4
 DX = L/(N+1)
-DT = 1e-4
+DT = 1e-3
 MU = 0.0
 N_PRNT = 10
 
@@ -223,51 +223,80 @@ DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 #################################################################
 
 
-def solveConservative(v_d):
+def solveConservative(a_d, v_d):
     h             = np.ones(N)
-    v             = np.zeros(N)
-    hv            = np.zeros(N)
-    hgv2          = np.zeros(N)
-    flux_mass     = np.zeros(N)
-    flux_momentum = np.zeros(N)
+    q             = np.zeros(N)
+    hm            = np.ones(N)
+    qm            = np.zeros(N)
+    #hv            = np.zeros(N)
+    qgh           = np.zeros(N)
+    qghm          = np.zeros(N)
+    #flux_mass     = np.zeros(N)
+    #flux_momentum = np.zeros(N)
 
     result = [h]
     time   = [0.0]
 
-    def d1tvd(u, du, nx, dx):
-        phi = np.zeros((nx))
-        r   = np.zeros((nx))
+    def d1lax(u, du, um, nx, dt, dx):
 
-        r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-        phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
+        um[0:nx-1] = 0.5*(u[0:nx-1] + u[1:nx]) - (0.5*dt/dx)*(du[1:nx] - du[0:nx-1])
 
-        du[1:nx-1]  = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
-        du[1:nx-1] -= u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
-        du[1:nx-1] /= dx
+    def d1o1(u, du, nx, dt, dx):
+
+        u[1:nx-1] = u[1:nx-1] - (dt/dx)*(du[1:nx-1] - du[0:nx-2])
+
+    # def d1tvd(u, du, nx, dx):
+    #     phi = np.zeros((nx))
+    #     r   = np.zeros((nx))
+
+    #     r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
+    #     phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
+
+    #     du[1:nx-1]  = u[1:nx-1] #+ 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
+    #     du[1:nx-1] -= u[0:nx-2] #+ 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
+    #     du[1:nx-1] /= dx
 
     # To reach the desired time
     t = 0.0
     it = 0
     while T > t:
 
-        v[0]  = v_d(t)
-        v[-1] = v_d(t)
         h[0]  = h[1]
         h[-1] = h[-2]
+        #q[0]  = h[0]*v_d(t)
+        #q[-1] = h[-1]*v_d(t)
+
+        q[0] = 0.0
+        q[-1] = 0.0
+
+        #q[0]  = v_d(t)/h[0]
+        #q[-1] = v_d(t)/h[-1]
+
+        qgh[:] = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
+
+        d1lax(h, q,   hm, N, DT, DX)
+        d1lax(q, qgh, qm, N, DT, DX)
+        qm[:] -= 0.5*DT*a_d(t)
+
+        qghm[:] = qm[:]*qm[:]/hm[:] + 0.5*G*hm[:]*hm[:]
+
+        d1o1(h, qm,   N, DT, DX)
+        d1o1(q, qghm, N, DT, DX)
+        q[:] -= DT*a_d(t)
 
         #d1tvd(h*(v-v_d(t)), flux_mass, DX)
         #d1tvd(h*(v-v_d(t))**2 + G/2*h**2, flux_momentum, DX)
 
-        hv[:]   = h[:]*v[:]
-        hgv2[:] = h[:]*v[:]*v[:] + 0.5*G*h[:]*h[:]
+        # hv[:]   = h[:]*v[:]
+        # hgv2[:] = h[:]*v[:]*v[:] + 0.5*G*h[:]*h[:]
 
-        d1tvd(hv, flux_mass, N, DX)
-        d1tvd(hgv2, flux_momentum, N, DX)
+        # d1tvd(hv, flux_mass, N, DX)
+        # d1tvd(hgv2, flux_momentum, N, DX)
 
-        #hv[:]      = h[:]*v[:]
-        h[1:N-1]  -= DT*flux_mass[1:N-1]
-        hv[1:N-1] -= DT*flux_momentum[1:N-1]
-        v[1:N-1]   = hv[1:N-1] / h[1:N-1]
+        # #hv[:]      = h[:]*v[:]
+        # h[1:N-1]  -= DT*flux_mass[1:N-1]
+        # hv[1:N-1] -= DT*flux_momentum[1:N-1]
+        # v[1:N-1]   = hv[1:N-1] / h[1:N-1]
 
         t += DT
 
@@ -277,10 +306,16 @@ def solveConservative(v_d):
         result.append(np.copy(h))
         time.append(t)
 
-        if (it%N_PRNT == 0):
-            fig, ax = plt.subplots()
+        if (it == 0):
+            plt.figure(figsize=(5,2.5))
             x = np.linspace(0, L, N)
-            ax.plot(x, v)
+
+        if (it%N_PRNT == 0):
+            ax = plt.gca()
+            fig = plt.gcf()
+            ax.set_xlim([0.0,1.0])
+            ax.set_ylim([0.0,2.0])
+            ax.plot(x, h)
             plt.pause(0.1)
             plt.clf()
 
@@ -425,14 +460,18 @@ def solveNonLinearLongWave(v_d):
 def main():
 
     def v_d(t):
-        return np.sin(np.pi*t)
-        # if t < 1:
-        #     return np.sin(np.pi*t)
-        # else:
-        #     return 0o
+        #return 2.0*np.sin(np.pi*t)
+        if t < 1:
+            return np.sin(np.pi*t)
+        else:
+            return 0.0
+
+    def a_d(t):
+        dt = 1.0e-5
+        return (v_d(t+dt) - v_d(t))/dt
 
     x = np.linspace(0, L, N)
-    t, h = solveConservative(v_d)
+    t, h = solveConservative(a_d, v_d)
 
     anim = TimeSeries1D(x, h, t)
     anim.createAnimation(skip_frames=40)
