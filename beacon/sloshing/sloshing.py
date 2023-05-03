@@ -4,7 +4,207 @@ import matplotlib.pyplot as plt
 
 from Visualization import plot1D, printProgressBar, TimeSeries1D
 
-# Macros
+import numpy as np
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+
+
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+
+def secondsToStr(seconds):
+    seconds = seconds % (24 * 3600)
+    hour = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+
+    return "%d:%02d:%02d" % (hour, minutes, seconds)
+
+
+def find_nearest(array, value):
+    idx = (np.np.abs(array - value)).argmin()
+    return idx
+
+
+def plot1D(x, h, v=None):
+
+    # Figure setup
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel(r'$L [m]$')
+    ax.set_ylabel(r'$\eta [m]$', color='tab:red')
+    ax.set_xlim([np.min(x), np.max(x)])
+    ax.set_ylim([np.min(h), np.max(h)])
+    ax.tick_params(axis='y', labelcolor='tab:red')
+    ax.plot(x, h, color='tab:red')
+
+    if not v is None:
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        color = 'tab:blue'
+        # we already handled the x-label with ax1
+        ax2.set_ylabel('sin', color=color)
+        ax2.plot(np.linspace(np.min(x), np.max(x), len(x)+1), v, color=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()
+    plt.show()
+
+    return
+
+
+def clean_up_artists(axis, artist_list):
+    """
+    Try to remove the artists stored in the artist list belonging to the 'axis'.
+     axis: clean artists belonging to these axis
+     artist_list: list of artist to remove
+    return: nothing
+    """
+    for artist in artist_list:
+        try:
+            # fist attempt: try to remove collection of contours for instance
+            while artist.collections:
+                for col in artist.collections:
+                    artist.collections.remove(col)
+                    try:
+                        axis.collections.remove(col)
+                    except ValueError:
+                        pass
+
+                artist.collections = []
+                axis.collections = []
+        except AttributeError:
+            pass
+
+        # Second attempt, try to remove the text or the line plot
+        try:
+            artist.remove()
+        except (AttributeError, ValueError):
+            pass
+
+
+class TimeSeries1D():
+
+    def __init__(self, x, h, time):
+        '''
+        Load data for animation
+             map2D:     Map used for the simulation
+             time:      List of times corresponding to the frames in data.
+            return: nothing
+        '''
+
+        self.x = x
+        self.time = time
+        self.h = h
+
+    def createAnimation(self, start_frame=None, end_frame=None, skip_frames=None):
+        '''
+        Create animation with the data given at init
+            start_frame: Start from frame number e.g. 0
+            end_frame: Start from frame number e.g. len(labels[:,0,0])
+            skip_frames: Amount of frames -1 to skip between every displayed image e.g. 1 (no skipping)
+            return: nothing
+        '''
+
+        # Set frame control
+        if start_frame is None:
+            start_frame = 0
+
+        if end_frame is None:
+            end_frame = len(self.time)
+
+        if skip_frames is None:
+            skip_frames = 1  # 1 - no skipping
+
+        frames = range(start_frame, end_frame, skip_frames)
+
+        # Figure setup
+        fig, ax = plt.subplots()
+
+        ax.set_xlabel(r'$L [m]$')
+        ax.set_ylabel(r'$\eta [m]$', color='tab:red')
+        ax.set_xlim([np.min(self.x), np.max(self.x)])
+        ax.set_ylim([0, np.max(np.array(self.h))])
+        ax.tick_params(axis='y', labelcolor='tab:red')
+        ax.set_title("{}".format("1D Simulation"),
+                     transform=ax.transAxes, fontdict=dict(color="blue", size=12))
+
+        changed_artists = list()
+        line, = ax.plot(self.x, self.h[0], color='tab:red')
+        changed_artists.append(line)
+
+        time_text = ax.text(0.6, 1.05, "{}".format("Time : "+secondsToStr(self.time[0])),
+                            transform=ax.transAxes, fontdict=dict(color="black", size=14))
+        changed_artists.append(time_text)
+
+        print("\nProcessing animation...")
+
+        def update_plot1D(frame_index):
+            """
+            Update the line plot of the time step 'frame_index'
+            """
+
+            h = self.h[frame_index]
+
+            # Create the contour plot
+            line.set_data(self.x, h)
+
+            time_text.set_text("{}".format(
+                "Time : "+secondsToStr(self.time[frame_index])))
+
+            return line, time_text
+
+        # Call the animation function. The fargs argument equals the parameter list of update_plot,
+        # except the 'frame_index' parameter.
+        self.ani = animation.FuncAnimation(
+            fig, update_plot1D, frames=frames, interval=1, blit=False, repeat=False)
+        # plt.show()
+
+    def saveAnimation(self, fps=60, name='toLazytoName1D'):
+        '''
+        Save animation after computing it with createAnimation
+             fps: Amount of frames displayed each second in the video e.g. 10.
+             name: Name of the video. Is stored depending on the call path of the object.
+            return: nothing
+        '''
+        if not hasattr(self, 'ani'):
+            print(
+                "No animation available. Please call createAnimation on the object before saving it.")
+        else:
+            print("Saving animation...")
+            Writer = animation.writers['ffmpeg']
+            writer = Writer(fps=fps, metadata=dict(
+                artist='Me'))  # , bitrate=-1)
+            self.ani.save(name+'.mp4', writer=writer)
+
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+
+# Macros "aka implementation cancera"
 G = 9.81
 L = 1
 N = 40
@@ -17,8 +217,12 @@ MU = 0.0
 BDF = 2
 DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 
-
-DEBUG = True
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+#################################################################
 
 
 def solveConservative(v_d):
