@@ -242,7 +242,7 @@ def solveConservative(a_d, v_d):
 
     def d1laxw(u, du, um, nx, dt, dx):
 
-        um[0:nx-1] = 0.5*(u[0:nx-1] + u[1:nx]) - (0.5*dt/dx)*(du[1:nx] - du[0:nx-1])
+        um[1:nx+1] = 0.5*(u[1:nx+1] + u[2:nx+2]) - (0.5*dt/dx)*(du[2:nx+2] - du[1:nx+1])
 
     def d1laxf(u, du, nx, dt, dx):
 
@@ -250,7 +250,7 @@ def solveConservative(a_d, v_d):
 
     def d1o1(u, du, nx, dt, dx):
 
-        u[1:nx-1] = u[1:nx-1] - (dt/dx)*(du[1:nx-1] - du[0:nx-2])
+        u[1:nx+1] -= (dt/dx)*(du[1:nx+1] - du[0:nx])
 
     def d1tvd(u, du, nx, dx):
         phi = np.zeros((nx))
