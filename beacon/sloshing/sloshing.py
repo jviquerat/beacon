@@ -226,42 +226,27 @@ DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 def solveConservative(a_d, v_d):
     h             = np.ones(N+2)
     q             = np.zeros(N+2)
+    qgh           = np.zeros(N+2)
     fhg           = np.zeros(N+2)
     fhd           = np.zeros(N+2)
     fqg           = np.zeros(N+2)
     fqd           = np.zeros(N+2)
+    rhsh          = np.zeros(N+2)
+    rhsq          = np.zeros(N+2)
+    rhshp         = np.zeros(N+2)
+    rhsqp         = np.zeros(N+2)
     c             = np.zeros(N+1)
-    qgh           = np.zeros(N+2)
 
     result = [h[1:N+1]]
     time   = [0.0]
 
-    def d1laxw(u, du, um, nx, dt, dx):
-
-        um[1:nx+1] = 0.5*(u[1:nx+1] + u[2:nx+2]) - (0.5*dt/dx)*(du[2:nx+2] - du[1:nx+1])
-
-    def d1laxf(u, du, nx, dt, dx):
-
-        u[1:nx+1] = 0.5*(u[2:nx+2] + u[0:nx]) - (0.5*dt/dx)*(du[2:nx+2] - du[0:nx])
-
-    def d1o1(u, du, nx, dt, dx):
-
-        u[1:nx+1] -= (dt/dx)*(du[1:nx+1] - du[0:nx])
-
-    def d1tvd(u, du, nx, dx):
-        phi = np.zeros((nx))
-        r   = np.zeros((nx))
-
-        r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-        phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
-
-        du[1:nx-1]  = u[1:nx-1]# + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
-        du[1:nx-1] -= u[0:nx-2]# + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
-        du[1:nx-1] /= dx
-
     def rusanov(f, fug, fud, ug, ud, c):
 
         f[:] = 0.5*(fug[:] + fud[:]) - 0.5*c[:]*(ud[:] - ug[:])
+
+    def adams(u, rhs, rhsp, nx, dt):
+
+        u[1:nx+1] += 0.5*dt*(-3.0*rhs[1:nx+1] + rhsp[1:nx+1])
 
     # To reach the desired time
     t = 0.0
@@ -279,29 +264,10 @@ def solveConservative(a_d, v_d):
         q[nx+1] = 0.0
 
         ########################
-        # Lax-Wendroff
-        # qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
-
-        # d1laxw(h, q,   hm, nx, dt, dx)
-        # d1laxw(q, qgh, qm, nx, dt, dx)
-        # qm[1:nx+1] -= 0.5*dt*a_d(t)
-
-        # qghm[:] = qm[:]*qm[:]/hm[:] + 0.5*g*hm[:]*hm[:]
-
-        # d1o1(h, qm,   nx, dt, dx)
-        # d1o1(q, qghm, nx, dt, dx)
-        # q[1:nx+1] -= dt*a_d(t)
-
-        ########################
-        # Lax-Friedrichs
-        # qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
-
-        # d1laxf(h, q,    nx, dt, dx)
-        # d1laxf(q, qghm, nx, dt, dx)
-        # q[1:nx+1] -= dt*a_d(t)
-
-        ########################
         # Rusanov
+        rhshp[1:nx+1] = rhsh[1:nx+1]
+        rhsqp[1:nx+1] = rhsq[1:nx+1]
+
         qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
         c[0:nx+1] = np.maximum(np.abs(q[0:nx+1]/h[0:nx+1]) + np.sqrt(g*h[0:nx+1]),
                                np.abs(q[1:nx+2]/h[1:nx+2]) + np.sqrt(g*h[1:nx+2]),)
@@ -311,24 +277,16 @@ def solveConservative(a_d, v_d):
         rusanov(fqg[1:nx+1], qgh[0:nx],   qgh[1:nx+1], q[0:nx],   q[1:nx+1], c[0:nx])
         rusanov(fqd[1:nx+1], qgh[1:nx+1], qgh[2:nx+2], q[1:nx+1], q[2:nx+2], c[1:nx+1])
 
-        h[1:nx+1] -= (dt/dx)*(fhd[1:nx+1] - fhg[1:nx+1])
-        q[1:nx+1] -= (dt/dx)*(fqd[1:nx+1] - fqg[1:nx+1])
+        rhsh[1:nx+1] = (fhd[1:nx+1] - fhg[1:nx+1])/dx
+        rhsq[1:nx+1] = (fqd[1:nx+1] - fqg[1:nx+1])/dx
+
+        adams(h, rhsh, rhshp, nx, dt)
+        adams(q, rhsq, rhsqp, nx, dt)
+
+        #h[1:nx+1] -= (dt/dx)*(fhd[1:nx+1] - fhg[1:nx+1])
+        #q[1:nx+1] -= (dt/dx)*(fqd[1:nx+1] - fqg[1:nx+1])
         q[1:nx+1] -= dt*a_d(t)
 
-        ########################
-        # Weighted upwind
-        # dh[1:nx+1]  = np.maximum(q[1:nx+1], 0.0) + np.maximum(-q[2:nx+2], 0.0)
-        # dh[1:nx+1] -= np.maximum(q[0:nx  ], 0.0) + np.maximum(-q[1:nx+1], 0.0)
-        # h[1:nx+1]  -= dt/dx*dh[1:nx+1]
-
-        # qgh[:]      = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
-        # vq[1:nx+1]  = np.abs(q[1:nx+1])/(q[1:nx+1] + 1.0e-5)
-        # dq[1:nx+1]  = np.maximum( vq[1:nx+1]*qgh[1:nx+1], 0.0)
-        # dq[1:nx+1] += np.maximum(-vq[1:nx+1]*qgh[2:nx+2], 0.0)
-        # dq[1:nx+1] -= np.maximum( vq[1:nx+1]*qgh[0:nx  ], 0.0)
-        # dq[1:nx+1] -= np.maximum(-vq[1:nx+1]*qgh[1:nx+1], 0.0)
-        # q[1:nx+1]  -= dt/dx*dq[1:nx+1]
-        # q[1:nx+1]  -= dt*a_d(t)
 
         t += DT
 
