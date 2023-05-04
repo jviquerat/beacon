@@ -224,79 +224,97 @@ DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 
 
 def solveConservative(a_d, v_d):
-    h             = np.ones(N)
-    q             = np.zeros(N)
-    hm            = np.ones(N)
-    qm            = np.zeros(N)
+    h             = np.ones(N+2)
+    q             = np.zeros(N+2)
+    dh            = np.zeros(N+2)
+    dq            = np.zeros(N+2)
+    hm            = np.ones(N+2)
+    qm            = np.zeros(N+2)
+    vq            = np.zeros(N+2)
     #hv            = np.zeros(N)
-    qgh           = np.zeros(N)
-    qghm          = np.zeros(N)
+    qgh           = np.zeros(N+2)
+    qghm          = np.zeros(N+2)
     #flux_mass     = np.zeros(N)
     #flux_momentum = np.zeros(N)
 
     result = [h]
     time   = [0.0]
 
-    def d1lax(u, du, um, nx, dt, dx):
+    def d1laxw(u, du, um, nx, dt, dx):
 
         um[0:nx-1] = 0.5*(u[0:nx-1] + u[1:nx]) - (0.5*dt/dx)*(du[1:nx] - du[0:nx-1])
+
+    def d1laxf(u, du, nx, dt, dx):
+
+        u[1:nx+1] = 0.5*(u[2:nx+2] + u[0:nx]) - (0.5*dt/dx)*(du[2:nx+2] - du[0:nx])
 
     def d1o1(u, du, nx, dt, dx):
 
         u[1:nx-1] = u[1:nx-1] - (dt/dx)*(du[1:nx-1] - du[0:nx-2])
 
-    # def d1tvd(u, du, nx, dx):
-    #     phi = np.zeros((nx))
-    #     r   = np.zeros((nx))
+    def d1tvd(u, du, nx, dx):
+        phi = np.zeros((nx))
+        r   = np.zeros((nx))
 
-    #     r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-    #     phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
+        r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
+        phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))  # mindmod
 
-    #     du[1:nx-1]  = u[1:nx-1] #+ 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
-    #     du[1:nx-1] -= u[0:nx-2] #+ 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
-    #     du[1:nx-1] /= dx
+        du[1:nx-1]  = u[1:nx-1]# + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1])
+        du[1:nx-1] -= u[0:nx-2]# + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
+        du[1:nx-1] /= dx
 
     # To reach the desired time
     t = 0.0
     it = 0
     while T > t:
 
-        h[0]  = h[1]
+        h[ 0] = h[ 1]
         h[-1] = h[-2]
-        #q[0]  = h[0]*v_d(t)
-        #q[-1] = h[-1]*v_d(t)
-
-        q[0] = 0.0
+        q[ 0] = 0.0
+        q[ 1] = 0.0
         q[-1] = 0.0
+        q[-2] = 0.0
+        nx = N
+        dt = DT
+        dx = DX
 
-        #q[0]  = v_d(t)/h[0]
-        #q[-1] = v_d(t)/h[-1]
-
+        ########################
+        # Lax-Wendroff
         qgh[:] = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
 
-        d1lax(h, q,   hm, N, DT, DX)
-        d1lax(q, qgh, qm, N, DT, DX)
-        qm[:] -= 0.5*DT*a_d(t)
+        d1laxw(h, q,   hm, nx, dt, dx)
+        d1laxw(q, qgh, qm, nx, dt, dx)
+        qm[1:nx+1] -= 0.5*dt*a_d(t)
 
         qghm[:] = qm[:]*qm[:]/hm[:] + 0.5*G*hm[:]*hm[:]
 
-        d1o1(h, qm,   N, DT, DX)
-        d1o1(q, qghm, N, DT, DX)
-        q[:] -= DT*a_d(t)
+        d1o1(h, qm,   nx, dt, dx)
+        d1o1(q, qghm, nx, dt, dx)
+        q[1:nx+1] -= dt*a_d(t)
 
-        #d1tvd(h*(v-v_d(t)), flux_mass, DX)
-        #d1tvd(h*(v-v_d(t))**2 + G/2*h**2, flux_momentum, DX)
+        ########################
+        # Lax-Friedrichs
+        # qgh[:] = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
 
-        # hv[:]   = h[:]*v[:]
-        # hgv2[:] = h[:]*v[:]*v[:] + 0.5*G*h[:]*h[:]
+        # d1laxf(h, q,    nx, dt, dx)
+        # d1laxf(q, qghm, nx, dt, dx)
+        # q[1:nx+1] -= dt*a_d(t)
 
-        # d1tvd(hv, flux_mass, N, DX)
-        # d1tvd(hgv2, flux_momentum, N, DX)
+        ########################
+        # Weighted upwind
+        # nx = N
+        # dh[1:nx-1]  = np.maximum(q[1:nx-1],0.0) + np.maximum(-q[2:nx],  0.0)
+        # dh[1:nx-1] -= np.maximum(q[0:nx-2],0.0) + np.maximum(-q[1:nx-1],0.0)
+        # h[1:nx-1]  -= DT/DX*dh[1:nx-1]
 
-        # #hv[:]      = h[:]*v[:]
-        # h[1:N-1]  -= DT*flux_mass[1:N-1]
-        # hv[1:N-1] -= DT*flux_momentum[1:N-1]
-        # v[1:N-1]   = hv[1:N-1] / h[1:N-1]
+        # qgh[:]      = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
+        # vq[1:nx-1]  = np.abs(q[1:nx-1])/(q[1:nx-1] + 1.0e-3)
+        # dq[1:nx-1]  = np.maximum( vq[1:nx-1]*qgh[1:nx-1], 0.0)
+        # dq[1:nx-1] += np.maximum(-vq[1:nx-1]*qgh[2:nx],   0.0)
+        # dq[1:nx-1] -= np.maximum( vq[1:nx-1]*qgh[0:nx-2], 0.0)
+        # dq[1:nx-1] -= np.maximum(-vq[1:nx-1]*qgh[1:nx-1], 0.0)
+        # q[1:nx-1]  -= DT/DX*dq[1:nx-1]
+        # q[1:N-1]   -= DT*a_d(t)
 
         t += DT
 
@@ -315,7 +333,7 @@ def solveConservative(a_d, v_d):
             fig = plt.gcf()
             ax.set_xlim([0.0,1.0])
             ax.set_ylim([0.0,2.0])
-            ax.plot(x, h)
+            ax.plot(x, h[1:nx+1])
             plt.pause(0.1)
             plt.clf()
 
@@ -462,7 +480,7 @@ def main():
     def v_d(t):
         #return 2.0*np.sin(np.pi*t)
         if t < 1:
-            return np.sin(np.pi*t)
+            return 0.5*np.sin(4.0*np.pi*t)
         else:
             return 0.0
 
