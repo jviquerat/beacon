@@ -226,18 +226,14 @@ DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
 def solveConservative(a_d, v_d):
     h             = np.ones(N+2)
     q             = np.zeros(N+2)
-    dh            = np.zeros(N+2)
-    dq            = np.zeros(N+2)
-    hm            = np.ones(N+2)
-    qm            = np.zeros(N+2)
-    vq            = np.zeros(N+2)
-    #hv            = np.zeros(N)
+    fhg           = np.zeros(N+2)
+    fhd           = np.zeros(N+2)
+    fqg           = np.zeros(N+2)
+    fqd           = np.zeros(N+2)
+    c             = np.zeros(N+1)
     qgh           = np.zeros(N+2)
-    qghm          = np.zeros(N+2)
-    #flux_mass     = np.zeros(N)
-    #flux_momentum = np.zeros(N)
 
-    result = [h]
+    result = [h[1:N+1]]
     time   = [0.0]
 
     def d1laxw(u, du, um, nx, dt, dx):
@@ -263,65 +259,83 @@ def solveConservative(a_d, v_d):
         du[1:nx-1] -= u[0:nx-2]# + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2])
         du[1:nx-1] /= dx
 
+    def rusanov(f, fug, fud, ug, ud, c):
+
+        f[:] = 0.5*(fug[:] + fud[:]) - 0.5*c[:]*(ud[:] - ug[:])
+
     # To reach the desired time
     t = 0.0
     it = 0
     while T > t:
 
-        h[ 0] = h[ 1]
-        h[-1] = h[-2]
-        q[ 0] = 0.0
-        q[ 1] = 0.0
-        q[-1] = 0.0
-        q[-2] = 0.0
         nx = N
         dt = DT
         dx = DX
+        g  = G
+
+        h[   0] = h[ 1]
+        h[nx+1] = h[nx]
+        q[   0] = 0.0
+        q[nx+1] = 0.0
 
         ########################
         # Lax-Wendroff
-        qgh[:] = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
+        # qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
 
-        d1laxw(h, q,   hm, nx, dt, dx)
-        d1laxw(q, qgh, qm, nx, dt, dx)
-        qm[1:nx+1] -= 0.5*dt*a_d(t)
+        # d1laxw(h, q,   hm, nx, dt, dx)
+        # d1laxw(q, qgh, qm, nx, dt, dx)
+        # qm[1:nx+1] -= 0.5*dt*a_d(t)
 
-        qghm[:] = qm[:]*qm[:]/hm[:] + 0.5*G*hm[:]*hm[:]
+        # qghm[:] = qm[:]*qm[:]/hm[:] + 0.5*g*hm[:]*hm[:]
 
-        d1o1(h, qm,   nx, dt, dx)
-        d1o1(q, qghm, nx, dt, dx)
-        q[1:nx+1] -= dt*a_d(t)
+        # d1o1(h, qm,   nx, dt, dx)
+        # d1o1(q, qghm, nx, dt, dx)
+        # q[1:nx+1] -= dt*a_d(t)
 
         ########################
         # Lax-Friedrichs
-        # qgh[:] = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
+        # qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
 
         # d1laxf(h, q,    nx, dt, dx)
         # d1laxf(q, qghm, nx, dt, dx)
         # q[1:nx+1] -= dt*a_d(t)
 
         ########################
-        # Weighted upwind
-        # nx = N
-        # dh[1:nx-1]  = np.maximum(q[1:nx-1],0.0) + np.maximum(-q[2:nx],  0.0)
-        # dh[1:nx-1] -= np.maximum(q[0:nx-2],0.0) + np.maximum(-q[1:nx-1],0.0)
-        # h[1:nx-1]  -= DT/DX*dh[1:nx-1]
+        # Rusanov
+        qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
+        c[0:nx+1] = np.maximum(np.abs(q[0:nx+1]/h[0:nx+1]) + np.sqrt(g*h[0:nx+1]),
+                               np.abs(q[1:nx+2]/h[1:nx+2]) + np.sqrt(g*h[1:nx+2]),)
+        rusanov(fhg[1:nx+1], q[0:nx],   q[1:nx+1], h[0:nx],   h[1:nx+1], c[0:nx])
+        rusanov(fhd[1:nx+1], q[1:nx+1], q[2:nx+2], h[1:nx+1], h[2:nx+2], c[1:nx+1])
 
-        # qgh[:]      = q[:]*q[:]/h[:] + 0.5*G*h[:]*h[:]
-        # vq[1:nx-1]  = np.abs(q[1:nx-1])/(q[1:nx-1] + 1.0e-3)
-        # dq[1:nx-1]  = np.maximum( vq[1:nx-1]*qgh[1:nx-1], 0.0)
-        # dq[1:nx-1] += np.maximum(-vq[1:nx-1]*qgh[2:nx],   0.0)
-        # dq[1:nx-1] -= np.maximum( vq[1:nx-1]*qgh[0:nx-2], 0.0)
-        # dq[1:nx-1] -= np.maximum(-vq[1:nx-1]*qgh[1:nx-1], 0.0)
-        # q[1:nx-1]  -= DT/DX*dq[1:nx-1]
-        # q[1:N-1]   -= DT*a_d(t)
+        rusanov(fqg[1:nx+1], qgh[0:nx],   qgh[1:nx+1], q[0:nx],   q[1:nx+1], c[0:nx])
+        rusanov(fqd[1:nx+1], qgh[1:nx+1], qgh[2:nx+2], q[1:nx+1], q[2:nx+2], c[1:nx+1])
+
+        h[1:nx+1] -= (dt/dx)*(fhd[1:nx+1] - fhg[1:nx+1])
+        q[1:nx+1] -= (dt/dx)*(fqd[1:nx+1] - fqg[1:nx+1])
+        q[1:nx+1] -= dt*a_d(t)
+
+        ########################
+        # Weighted upwind
+        # dh[1:nx+1]  = np.maximum(q[1:nx+1], 0.0) + np.maximum(-q[2:nx+2], 0.0)
+        # dh[1:nx+1] -= np.maximum(q[0:nx  ], 0.0) + np.maximum(-q[1:nx+1], 0.0)
+        # h[1:nx+1]  -= dt/dx*dh[1:nx+1]
+
+        # qgh[:]      = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
+        # vq[1:nx+1]  = np.abs(q[1:nx+1])/(q[1:nx+1] + 1.0e-5)
+        # dq[1:nx+1]  = np.maximum( vq[1:nx+1]*qgh[1:nx+1], 0.0)
+        # dq[1:nx+1] += np.maximum(-vq[1:nx+1]*qgh[2:nx+2], 0.0)
+        # dq[1:nx+1] -= np.maximum( vq[1:nx+1]*qgh[0:nx  ], 0.0)
+        # dq[1:nx+1] -= np.maximum(-vq[1:nx+1]*qgh[1:nx+1], 0.0)
+        # q[1:nx+1]  -= dt/dx*dq[1:nx+1]
+        # q[1:nx+1]  -= dt*a_d(t)
 
         t += DT
 
         if (int(1000*(t+DT)/T) - int(1000*t/T)) == 1:
             printProgressBar(int(1000*(t+DT)/T), 1000, prefix='Progress:',
                              suffix='dt = '+str(DT), length=50)
-        result.append(np.copy(h))
+        result.append(np.copy(h[1:N+1]))
         time.append(t)
 
         if (it == 0):
