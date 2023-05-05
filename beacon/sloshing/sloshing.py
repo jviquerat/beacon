@@ -1,472 +1,321 @@
-import numpy as np
-import scipy.sparse as sparse
+### Generic imports
+import os
+import time
+import math
+import random
+import gym
+import gym.spaces        as gsp
+import numpy             as np
 import matplotlib.pyplot as plt
-
-import numpy as np
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
-
-
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 *
-                                                     (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
-    # Print New Line on Complete
-    if iteration == total:
-        print()
-
-
-def secondsToStr(seconds):
-    seconds = seconds % (24 * 3600)
-    hour = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-
-    return "%d:%02d:%02d" % (hour, minutes, seconds)
-
-
-def find_nearest(array, value):
-    idx = (np.np.abs(array - value)).argmin()
-    return idx
-
-
-def plot1D(x, h, v=None):
-
-    # Figure setup
-    fig, ax = plt.subplots()
-
-    ax.set_xlabel(r'$L [m]$')
-    ax.set_ylabel(r'$\eta [m]$', color='tab:red')
-    ax.set_xlim([np.min(x), np.max(x)])
-    ax.set_ylim([np.min(h), np.max(h)])
-    ax.tick_params(axis='y', labelcolor='tab:red')
-    ax.plot(x, h, color='tab:red')
-
-    if not v is None:
-        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-        color = 'tab:blue'
-        # we already handled the x-label with ax1
-        ax2.set_ylabel('sin', color=color)
-        ax2.plot(np.linspace(np.min(x), np.max(x), len(x)+1), v, color=color)
-        ax2.tick_params(axis='y', labelcolor=color)
-
-    fig.tight_layout()
-    plt.show()
-
-    return
-
-
-def clean_up_artists(axis, artist_list):
-    """
-    Try to remove the artists stored in the artist list belonging to the 'axis'.
-     axis: clean artists belonging to these axis
-     artist_list: list of artist to remove
-    return: nothing
-    """
-    for artist in artist_list:
-        try:
-            # fist attempt: try to remove collection of contours for instance
-            while artist.collections:
-                for col in artist.collections:
-                    artist.collections.remove(col)
-                    try:
-                        axis.collections.remove(col)
-                    except ValueError:
-                        pass
-
-                artist.collections = []
-                axis.collections = []
-        except AttributeError:
-            pass
-
-        # Second attempt, try to remove the text or the line plot
-        try:
-            artist.remove()
-        except (AttributeError, ValueError):
-            pass
-
-
-class TimeSeries1D():
-
-    def __init__(self, x, h, time):
-        '''
-        Load data for animation
-             map2D:     Map used for the simulation
-             time:      List of times corresponding to the frames in data.
-            return: nothing
-        '''
-
-        self.x = x
-        self.time = time
-        self.h = h
-
-    def createAnimation(self, start_frame=None, end_frame=None, skip_frames=None):
-        '''
-        Create animation with the data given at init
-            start_frame: Start from frame number e.g. 0
-            end_frame: Start from frame number e.g. len(labels[:,0,0])
-            skip_frames: Amount of frames -1 to skip between every displayed image e.g. 1 (no skipping)
-            return: nothing
-        '''
-
-        # Set frame control
-        if start_frame is None:
-            start_frame = 0
-
-        if end_frame is None:
-            end_frame = len(self.time)
-
-        if skip_frames is None:
-            skip_frames = 1  # 1 - no skipping
-
-        frames = range(start_frame, end_frame, skip_frames)
-
-        # Figure setup
-        fig, ax = plt.subplots()
-
-        ax.set_xlabel(r'$L [m]$')
-        ax.set_ylabel(r'$\eta [m]$', color='tab:red')
-        ax.set_xlim([np.min(self.x), np.max(self.x)])
-        ax.set_ylim([0, np.max(np.array(self.h))])
-        ax.tick_params(axis='y', labelcolor='tab:red')
-        ax.set_title("{}".format("1D Simulation"),
-                     transform=ax.transAxes, fontdict=dict(color="blue", size=12))
-
-        changed_artists = list()
-        line, = ax.plot(self.x, self.h[0], color='tab:red')
-        changed_artists.append(line)
-
-        time_text = ax.text(0.6, 1.05, "{}".format("Time : "+secondsToStr(self.time[0])),
-                            transform=ax.transAxes, fontdict=dict(color="black", size=14))
-        changed_artists.append(time_text)
-
-        print("\nProcessing animation...")
-
-        def update_plot1D(frame_index):
-            """
-            Update the line plot of the time step 'frame_index'
-            """
-
-            h = self.h[frame_index]
-
-            # Create the contour plot
-            line.set_data(self.x, h)
-
-            time_text.set_text("{}".format(
-                "Time : "+secondsToStr(self.time[frame_index])))
-
-            return line, time_text
-
-        # Call the animation function. The fargs argument equals the parameter list of update_plot,
-        # except the 'frame_index' parameter.
-        self.ani = animation.FuncAnimation(
-            fig, update_plot1D, frames=frames, interval=1, blit=False, repeat=False)
-        # plt.show()
-
-    def saveAnimation(self, fps=60, name='toLazytoName1D'):
-        '''
-        Save animation after computing it with createAnimation
-             fps: Amount of frames displayed each second in the video e.g. 10.
-             name: Name of the video. Is stored depending on the call path of the object.
-            return: nothing
-        '''
-        if not hasattr(self, 'ani'):
-            print(
-                "No animation available. Please call createAnimation on the object before saving it.")
-        else:
-            print("Saving animation...")
-            Writer = animation.writers['ffmpeg']
-            writer = Writer(fps=fps, metadata=dict(
-                artist='Me'))  # , bitrate=-1)
-            self.ani.save(name+'.mp4', writer=writer)
-
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-
-# Macros "aka implementation cancera"
-G = 9.81
-L = 1
-N = 100
-T = 4
-DX = L/(N+1)
-DT = 1e-3
-MU = 0.0
-N_PRNT = 10
-
-BDF = 2
-DT_TERM = 3/(2*DT) if BDF == 2 else 1/DT
-
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-#################################################################
-
-
-def solveConservative(a_d, v_d):
-    h             = np.ones(N+2)
-    q             = np.zeros(N+2)
-    qgh           = np.zeros(N+2)
-    fhg           = np.zeros(N+2)
-    fhd           = np.zeros(N+2)
-    fqg           = np.zeros(N+2)
-    fqd           = np.zeros(N+2)
-    rhsh          = np.zeros(N+2)
-    rhsq          = np.zeros(N+2)
-    rhshp         = np.zeros(N+2)
-    rhsqp         = np.zeros(N+2)
-    c             = np.zeros(N+1)
-
-    result = [h[1:N+1]]
-    time   = [0.0]
-
-    def rusanov(f, fug, fud, ug, ud, c):
-
-        f[:] = 0.5*(fug[:] + fud[:]) - 0.5*c[:]*(ud[:] - ug[:])
-
-    def adams(u, rhs, rhsp, nx, dt):
-
-        u[1:nx+1] += 0.5*dt*(-3.0*rhs[1:nx+1] + rhsp[1:nx+1])
-
-    # To reach the desired time
-    t = 0.0
-    it = 0
-    while T > t:
-
-        nx = N
-        dt = DT
-        dx = DX
-        g  = G
-
-        h[   0] = h[ 1]
-        h[nx+1] = h[nx]
-        q[   0] = 0.0
-        q[nx+1] = 0.0
-
-        ########################
-        # Rusanov
-        rhshp[1:nx+1] = rhsh[1:nx+1]
-        rhsqp[1:nx+1] = rhsq[1:nx+1]
-
-        qgh[:] = q[:]*q[:]/h[:] + 0.5*g*h[:]*h[:]
-        c[0:nx+1] = np.maximum(np.abs(q[0:nx+1]/h[0:nx+1]) + np.sqrt(g*h[0:nx+1]),
-                               np.abs(q[1:nx+2]/h[1:nx+2]) + np.sqrt(g*h[1:nx+2]),)
-        rusanov(fhg[1:nx+1], q[0:nx],   q[1:nx+1], h[0:nx],   h[1:nx+1], c[0:nx])
-        rusanov(fhd[1:nx+1], q[1:nx+1], q[2:nx+2], h[1:nx+1], h[2:nx+2], c[1:nx+1])
-
-        rusanov(fqg[1:nx+1], qgh[0:nx],   qgh[1:nx+1], q[0:nx],   q[1:nx+1], c[0:nx])
-        rusanov(fqd[1:nx+1], qgh[1:nx+1], qgh[2:nx+2], q[1:nx+1], q[2:nx+2], c[1:nx+1])
-
-        rhsh[1:nx+1] = (fhd[1:nx+1] - fhg[1:nx+1])/dx
-        rhsq[1:nx+1] = (fqd[1:nx+1] - fqg[1:nx+1])/dx
-
-        adams(h, rhsh, rhshp, nx, dt)
-        adams(q, rhsq, rhsqp, nx, dt)
-
-        #h[1:nx+1] -= (dt/dx)*(fhd[1:nx+1] - fhg[1:nx+1])
-        #q[1:nx+1] -= (dt/dx)*(fqd[1:nx+1] - fqg[1:nx+1])
-        q[1:nx+1] -= dt*a_d(t)
-
-
-        t += DT
-
-        if (int(1000*(t+DT)/T) - int(1000*t/T)) == 1:
-            printProgressBar(int(1000*(t+DT)/T), 1000, prefix='Progress:',
-                             suffix='dt = '+str(DT), length=50)
-        result.append(np.copy(h[1:N+1]))
-        time.append(t)
-
-        if (it == 0):
+import numba             as nb
+
+#from   matplotlib.patches import Rectangle
+
+###############################################
+### Generic class
+class sloshing(gym.Env):
+    metadata = {'render.modes': ['human']}
+
+    # Initialize instance
+    def __init__(self, cpu=0, init=True, L=1.0, g=9.81):
+
+        # Main parameters
+        self.L          = L                # length of domain
+        self.nx         = 100              # nb of discretization points
+        self.dt         = 0.001            # timestep
+        self.dt_act     = 0.02             # action timestep
+        self.t_warmup   = 2.0              # warmup time
+        self.t_act      = 5.0              # action time after warmup
+        self.g          = g                # gravity
+        self.n_obs      = self.nx          # nb of obs pts
+        #self.jet_amp    = 5.0             # jet amplitude scaling
+        self.u_interp   = 0.01             # time on which action is interpolated
+        self.blowup_rwd =-1.0              # reward in case of blow-up
+        self.init_file  = "init_field.dat" # initialization file
+        self.rand_init  = False             # random initialization
+        self.rand_steps = 400              # nb of rand. steps for random initialization
+
+        # Deduced parameters
+        self.t_max      = self.t_warmup + self.t_act     # total simulation time
+        self.dx         = float(self.L/self.nx)          # spatial step
+        self.ndt_max    = int(self.t_max/self.dt)        # nb of numerical timesteps
+        self.ndt_act    = int(self.dt_act/self.dt)       # nb of numerical timesteps per action
+        self.ndt_warmup = int(self.t_warmup/self.dt)     # nb of numerical timesteps for warmup
+        self.n_act      = int(self.t_act/self.dt_act)    # nb of action steps per episode
+        self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
+        self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
+
+        ### Path
+        self.path = "png"
+        os.makedirs(self.path, exist_ok=True)
+
+        ### Declare arrays
+        self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
+        self.h       = np.zeros((self.nx+2)) # current h
+        self.q       = np.zeros((self.nx+2)) # current q
+        self.v       = np.zeros((self.nx+2)) # current v
+        self.qgh     = np.zeros((self.nx+2)) # current q**2/h + 0.5*g*h**2
+        self.fhg     = np.zeros((self.nx+2)) # left  flux for h
+        self.fhd     = np.zeros((self.nx+2)) # right flux for h
+        self.fqg     = np.zeros((self.nx+2)) # left  flux for q
+        self.fqd     = np.zeros((self.nx+2)) # right flux for q
+        self.rhsh    = np.zeros((self.nx+2)) # rhs for h
+        self.rhsq    = np.zeros((self.nx+2)) # rhs for q
+        self.rhshp   = np.zeros((self.nx+2)) # previous rhs for h
+        self.rhsqp   = np.zeros((self.nx+2)) # previous rhs for q
+        self.c       = np.zeros((self.nx+1)) # rusanov parameter
+
+        self.h_init  = np.zeros((self.nx+2))   # h initialization
+        self.q_init  = np.zeros((self.nx+2))   # q initialization
+
+        # Load initialization file
+        if (init): self.load(self.init_file)
+
+        # Define action space
+        self.action_space = gsp.Box(low   =-1.0,
+                                    high  = 1.0,
+                                    shape = (1,),
+                                    dtype = np.float32)
+
+        # Define observation space
+        self.h_min = 0.0
+        self.h_max = 2.0
+
+        low  = np.ones((self.n_obs))*self.h_min
+        high = np.ones((self.n_obs))*self.h_max
+
+        self.observation_space = gsp.Box(low   =-low,
+                                         high  = high,
+                                         shape = (self.n_obs,),
+                                         dtype = np.float32)
+
+    # Reset environment
+    def reset(self):
+
+        self.reset_fields()
+        self.h[:] = self.h_init[:]
+        self.q[:] = self.q_init[:]
+
+        if (self.rand_init):
+            n = random.randint(0,self.rand_steps)
+            for i in range(n):
+                self.step(self.u)
+            self.stp = 0
+
+        obs = self.get_obs()
+
+        return obs, None
+
+    # Reset fields to initial state
+    def reset_fields(self):
+
+        # Initial solution
+        self.h[:]   = 1.0
+        self.q[:]   = 0.0
+        self.v[:]   = 0.0
+
+        # Other fields
+        self.qgh[:]   = 0.0
+        self.fhg[:]   = 0.0
+        self.fhd[:]   = 0.0
+        self.fqg[:]   = 0.0
+        self.fqd[:]   = 0.0
+        self.rhsh[:]  = 0.0
+        self.rhsq[:]  = 0.0
+        self.rhshp[:] = 0.0
+        self.rhsqp[:] = 0.0
+
+        # Actions
+        self.u  = [0.0]
+        self.up = [0.0]
+
+        # Running indices
+        self.stp      = 0
+        self.stp_plot = 0
+
+    # Run warmup
+    def warmup(self):
+
+        # Run until flow is developed
+        for i in range(self.n_warmup):
+            self.solve()
+
+    # Define excitation signal
+    def signal(self, t, dt):
+
+        # velocity signal
+        def v(t):
+            if t < 1: return 0.5*np.sin(4.0*np.pi*t)
+            else:     return 0.0
+
+        # acceleration
+        a = (v(t+dt) - v(t))/dt
+
+        return a
+
+    # Step
+    def step(self, u=None):
+
+        # Run solver
+        self.solve(u)
+
+        # Retrieve data
+        obs = self.get_obs()
+        rwd = self.get_rwd()
+
+        # Check end of episode
+        done  = False
+        trunc = False
+        if (self.stp == self.n_act-1):
+            done  = True
+            trunc = True
+        if (np.any((self.h < -5.0*self.h_max) | (self.h > 5.0*self.h_max))):
+            print("Blowup")
+            done  = True
+            trunc = False
+            rwd   = self.blowup_rwd
+
+        # Update step
+        self.stp += 1
+
+        return obs, rwd, done, trunc, None
+
+    # Resolution
+    def solve(self, u=None):
+
+        if (u is None): u = self.u.copy()
+
+        # Save actions
+        self.up[:] = self.u[:]
+        self.u[:]  = u[:]
+
+        nx = self.nx
+        dx = self.dx
+
+        # Run solver
+        for i in range(self.ndt_act):
+
+            # Boundary conditions
+            self.h[0] = self.h[1]
+            self.q[0] = 0.0
+            self.h[self.nx+1] = self.h[self.nx]
+            self.q[self.nx+1] = 0.0
+
+            # Update previous fields
+            self.rhshp[1:nx+1] = self.rhsh[1:nx+1]
+            self.rhsqp[1:nx+1] = self.rhsq[1:nx+1]
+
+            # Compute v and q**2/h + 0.5*h**2 terms
+            self.v[:]   = self.q[:]/self.h[:]
+            self.qgh[:] = self.q[:]**2/self.h[:] + 0.5*self.g*self.h[:]**2
+
+            # Compute rusanov parameter
+            self.c[0:nx+1] = np.maximum(
+                np.abs(self.v[0:nx+1]) + np.sqrt(self.g*self.h[0:nx+1]),
+                np.abs(self.v[1:nx+2]) + np.sqrt(self.g*self.h[1:nx+2]))
+
+            # Compute fluxes for h
+            rusanov(self.fhg[1:nx+1], self.q[0:nx],   self.q[1:nx+1],
+                    self.h[0:nx],     self.h[1:nx+1], self.c[0:nx])
+            rusanov(self.fhd[1:nx+1], self.q[1:nx+1], self.q[2:nx+2],
+                    self.h[1:nx+1],   self.h[2:nx+2], self.c[1:nx+1])
+
+            # Compute fluxes for q
+            rusanov(self.fqg[1:nx+1], self.qgh[0:nx],   self.qgh[1:nx+1],
+                    self.q[0:nx],     self.q[1:nx+1],   self.c[0:nx])
+            rusanov(self.fqd[1:nx+1], self.qgh[1:nx+1], self.qgh[2:nx+2],
+                    self.q[1:nx+1],   self.q[2:nx+2],   self.c[1:nx+1])
+
+            # Form right-hand-sides
+            self.rhsh[1:nx+1] = (self.fhd[1:nx+1] - self.fhg[1:nx+1])/dx
+            self.rhsq[1:nx+1] = (self.fqd[1:nx+1] - self.fqg[1:nx+1])/dx
+
+            # Add control
+            alpha = min(float(i)/float(self.n_interp), 1.0)
+            u     = (1.0-alpha)*self.up[0] + alpha*self.u[0]
+            self.rhsq[1:nx+1] += u
+
+            # March in time
+            adams(self.h, self.rhsh, self.rhshp, self.nx, self.dt)
+            adams(self.q, self.rhsq, self.rhsqp, self.nx, self.dt)
+
+    # Retrieve observations
+    def get_obs(self):
+
+        obs = self.h.copy()
+
+        return obs
+
+    # Compute reward
+    def get_rwd(self):
+
+        rwd      = 0.0
+        hdiff    = np.zeros((self.nx))
+        hdiff[:] = self.h[1:self.nx+1] - 1.0
+        rwd     -= np.sum(np.square(hdiff))*self.dx
+
+        return rwd
+
+    # Render environment
+    def render(self, mode="human", show=False, dump=True):
+
+        ### Initialize plot
+        if (self.stp_plot == 0):
             plt.figure(figsize=(5,2.5))
-            x = np.linspace(0, L, N)
 
-        if (it%N_PRNT == 0):
-            ax = plt.gca()
-            fig = plt.gcf()
-            ax.set_xlim([0.0,1.0])
-            ax.set_ylim([0.0,2.0])
-            ax.plot(x, h[1:nx+1])
-            plt.pause(0.1)
-            plt.clf()
+        ax  = plt.gca()
+        fig = plt.gcf()
+        ax.set_xlim([0.0,self.L])
+        ax.set_ylim([0.0,2.0])
+        plt.plot(self.x, self.h[1:self.nx+1])
+        # for i in range(self.n_jets):
+        #     s = self.jet_pos + i*self.jet_space - self.jet_hw
+        #     ax.add_patch(Rectangle((s*self.dx, 1.0),
+        #                            (2*self.jet_hw+1)*self.dx, self.u[i],
+        #                            facecolor='red', fill=True, lw=1))
+        fig.tight_layout()
+        plt.grid()
+        #fig.savefig(self.path+'/'+str(self.stp_plot)+'.png',
+        #            bbox_inches='tight')
+        if show: plt.pause(0.01)
+        plt.clf()
+        #if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
+        #                   self.path+"/jet_"+str(self.stp_plot)+".dat")
+        self.stp_plot += 1
 
-        it += 1
+    # Dump (h,q)
+    def dump(self, field_name, control_name=None):
 
-    return np.array(time), np.array(result)
+        array = self.x.copy()
+        array = np.vstack((array, self.h[1:self.nx+1]))
+        array = np.vstack((array, self.q[1:self.nx+1]))
+        array = np.transpose(array)
 
+        np.savetxt(field_name, array,  fmt='%.5e')
+        if (control_name is not None):
+            np.savetxt(control_name, self.u, fmt='%.5e')
 
-def solveImpNonLinearLongWave(v_d):
+    # Load (h,q)
+    def load(self, filename):
 
-    def compute_vrow(v):
-        if v > 0:
-            return [-v/DX-MU/DX**2, -G/DX, DT_TERM + v/DX + 2*MU/DX**2, G/DX, -MU/DX**2]
-        else:
-            return [-MU/DX**2, -G/DX, DT_TERM - v/DX + 2*MU/DX**2, G/DX, v/DX - MU/DX**2]
+        f = np.loadtxt(filename)
+        self.h_init[1:self.nx+1] = f[:,1]
+        self.q_init[1:self.nx+1] = f[:,2]
 
-    def compute_hrow(v1, v2):
-        return [-v1/(2*DX), 0, DT_TERM + v2/(2*DX)-v1/(2*DX), 0, v2/(2*DX)]
+    # Closing
+    def close(self):
+        pass
 
-    def assemble_matrix(x, v_d):
-        A = np.zeros((2*N+1, 2*N+1))
-        A[0, 0] = 1
-        A[-1, -1] = 1
+###############################################
+# rusanov flux
+@nb.njit(cache=True)
+def rusanov(f, fug, fud, ug, ud, c):
 
-        A[1, 1:4] = [DT_TERM + (x[2]-v_d)/(2*DX) -
-                     (x[0]-v_d)/DX, 0, (x[2]-v_d)/(2*DX)]
-        A[-2, -4:-1] = [-(x[-3]-v_d)/(2*DX), 0, DT_TERM +
-                        (x[-1]-v_d)/DX - (x[-3]-v_d)/(2*DX)]
+    f[:] = 0.5*(fug[:] + fud[:]) - 0.5*c[:]*(ud[:] - ug[:])
 
-        for i in range(2, 2*N-1, 2):
-            A[i, i-2:i+3] = compute_vrow(x[i]-v_d)
+# 2nd order adams-bashforth update in time
+@nb.njit(cache=True)
+def adams(u, rhs, rhsp, nx, dt):
 
-        for i in range(3, 2*N-2, 2):
-            A[i, i-2:i+3] = compute_hrow(x[i-1]-v_d, x[i+1]-v_d)
+    u[1:nx+1] += 0.5*dt*(-3.0*rhs[1:nx+1] + rhsp[1:nx+1])
 
-        return A
-
-    def assemble_rhs(x, x_, bcs):
-        if BDF == 2:
-            b = (4*x-x_)/(2*DT)
-        else:
-            b = x/DT
-
-        b[0] = bcs
-        b[-1] = bcs
-        return b
-
-    x = np.zeros(2*N+1)
-    x[1::2] = 1
-    x_old = np.copy(x)
-
-    result = [x[1::2]]
-    time = [0.0]
-
-    # To reach the desired time
-    t = 0.0
-    while T > t:
-        b = assemble_rhs(x, x_old, v_d(t))
-
-        for k in range(20):
-            A = assemble_matrix(x, v_d(t))
-            x = np.linalg.solve(A, b)
-            res = np.linalg.norm(x-x_old)
-            x_old = np.copy(x)
-            # print(f"Residual at iteration {k}: {res}")
-
-        # print("\n\n")
-
-        t += DT
-
-        if (int(1000*(t+DT)/T) - int(1000*t/T)) == 1:
-            printProgressBar(int(1000*(t+DT)/T), 1000, prefix='Progress:',
-                             suffix='dt = '+str(DT), length=50)
-        result.append(np.copy(x[1::2]))
-        time.append(t)
-
-    return np.array(time), np.array(result)
-
-
-def solveNonLinearLongWave(v_d):
-    '''
-        Solve the linear long wave equation and plot it as an animation
-        once all frames are calculated
-    '''
-
-    h = np.ones(N)
-    v = np.zeros(N+1)
-
-    result = [h]
-    time = [0.0]
-
-    # Derivative of eta for velocity equation
-    Deta = -G/DX*sparse.diags([-1, 1], [0, 1], shape=(N-1, N)).tocsr()
-
-    # Derivative of velocity*distance in eta equation
-    Dvh = -1/DX*sparse.diags([-1, 1], [0, 1], shape=(N, N+1)).tocsr()
-
-    # Upwind derivative for positive velocities
-    Dv_forw = -1/DX*sparse.diags([-1, 1], [0, 1], shape=(N-1, N+1)).tocsr()
-
-    # Upwind derivative for negative velocities
-    Dv_back = -1/DX*sparse.diags([-1, 1], [1, 2], shape=(N-1, N+1)).tocsr()
-
-    # Viscous dissipation
-    Dmu = -DX**-2 * sparse.diags([-1, 2, -1],
-                                 [0, 1, 2], shape=(N-1, N+1)).tocsr()
-
-    # Interpolation matrices
-    Ih = 0.5*sparse.diags([1, 1], [-1, 0], shape=(N+1, N)).tolil()
-    Ih[0, 0] = 1
-    Ih[-1, -2] = 0
-    Ih = Ih.tocsr()
-
-    # To reach the desired time
-    t = 0.0
-    while T > t:
-        dt = 0.05*DX/max(1e-1, np.max(np.abs(v) + np.sqrt(2*G*Ih.dot(h))))
-
-        v[0] = v_d(t)
-        v[-1] = v_d(t)
-
-        conv_v = v[1:-1]-v_d(t)
-
-        v[1:-1] += dt*Deta.dot(h) +\
-            dt*(conv_v*(conv_v > 0.0) * Dv_forw.dot(v) +
-                conv_v*(conv_v <= 0.0) * Dv_back.dot(v) +
-                MU*Dmu.dot(v))
-
-        h += dt*Dvh.dot(Ih.dot(h)*(v-v_d(t)))
-
-        t += dt
-
-        if (int(1000*(t+dt)/T) - int(1000*t/T)) == 1:
-            printProgressBar(int(1000*(t+dt)/T), 1000, prefix='Progress:',
-                             suffix='dt = '+str(dt), length=50)
-        result.append(np.copy(h))
-        time.append(t)
-
-    return np.array(time), np.array(result)
-
-
-def main():
-
-    def v_d(t):
-        #return 2.0*np.sin(np.pi*t)
-        if t < 1:
-            return 0.5*np.sin(4.0*np.pi*t)
-        else:
-            return 0.0
-
-    def a_d(t):
-        dt = 1.0e-5
-        return (v_d(t+dt) - v_d(t))/dt
-
-    x = np.linspace(0, L, N)
-    t, h = solveConservative(a_d, v_d)
-
-    anim = TimeSeries1D(x, h, t)
-    anim.createAnimation(skip_frames=40)
-    anim.saveAnimation(fps=30)
-
-
-if __name__ == "__main__":
-    main()
