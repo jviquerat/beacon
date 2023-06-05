@@ -9,7 +9,7 @@ import numpy             as np
 import matplotlib.pyplot as plt
 import numba             as nb
 
-#from   matplotlib.patches import Rectangle
+from   matplotlib.patches import Rectangle
 
 ###############################################
 ### Generic class
@@ -23,16 +23,16 @@ class sloshing(gym.Env):
         self.L          = L                # length of domain
         self.nx         = 100              # nb of discretization points
         self.dt         = 0.001            # timestep
-        self.dt_act     = 0.02             # action timestep
+        self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 2.0              # warmup time
-        self.t_act      = 5.0              # action time after warmup
+        self.t_act      = 6.0              # action time after warmup
         self.g          = g                # gravity
-        self.n_obs      = self.nx          # nb of obs pts
-        #self.jet_amp    = 5.0             # jet amplitude scaling
+        self.n_obs      = int(0.5*self.nx) # nb of obs pts
+        self.amp        = 5.0              # amplitude scaling
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
-        self.rand_init  = False             # random initialization
+        self.rand_init  = False            # random initialization
         self.rand_steps = 400              # nb of rand. steps for random initialization
 
         # Deduced parameters
@@ -145,11 +145,11 @@ class sloshing(gym.Env):
 
         # velocity signal
         def v(t):
-            if t < 1: return 0.5*np.sin(4.0*np.pi*t)
-            else:     return 0.0
+            if t < self.t_warmup: return 0.5*np.sin(4.0*np.pi*t)
+            else:                 return 0.0
 
         # acceleration
-        a = (v(t+dt) - v(t))/dt
+        a = ((v(t+dt) - v(t))/dt)/self.amp
 
         return a
 
@@ -158,10 +158,6 @@ class sloshing(gym.Env):
 
         # Run solver
         self.solve(u)
-
-        # Retrieve data
-        obs = self.get_obs()
-        rwd = self.get_rwd()
 
         # Check end of episode
         done  = False
@@ -174,6 +170,10 @@ class sloshing(gym.Env):
             done  = True
             trunc = False
             rwd   = self.blowup_rwd
+
+        # Retrieve data
+        obs = self.get_obs()
+        rwd = self.get_rwd(done)
 
         # Update step
         self.stp += 1
@@ -233,7 +233,7 @@ class sloshing(gym.Env):
             # Add control
             alpha = min(float(i)/float(self.n_interp), 1.0)
             u     = (1.0-alpha)*self.up[0] + alpha*self.u[0]
-            self.rhsq[1:nx+1] += u
+            self.rhsq[1:nx+1] += u*self.amp
 
             # March in time
             adams(self.h, self.rhsh, self.rhshp, self.nx, self.dt)
@@ -242,22 +242,27 @@ class sloshing(gym.Env):
     # Retrieve observations
     def get_obs(self):
 
-        obs = self.h.copy()
+        obs = self.h.copy()[1:-1]
 
-        return obs
+        return obs[::2]
 
     # Compute reward
-    def get_rwd(self):
+    def get_rwd(self, done):
 
         rwd      = 0.0
         hdiff    = np.zeros((self.nx))
         hdiff[:] = self.h[1:self.nx+1] - 1.0
         rwd     -= np.sum(np.square(hdiff))*self.dx
 
+        # Final step penalty for high velocity
+        if done:
+            v_end = np.linalg.norm(self.v)
+            rwd -= v_end
+
         return rwd
 
     # Render environment
-    def render(self, mode="human", show=False, dump=True):
+    def render(self, mode="human", show=True, dump=True):
 
         ### Initialize plot
         if (self.stp_plot == 0):
@@ -268,11 +273,9 @@ class sloshing(gym.Env):
         ax.set_xlim([0.0,self.L])
         ax.set_ylim([0.0,2.0])
         plt.plot(self.x, self.h[1:self.nx+1])
-        # for i in range(self.n_jets):
-        #     s = self.jet_pos + i*self.jet_space - self.jet_hw
-        #     ax.add_patch(Rectangle((s*self.dx, 1.0),
-        #                            (2*self.jet_hw+1)*self.dx, self.u[i],
-        #                            facecolor='red', fill=True, lw=1))
+        ax.add_patch(Rectangle((0.5*self.L, 1.5),
+                               0.2*self.u[0], 0.1,
+                               facecolor='red', fill=True, lw=1))
         fig.tight_layout()
         plt.grid()
         #fig.savefig(self.path+'/'+str(self.stp_plot)+'.png',
