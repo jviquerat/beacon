@@ -17,18 +17,18 @@ class sloshing(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True, L=1.0, g=9.81):
+    def __init__(self, cpu=0, init=True, L=2.5, g=9.81):
 
         # Main parameters
         self.L          = L                # length of domain
-        self.nx         = 100              # nb of discretization points
+        self.nx         = 100*int(L)       # nb of discretization points
         self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 2.0              # warmup time
-        self.t_act      = 6.0              # action time after warmup
+        self.t_act      = 8.0              # action time after warmup
         self.g          = g                # gravity
         self.n_obs      = int(0.5*self.nx) # nb of obs pts
-        self.amp        = 5.0              # amplitude scaling
+        self.amp        = 2.0              # amplitude scaling
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
@@ -145,8 +145,7 @@ class sloshing(gym.Env):
 
         # velocity signal
         def v(t):
-            if t < self.t_warmup: return 0.5*np.sin(4.0*np.pi*t)
-            else:                 return 0.0
+            return 0.5*(np.sin(1.0*np.pi*t)+np.sin(3.0*np.pi*t))
 
         # acceleration
         a = ((v(t+dt) - v(t))/dt)/self.amp
@@ -253,12 +252,12 @@ class sloshing(gym.Env):
         rwd      = 0.0
         hdiff    = np.zeros((self.nx))
         hdiff[:] = self.h[1:self.nx+1] - 1.0
-        rwd     -= np.sum(np.square(hdiff))*self.dx
+        hrwd     = np.sum(np.square(hdiff))*self.dx
+        rwd     -= hrwd
 
         # Final step penalty for high velocity
         if done:
-            v_end = np.linalg.norm(self.v)
-            rwd -= v_end
+            rwd  -= 100.0*hrwd
 
         return rwd
 
