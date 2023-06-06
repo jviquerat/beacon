@@ -243,8 +243,9 @@ class sloshing(gym.Env):
     def get_obs(self):
 
         obs = self.h.copy()[1:-1]
+        obs = obs[::2]
 
-        return obs[::2]
+        return obs
 
     # Compute reward
     def get_rwd(self, done):
@@ -266,7 +267,7 @@ class sloshing(gym.Env):
 
         ### Initialize plot
         if (self.stp_plot == 0):
-            plt.figure(figsize=(5,2.5))
+            plt.figure(figsize=(5.0,2.5))
 
         ax  = plt.gca()
         fig = plt.gcf()
@@ -278,12 +279,11 @@ class sloshing(gym.Env):
                                facecolor='red', fill=True, lw=1))
         fig.tight_layout()
         plt.grid()
-        #fig.savefig(self.path+'/'+str(self.stp_plot)+'.png',
-        #            bbox_inches='tight')
+        fig.savefig(self.path+'/'+str(self.stp_plot)+'.png')
         if show: plt.pause(0.01)
         plt.clf()
-        #if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-        #                   self.path+"/jet_"+str(self.stp_plot)+".dat")
+        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
+                           self.path+"/jet_"+str(self.stp_plot)+".dat")
         self.stp_plot += 1
 
     # Dump (h,q)
