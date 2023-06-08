@@ -17,7 +17,7 @@ class sloshing(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True, L=2.5, g=9.81):
+    def __init__(self, cpu=0, init=True, L=2.5, amp=5.0, alpha=0.0005, g=9.81):
 
         # Main parameters
         self.L          = L                # length of domain
@@ -27,8 +27,9 @@ class sloshing(gym.Env):
         self.t_warmup   = 2.0              # warmup time
         self.t_act      = 8.0              # action time after warmup
         self.g          = g                # gravity
-        self.n_obs      = int(0.5*self.nx) # nb of obs pts
-        self.amp        = 2.0              # amplitude scaling
+        self.n_obs      = int(self.nx/2)   # nb of obs pts
+        self.amp        = amp              # amplitude scaling
+        self.alpha      = alpha            # control penalization
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
@@ -78,8 +79,8 @@ class sloshing(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        self.h_min = 0.0
-        self.h_max = 2.0
+        self.h_min =-1.0
+        self.h_max = 1.0
 
         low  = np.ones((self.n_obs))*self.h_min
         high = np.ones((self.n_obs))*self.h_max
@@ -143,12 +144,7 @@ class sloshing(gym.Env):
     # Define excitation signal
     def signal(self, t, dt):
 
-        # velocity signal
-        def v(t):
-            return 0.5*(np.sin(1.0*np.pi*t)+np.sin(3.0*np.pi*t))
-
-        # acceleration
-        a = ((v(t+dt) - v(t))/dt)/self.amp
+        a = 0.5*(np.cos(np.pi*t) + 3.0*np.cos(4.0*np.pi*t))
 
         return a
 
@@ -164,7 +160,7 @@ class sloshing(gym.Env):
         if (self.stp == self.n_act-1):
             done  = True
             trunc = True
-        if (np.any((self.h < -5.0*self.h_max) | (self.h > 5.0*self.h_max))):
+        if (np.any((self.h < -5.0*self.h_max) | (self.h > 2.0*self.h_max))):
             print("Blowup")
             done  = True
             trunc = False
@@ -241,7 +237,7 @@ class sloshing(gym.Env):
     # Retrieve observations
     def get_obs(self):
 
-        obs = self.h.copy()[1:-1]
+        obs = self.q.copy()[1:-1]
         obs = obs[::2]
 
         return obs
@@ -252,12 +248,9 @@ class sloshing(gym.Env):
         rwd      = 0.0
         hdiff    = np.zeros((self.nx))
         hdiff[:] = self.h[1:self.nx+1] - 1.0
-        hrwd     = np.sum(np.square(hdiff))*self.dx
+        hrwd     = np.linalg.norm(hdiff)*self.dx
         rwd     -= hrwd
-
-        # Final step penalty for high velocity
-        if done:
-            rwd  -= 100.0*hrwd
+        rwd     -= self.alpha*abs(self.amp*self.u[0])
 
         return rwd
 

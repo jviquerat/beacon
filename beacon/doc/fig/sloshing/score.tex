@@ -1,0 +1,33 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\begin{tikzpicture}[	trim axis left, trim axis right, font=\scriptsize,
+				upper/.style={	name path=upper, smooth, draw=none},
+				lower/.style={	name path=lower, smooth, draw=none},]
+	\begin{axis}[	xmin=0, xmax=200000, scale=0.75,
+				ymin=-5, ymax=-0.5,
+				scaled x ticks=false,
+				xtick={0, 50000, 100000, 150000, 200000},
+				xticklabels={$0$,$50k$,$100k$,$150k$,$200k$},
+				legend cell align=left, legend pos=south east,
+				legend style={nodes={scale=0.8, transform shape}},
+				every tick label/.append style={font=\scriptsize},
+				grid=major, xlabel=transitions, ylabel=score]
+				
+		\legend{\ppo}
+		
+		\addplot [upper, forget plot] 				table[x index=0,y index=7] {fig/sloshing/ppo.dat};
+		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/sloshing/ppo.dat}; 
+		\addplot [fill=blue3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
+		\addplot[draw=blue1, thick, smooth] 			table[x index=0,y index=5] {fig/sloshing/ppo.dat}; 
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Score curves using the \textsc{ppo} algorithm to solve the \codeinline{sloshing-v0} environment.}} 
+\label{fig:sloshing_score}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%
