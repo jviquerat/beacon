@@ -9,13 +9,88 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{What this library is about}
 
-This library provides self-contained benchmarks for deep reinforcement learning-based flow control. The goal is to provide the community with benchmarks that fall within the range of flow control problems, while following three constraints: (i) be written in Python to ensure a simple coupling with most DRL libraries, (ii) follow the general \gym API (see next section), and (iii) be cheap enough in terms in CPU usage so that trainings can be performed on a standard laptop. Hence, this library serves as a first step for prototyping flow control algorithms, before moving on to larger problems that will require a proper CFD solver and, most probably, a CPU cluster.
+This library provides self-contained cases for deep reinforcement learning-based flow control. The goal is to provide the community with benchmarks that fall within the range of flow control problems, while following three constraints: (i) be written in Python to ensure a simple coupling with most DRL libraries, (ii) follow the general \gym API, and (iii) be cheap enough in terms in CPU usage so that trainings can be performed on a decent computing station. Hence, this library serves as a first step for prototyping flow control algorithms, before moving on to larger problems that will require more efficient CFD solvers and, most probably, a CPU cluster.
 
-In this document, a chapter is devoted to each case. Details are provided on the physics of the problem, its numerical discretization and the general environment parameters. Baseline results with several algorithms are also provided for reference.
+In this document, a chapter is devoted to each case. Details are provided on the physics of the problems, their numerical discretization and the general environment parameters. Baseline results with several algorithms are also provided for reference.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{The \gym API}
+\section{Overview of the environments}
 
-interface + spaces for actions and observations
+All the environments of the library follow the same pattern:
+
+\begin{enumerate}[itemsep=0mm]
+	\item The environment file is self-contained;
+	\item The environment can be run control-free using the \codeinline{run.py} file;
+	\item The initial state of the environment is stored in \codeinline{init_field.dat} and can be re-generated using the \codeinline{init.py} file;
+\end{enumerate}
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}[h]
+    \footnotesize
+    \caption{\textbf{Overview of the different environments.} The informations in this table correspond to the default parameters of each environment. Modifying the latter could have a significant impact on the quantities proposed hereafter.}
+    \label{table:environments}
+    \centering
+    \begin{tabular}{rccccc}
+        \toprule
+        env. name				& action dim.	& CPU requirements 	& problem type		& control type			& baseline reward\\\midrule
+	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous		& continuous			& --\\
+	\codeinline{sloshing-v0}	& $1$		& low				& episodic			& --					& --\\
+	\codeinline{karman-v0}	& $1$		& high				& --				& -- 					& --\\
+	\codeinline{lorenz-v0}	& $1$		& low				& --				& -- 					& --\\
+	\codeinline{silo-v0}		& --			& moderate			& --				& -- 					& --\\
+	\codeinline{rayleigh-v0}	& -- 			& high				& --				& -- 					& --\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Default parameters}
+
+All the benchmarks of the library come with baseline score curves obtained with the \ppo algorithm, which default parameters are provided in table \ref{table:default_ppo_parameters} (environment-specific parameters are provided in the dedicated sections of each chapter).
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}[h]
+    \footnotesize
+    \caption{\textbf{Default parameters used for \textsc{ppo} agents.}}
+    \label{table:default_ppo_parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        --					& agent type					& PPO-clip\\
+	$\gamma$ 			& discount factor				& 0.99\\
+	$\lambda_a$ 			& actor learning rate				& \num{5e-4}\\
+	$\lambda_c$ 			& critic learning rate				& \num{1e-3}\\
+	--		 			& optimizer					& adam\\
+	--					& weights initialization			& orthogonal\\
+	--	 				& activation (actor hidden layers)	& tanh\\
+	-- 					& activation (actor final layer)		& tanh, sigmoid\\
+	--	 				& activation (critic hidden layers)	& relu\\
+	-- 					& activation (critic final layer)		& linear\\
+	$\epsilon$ 			& PPO clip value				& 0.2\\
+	$\beta$				& entropy bonus				& 0.01\\
+	$g$					& gradient clipping value			& 0.1\\	
+	-- 					& actor network					& $[64, [[64],[64]]]$\\
+	-- 					& critic network					& $[64, 64]$\\
+	--					& observation normalization		& yes\\
+	--					& observation clipping			& no\\
+	--					& advantage type				& GAE\\
+	$\lambda_\text{GAE}$	& bias-variance trade-off			& 0.99\\
+	--					& advantage normalization		& yes\\\midrule
+	$n_\text{rollout}$ 		& nb. of transitions per update		& env-specific\\
+	$n_\text{batch}$ 		& nb. of minibatches per update 	& env-specific\\
+	$n_\text{epoch}$		& nb. of epochs per update		& env-specific\\
+	$n_\text{max}$			& total nb. of transitions per training	& env-specific\\
+	$n_\text{training}$		& total nb. of averaged trainings	& 5\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%

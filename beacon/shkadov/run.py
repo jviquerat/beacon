@@ -10,13 +10,13 @@ from shkadov import *
 
 # Initialize
 s = shkadov()
-s.reset_fields()
+s.reset()
 
 # Set parameters for control-free run
-n        = s.n_warmup + s.n_act
+n        = s.n_act
 sum_rwd  = 0.0
 s_time   = time.time()
-plt_freq = 50   # plotting frequency
+plt_freq = 1    # plotting frequency
 show     = True # set to True to show while running
 
 for i in range(n):
