@@ -2,7 +2,6 @@
 import os
 import time
 import math
-import random
 import gym
 import gym.spaces        as gsp
 import numpy             as np
@@ -17,7 +16,8 @@ class sloshing(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True, L=2.5, amp=5.0, alpha=0.0005, g=9.81):
+    def __init__(self, cpu=0, init=True,
+                 L=2.5, amp=5.0, alpha=0.0005, g=9.81):
 
         # Main parameters
         self.L          = L                # length of domain
@@ -33,8 +33,6 @@ class sloshing(gym.Env):
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
-        self.rand_init  = False            # random initialization
-        self.rand_steps = 400              # nb of rand. steps for random initialization
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -96,12 +94,6 @@ class sloshing(gym.Env):
         self.reset_fields()
         self.h[:] = self.h_init[:]
         self.q[:] = self.q_init[:]
-
-        if (self.rand_init):
-            n = random.randint(0,self.rand_steps)
-            for i in range(n):
-                self.step(self.u)
-            self.stp = 0
 
         obs = self.get_obs()
 

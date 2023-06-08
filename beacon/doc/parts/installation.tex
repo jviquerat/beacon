@@ -9,7 +9,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{What this library is about}
 
-This library provides self-contained benchmarks for deep reinforcement learning-based flow control. The goal is to provide the community with benchmarks that fall within the range of flow control problems, while following three constraints: (i) be written in Python to ensure a simple coupling with most DRL libraries, (ii) follow the general \gym API, and (iii) be cheap enough in terms in CPU usage so that trainings can be performed on a standard laptop. Hence, this library serves as a first step for prototyping flow control algorithms, before moving on to larger problems that will require more efficient CFD solvers and, most probably, a CPU cluster.
+This library provides self-contained cases for deep reinforcement learning-based flow control. The goal is to provide the community with benchmarks that fall within the range of flow control problems, while following three constraints: (i) be written in Python to ensure a simple coupling with most DRL libraries, (ii) follow the general \gym API, and (iii) be cheap enough in terms in CPU usage so that trainings can be performed on a decent computing station. Hence, this library serves as a first step for prototyping flow control algorithms, before moving on to larger problems that will require more efficient CFD solvers and, most probably, a CPU cluster.
 
 In this document, a chapter is devoted to each case. Details are provided on the physics of the problems, their numerical discretization and the general environment parameters. Baseline results with several algorithms are also provided for reference.
 
@@ -18,22 +18,30 @@ In this document, a chapter is devoted to each case. Details are provided on the
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview of the environments}
 
+All the environments of the library follow the same pattern:
+
+\begin{enumerate}
+	\item The environment file is self-contained;
+	\item The environment can be run control-free using the \codeinline{run.py} file;
+	\item The initial state of the environment is stored in \codeinline{init_field.dat} and can be re-generated using the \codeinline{init.py} file;
+\end{enumerate}
+
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-\begin{table}
+\begin{table}[h]
     \footnotesize
     \caption{\textbf{Overview of the different environments.} The informations in this table correspond to the default parameters of each environment. Modifying the latter could have a significant impact on the quantities proposed hereafter.}
     \label{table:environments}
     \centering
-    \begin{tabular}{rcccc}
+    \begin{tabular}{rccccc}
         \toprule
-        env. name				& action dim.	& CPU requirements 	& control type			& baseline reward\\\midrule
-	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous			& --\\
-	\codeinline{sloshing-v0}	& $1$		& low				& continuous			& --\\
-	\codeinline{karman-v0}	& $1$		& high				& -- 					& --\\
-	\codeinline{lorenz-v0}	& $1$		& low				& -- 					& --\\
-	\codeinline{silo-v0}		& --			& moderate			& -- 					& --\\
-	\codeinline{rayleigh-v0}	& -- 			& high				& -- 					& --\\
+        env. name				& action dim.	& CPU requirements 	& problem type		& control type			& baseline reward\\\midrule
+	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous		& continuous			& --\\
+	\codeinline{sloshing-v0}	& $1$		& low				& episodic			& --					& --\\
+	\codeinline{karman-v0}	& $1$		& high				& --				& -- 					& --\\
+	\codeinline{lorenz-v0}	& $1$		& low				& --				& -- 					& --\\
+	\codeinline{silo-v0}		& --			& moderate			& --				& -- 					& --\\
+	\codeinline{rayleigh-v0}	& -- 			& high				& --				& -- 					& --\\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -45,11 +53,11 @@ In this document, a chapter is devoted to each case. Details are provided on the
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Default parameters}
 
-In table \ref{table:default_ppo_parameters}, we provide the default parameters used for the PPO agents throughout this document. The environment-specific parameters are provided in the dedicated sections of each chapter.
+All the benchmarks of the library come with baseline score curves obtained with the \ppo algorithm, which default parameters are provided in table \ref{table:default_ppo_parameters} (environment-specific parameters are provided in the dedicated sections of each chapter).
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-\begin{table}
+\begin{table}[h]
     \footnotesize
     \caption{\textbf{Default parameters used for \textsc{ppo} agents.}}
     \label{table:default_ppo_parameters}
