@@ -18,7 +18,7 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1):
+                 L0=150.0, n_jets=10, jet_pos=150.0, jet_space=10.0, delta=0.1):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
@@ -40,7 +40,7 @@ class shkadov(gym.Env):
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.eps        = 1.0e-8           # avoid division by zero
         self.init_file  = "init_field.dat" # initialization file
-        self.rand_init  = True            # random initialization
+        self.rand_init  = True             # random initialization
         self.rand_steps = 400              # nb of rand. steps for random initialization
 
         # Deduced parameters

@@ -1,0 +1,213 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel=$h$]
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/uncontrolled_field_0.dat};
+			
+		\end{axis}
+	\end{tikzpicture} 
+	\hspace{1.5cm}
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel={}]
+				
+		\def\x{1.25}
+		\def\y{1.75}
+		\def\w{0.05}
+		\def\s{1}
+
+		\draw[fill=green2, draw=gray2] 	(\x,\y-\w) rectangle (\x-0.921*\s,\y+\w);
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/controlled_field_0.dat};
+			
+		\end{axis}
+	\end{tikzpicture}
+    	\caption{$t=0$, start of control}
+	\label{fig:sloshing_fields_0}
+\end{subfigure}
+%%%%%%%%%%%%
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel=$h$]
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/uncontrolled_field_15.dat};
+			
+		\end{axis}
+	\end{tikzpicture}  
+	\hspace{1.5cm}
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel={}]
+				
+		\def\x{1.25}
+		\def\y{1.75}
+		\def\w{0.05}
+		\def\s{1}
+
+		\draw[fill=green2, draw=gray2] 	(\x,\y-\w) rectangle (\x-0.797*\s,\y+\w);
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/controlled_field_15.dat};
+			
+		\end{axis}
+	\end{tikzpicture}
+    	\caption{$t=0.75$}
+	\label{fig:sloshing_fields_15}
+\end{subfigure}
+%%%%%%%%%%%%
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel=$h$]
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/uncontrolled_field_30.dat};
+			
+		\end{axis}
+	\end{tikzpicture}  
+	\hspace{1.5cm}
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel={}]
+				
+		\def\x{1.25}
+		\def\y{1.75}
+		\def\w{0.05}
+		\def\s{1}
+
+		\draw[fill=green2, draw=gray2] 	(\x,\y-\w) rectangle (\x-0.106*\s,\y+\w);
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/controlled_field_30.dat};
+			
+		\end{axis}
+	\end{tikzpicture}
+    	\caption{$t=1.5$}
+	\label{fig:sloshing_fields_30}
+\end{subfigure}
+%%%%%%%%%%%%
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel=$h$]
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/uncontrolled_field_70.dat};
+			
+		\end{axis}
+	\end{tikzpicture}  
+	\hspace{1.5cm}
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel={}]
+				
+		\def\x{1.25}
+		\def\y{1.75}
+		\def\w{0.05}
+		\def\s{1}
+
+		\draw[fill=green2, draw=gray2] 	(\x,\y-\w) rectangle (\x+0.037*\s,\y+\w);
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/controlled_field_70.dat};
+			
+		\end{axis}
+	\end{tikzpicture}
+    	\caption{$t=3.0$}
+	\label{fig:sloshing_fields_70}
+\end{subfigure}
+%%%%%%%%%%%%
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel=$h$]
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/uncontrolled_field_120.dat};
+			
+		\end{axis}
+	\end{tikzpicture}  
+	\hspace{1.5cm}
+	\begin{tikzpicture}[	scale=0.9, trim axis left, trim axis right, font=\scriptsize]
+		\begin{axis}[	xmin=0, xmax=2.5, ymin=0, ymax=2, scale=1.0,
+					xtick={0,0.5,1,1.5,2,2.5},
+					width=.45\textwidth, height=.2\textwidth, scale only axis=true,
+					legend cell align=left, legend pos=north east,
+					grid=major, ylabel={}]
+				
+		\def\x{1.25}
+		\def\y{1.75}
+		\def\w{0.05}
+		\def\s{1}
+
+		\draw[fill=green2, draw=gray2] 	(\x,\y-\w) rectangle (\x+0.0084*\s,\y+\w);
+		
+		\addplot[draw=bluegray1, very thick, smooth] 	table[x index=0,y index=1] {fig/sloshing/controlled_field_120.dat};
+			
+		\end{axis}
+	\end{tikzpicture}
+    	\caption{$t=6.0$}
+	\label{fig:sloshing_fields_120}
+\end{subfigure}
+%%%%%%%%%%%%
+
+%%%%%%%%%%%%
+\caption{\textbf{Evolution of the fluid surface without (left) and with (right) agent control.} The control amplitude and direction is represented using the green rectangle at the top.}
+\label{fig:sloshing_fields}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%
