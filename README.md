@@ -18,8 +18,8 @@ The agent actuates several jets to damp the instabilities of a falling fluid fil
 
 ## `sloshing`
 
-The agent controls the acceleration of a tank containing a fluid in order to damp the sloshing movement initiated during an excitation pahse. State vector is a downsampled mass flow rate vector. One episode represents 200 actions, and the training is made on 200000 transitions.
-
 <p align="center">
-  <img width="350" alt="" src="beacon/msc/sloshing.gif">
+  <img align="right" width="350" alt="" src="beacon/msc/sloshing.gif">
 </p>
+
+The agent controls the acceleration of a tank containing a fluid in order to damp the sloshing movement initiated during an excitation pahse. State vector is a downsampled mass flow rate vector. One episode represents 200 actions, and the training is made on 200000 transitions.
