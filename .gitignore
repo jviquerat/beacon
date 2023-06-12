@@ -25,3 +25,4 @@ beacon/doc/*.bbl
 beacon/doc/*.blg
 beacon/doc/_minted-doc
 beacon/*/*.png
+*.dat
