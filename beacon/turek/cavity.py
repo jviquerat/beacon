@@ -21,7 +21,7 @@ class cavity():
         self.ifdxy = 0.5/(dx**2+dy**2)
         self.t_max = t_max
         self.cfl   = cfl
-        self.nu    = 0.1
+        self.nu    = 0.01
         self.re    = re
         self.utop  = self.re*self.nu/self.l
 
@@ -32,6 +32,12 @@ class cavity():
 
         # Reset fields
         self.reset_fields()
+
+        # Compute timestep
+        self.tau = self.l/self.utop
+        mdxy     = min(self.dx, self.dy)
+        self.dt  = self.cfl*min(self.tau/self.re,
+                                self.tau*self.re*mdxy**2/(4.0*self.l**2))
 
     ### Reset fields
     def reset_fields(self):
@@ -130,22 +136,20 @@ class cavity():
     def poisson(self):
 
         # Term including starred velocities
-        nx = self.nx
-        ny = self.ny
-        b = np.zeros((nx+2,ny+2))
-        b[1:nx+1,1:ny+1] = ((self.us[2:nx+2,1:ny+1] - self.us[0:nx,1:ny+1])*0.5*self.idx +
-                            (self.vs[1:nx+1,2:ny+2] - self.vs[1:nx+1,0:ny])*0.5*self.idy)/self.dt
+        b            = np.zeros((self.nx+2,self.ny+2))
+        b[1:-1,1:-1] = ((self.us[2:,1:-1] - self.us[:-2,1:-1])*0.5*self.idx +
+                        (self.vs[1:-1,2:] - self.vs[1:-1,:-2])*0.5*self.idy)/self.dt
 
         tol = 1.0e-2
         err = 1.0e10
-        n_itp = 0
+        itp = 0
         ovf = False
-        p_old = np.zeros((nx+2,ny+2))
+        pn  = np.zeros((self.nx+2,self.ny+2))
         while(err > tol):
 
-            p_old[:,:] = self.p[:,:]
-            self.p[1:-1,1:-1] = ((p_old[2:,1:-1] + p_old[1:-1,:-2])*self.dy*self.dy +
-                                 (p_old[1:-1,2:] + p_old[:-2,1:-1])*self.dx*self.dx -
+            pn[:,:] = self.p[:,:]
+            self.p[1:-1,1:-1] = ((pn[2:,1:-1] + pn[1:-1,:-2])*self.dy*self.dy +
+                                 (pn[1:-1,2:] + pn[:-2,1:-1])*self.dx*self.dx -
                                  b[1:-1,1:-1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
 
             # Domain left (neumann)
@@ -160,15 +164,16 @@ class cavity():
             # Domain bottom (neumann)
             self.p[1:-1, 0] = self.p[1:-1, 1]
 
-            dp  = np.reshape(self.p - p_old, (-1))
+            # Compute error
+            dp  = np.reshape(self.p - pn, (-1))
             err = np.dot(dp,dp)
 
-            n_itp += 1
-            if (n_itp > 10000):
+            itp += 1
+            if (itp > 10000):
                 ovf = True
                 break
 
-        self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
+        self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
 
         # # Save previous pressure field
         # self.p_old[:,:] = self.p[:,:]
@@ -204,18 +209,9 @@ class cavity():
         # corrector(self.u,   self.v,   self.us, self.vs, self.phi,
         #           self.idx, self.idy, self.nx, self.ny, self.dt)
 
-    ### Compute timestep
-    def compute_dt(self):
-
-        vn      = np.sqrt(self.u**2+self.v**2)
-        vmax    = np.amax(vn)
-        vmax    = max(vmax, 0.1)
-        self.dt = self.cfl*min(self.dx,self.dy)/vmax
-
     ### Take one step
     def step(self):
 
-        self.compute_dt()
         self.set_bc()
         self.predictor()
         self.poisson()
@@ -262,7 +258,7 @@ class cavity():
 
         filename = "velocity.png"
         plt.axis('off')
-        plt.savefig(filename, dpi=200)
+        plt.savefig(filename, dpi=100)
         plt.close()
 
         # Plot pressure
@@ -276,7 +272,7 @@ class cavity():
 
         filename = "pressure.png"
         plt.axis('off')
-        plt.savefig(filename, dpi=200)
+        plt.savefig(filename, dpi=100)
         plt.close()
 
     ### Plot nb of solver iterations
