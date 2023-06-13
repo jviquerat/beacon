@@ -40,33 +40,33 @@ class cavity():
 
         # USE sparse solver
         # build pressure coefficient matrix
-        Ap = np.zeros([self.nx,self.ny])
-        Ae = 1.0/dx/dx*np.ones([self.nx,self.ny])
-        As = 1.0/dy/dy*np.ones([self.nx,self.ny])
-        An = 1.0/dy/dy*np.ones([self.nx,self.ny])
-        Aw = 1.0/dx/dx*np.ones([self.nx,self.ny])
-        # set left wall coefs
-        Aw[0,:] = 0.0
-        # set right wall coefs
-        Ae[-1,:] = 0.0
-        # set top wall coefs
-        An[:,-1] = 0.0
-        # set bottom wall coefs
-        As[:,0] = 0.0
-        Ap = -(Aw + Ae + An + As)
+        # Ap = np.zeros([self.nx,self.ny])
+        # Ae = 1.0/dx/dx*np.ones([self.nx,self.ny])
+        # As = 1.0/dy/dy*np.ones([self.nx,self.ny])
+        # An = 1.0/dy/dy*np.ones([self.nx,self.ny])
+        # Aw = 1.0/dx/dx*np.ones([self.nx,self.ny])
+        # # set left wall coefs
+        # Aw[0,:] = 0.0
+        # # set right wall coefs
+        # Ae[-1,:] = 0.0
+        # # set top wall coefs
+        # An[:,-1] = 0.0
+        # # set bottom wall coefs
+        # As[:,0] = 0.0
+        # Ap = -(Aw + Ae + An + As)
 
-        n = self.nx*self.ny
-        d0 = Ap.reshape(n)
-        # print(d0)
-        de = Ae.reshape(n)[:-1]
-        # print(de)
-        dw = Aw.reshape(n)[1:]
-        # print(dw)
-        ds = As.reshape(n)[self.nx:]
-        # print(ds)
-        dn = An.reshape(n)[:-self.nx]
-        # print(dn)
-        self.A1 = scipy.sparse.diags([d0, de, dw, dn, ds], [0, 1, -1, self.nx, -self.nx], format='csr')
+        # n = self.nx*self.ny
+        # d0 = Ap.reshape(n)
+        # # print(d0)
+        # de = Ae.reshape(n)[:-1]
+        # # print(de)
+        # dw = Aw.reshape(n)[1:]
+        # # print(dw)
+        # ds = As.reshape(n)[self.nx:]
+        # # print(ds)
+        # dn = An.reshape(n)[:-self.nx]
+        # # print(dn)
+        # self.A1 = scipy.sparse.diags([d0, de, dw, dn, ds], [0, 1, -1, self.nx, -self.nx], format='csr')
 
     ### Reset fields
     def reset_fields(self):
@@ -154,13 +154,55 @@ class cavity():
                 self.vs[i,j] = self.v[i,j] + self.dt*(convection + diffusion)
 
 
-        divut = np.zeros((self.nx+2,self.ny+2))
-        divut[1:-1,1:-1] = (self.us[2:,1:-1] - self.us[1:-1,1:-1])/self.dx + (self.vs[1:-1,2:] - self.vs[1:-1,1:-1])/self.dy
-        prhs = 1.0/self.dt * divut
+        # divut = np.zeros((self.nx+2,self.ny+2))
+        # divut[1:-1,1:-1] = (self.us[2:,1:-1] - self.us[1:-1,1:-1])/self.dx + (self.vs[1:-1,2:] - self.vs[1:-1,1:-1])/self.dy
+        # prhs = 1.0/self.dt * divut
 
-        pt,info = scipy.sparse.linalg.bicg(self.A1,prhs[1:-1,1:-1].ravel(),tol=1e-10) #theta=sc.linalg.solve_triangular(A,d)
+        # pt,info = scipy.sparse.linalg.bicg(self.A1,prhs[1:-1,1:-1].ravel(),tol=1e-10)
         p = np.zeros((self.nx+2,self.ny+2))
-        p[1:-1,1:-1] = pt.reshape((self.nx,self.ny))
+        # p[1:-1,1:-1] = pt.reshape((self.nx,self.ny))
+
+
+        # Term including starred velocities
+        nx = self.nx
+        ny = self.ny
+        b = np.zeros((nx+2,ny+2))
+        b[1:nx+1,1:ny+1] = ((self.us[2:nx+2,1:ny+1] - self.us[0:nx,1:ny+1])*0.5*self.idx +
+                            (self.vs[1:nx+1,2:ny+2] - self.vs[1:nx+1,0:ny])*0.5*self.idy)/self.dt
+
+        tol = 1.0e-2
+        err = 1.0e10
+        n_itp = 0
+        ovf = False
+        p_old = np.zeros((nx+2,ny+2))
+        while(err > tol):
+
+            p_old[:,:] = p[:,:]
+            p[1:-1,1:-1] = ((p_old[2:,1:-1] + p_old[1:-1,:-2])*self.dy*self.dy +
+                            (p_old[1:-1,2:] + p_old[:-2,1:-1])*self.dx*self.dx -
+                            b[1:-1,1:-1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
+
+            # Domain left (neumann)
+            p[ 0,1:-1] = p[ 1,1:-1]
+
+            # Domain right (neumann)
+            p[-1,1:-1] = p[-2,1:-1]
+
+            # Domain top (dirichlet)
+            p[1:-1,-1] = 0.0
+
+            # Domain bottom (neumann)
+            p[1:-1, 0] = p[1:-1, 1]
+
+            dp  = np.reshape(p - p_old, (-1))
+            err = np.dot(dp,dp)
+
+            n_itp += 1
+            if (n_itp > 10000):
+                ovf = True
+                break
+
+        self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
 
         self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (p[2:-1,1:-1] - p[1:-2,1:-1])/self.dx
         self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (p[1:-1,2:-1] - p[1:-1,1:-2])/self.dy
