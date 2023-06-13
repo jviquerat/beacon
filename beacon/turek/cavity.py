@@ -4,8 +4,6 @@ import numpy             as np
 import matplotlib.pyplot as plt
 import numba             as nb
 
-import scipy
-
 ###############################################
 ### Cavity class
 class cavity():
@@ -32,41 +30,8 @@ class cavity():
         self.ny = round(self.h/self.dy)
         self.nc = self.nx*self.ny
 
-        # Compute timestep
-        #self.dt   = self.cfl*min(self.dx,self.dy)
-
         # Reset fields
         self.reset_fields()
-
-        # USE sparse solver
-        # build pressure coefficient matrix
-        # Ap = np.zeros([self.nx,self.ny])
-        # Ae = 1.0/dx/dx*np.ones([self.nx,self.ny])
-        # As = 1.0/dy/dy*np.ones([self.nx,self.ny])
-        # An = 1.0/dy/dy*np.ones([self.nx,self.ny])
-        # Aw = 1.0/dx/dx*np.ones([self.nx,self.ny])
-        # # set left wall coefs
-        # Aw[0,:] = 0.0
-        # # set right wall coefs
-        # Ae[-1,:] = 0.0
-        # # set top wall coefs
-        # An[:,-1] = 0.0
-        # # set bottom wall coefs
-        # As[:,0] = 0.0
-        # Ap = -(Aw + Ae + An + As)
-
-        # n = self.nx*self.ny
-        # d0 = Ap.reshape(n)
-        # # print(d0)
-        # de = Ae.reshape(n)[:-1]
-        # # print(de)
-        # dw = Aw.reshape(n)[1:]
-        # # print(dw)
-        # ds = As.reshape(n)[self.nx:]
-        # # print(ds)
-        # dn = An.reshape(n)[:-self.nx]
-        # # print(dn)
-        # self.A1 = scipy.sparse.diags([d0, de, dw, dn, ds], [0, 1, -1, self.nx, -self.nx], format='csr')
 
     ### Reset fields
     def reset_fields(self):
@@ -154,14 +119,15 @@ class cavity():
                 self.vs[i,j] = self.v[i,j] + self.dt*(convection + diffusion)
 
 
-        # divut = np.zeros((self.nx+2,self.ny+2))
-        # divut[1:-1,1:-1] = (self.us[2:,1:-1] - self.us[1:-1,1:-1])/self.dx + (self.vs[1:-1,2:] - self.vs[1:-1,1:-1])/self.dy
-        # prhs = 1.0/self.dt * divut
 
-        # pt,info = scipy.sparse.linalg.bicg(self.A1,prhs[1:-1,1:-1].ravel(),tol=1e-10)
-        p = np.zeros((self.nx+2,self.ny+2))
-        # p[1:-1,1:-1] = pt.reshape((self.nx,self.ny))
 
+        # predictor(self.u,   self.v,   self.u_old, self.v_old,
+        #           self.us,  self.vs,  self.p,
+        #           self.idx, self.idy, self.nx,
+        #           self.ny,  self.dt,  self.re)
+
+    ### Compute pressure
+    def poisson(self):
 
         # Term including starred velocities
         nx = self.nx
@@ -177,24 +143,24 @@ class cavity():
         p_old = np.zeros((nx+2,ny+2))
         while(err > tol):
 
-            p_old[:,:] = p[:,:]
-            p[1:-1,1:-1] = ((p_old[2:,1:-1] + p_old[1:-1,:-2])*self.dy*self.dy +
-                            (p_old[1:-1,2:] + p_old[:-2,1:-1])*self.dx*self.dx -
-                            b[1:-1,1:-1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
+            p_old[:,:] = self.p[:,:]
+            self.p[1:-1,1:-1] = ((p_old[2:,1:-1] + p_old[1:-1,:-2])*self.dy*self.dy +
+                                 (p_old[1:-1,2:] + p_old[:-2,1:-1])*self.dx*self.dx -
+                                 b[1:-1,1:-1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
 
             # Domain left (neumann)
-            p[ 0,1:-1] = p[ 1,1:-1]
+            self.p[ 0,1:-1] = self.p[ 1,1:-1]
 
             # Domain right (neumann)
-            p[-1,1:-1] = p[-2,1:-1]
+            self.p[-1,1:-1] = self.p[-2,1:-1]
 
             # Domain top (dirichlet)
-            p[1:-1,-1] = 0.0
+            self.p[1:-1,-1] = 0.0
 
             # Domain bottom (neumann)
-            p[1:-1, 0] = p[1:-1, 1]
+            self.p[1:-1, 0] = self.p[1:-1, 1]
 
-            dp  = np.reshape(p - p_old, (-1))
+            dp  = np.reshape(self.p - p_old, (-1))
             err = np.dot(dp,dp)
 
             n_itp += 1
@@ -204,47 +170,39 @@ class cavity():
 
         self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
 
-        self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (p[2:-1,1:-1] - p[1:-2,1:-1])/self.dx
-        self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (p[1:-1,2:-1] - p[1:-1,1:-2])/self.dy
+        # # Save previous pressure field
+        # self.p_old[:,:] = self.p[:,:]
 
-        # predictor(self.u,   self.v,   self.u_old, self.v_old,
-        #           self.us,  self.vs,  self.p,
-        #           self.idx, self.idy, self.nx,
-        #           self.ny,  self.dt,  self.re)
+        # # Set pressure difference
+        # self.phi[:,:] = 0.0
 
-    ### Compute pressure
-    def poisson(self):
+        # ovf, n_itp = poisson(self.us, self.vs, self.phi,
+        #                      self.dx, self.dy, self.idx, self.idy,
+        #                      self.nx, self.ny, self.dt,  self.ifdxy,
+        #                      self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
+        # self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
 
-        # Save previous pressure field
-        self.p_old[:,:] = self.p[:,:]
+        # # Compute new pressure
+        # self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
 
-        # Set pressure difference
-        self.phi[:,:] = 0.0
-
-        ovf, n_itp = poisson(self.us, self.vs, self.phi,
-                             self.dx, self.dy, self.idx, self.idy,
-                             self.nx, self.ny, self.dt,  self.ifdxy,
-                             self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
-        self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
-
-        # Compute new pressure
-        self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
-
-        if (ovf):
-            print("\n")
-            print("Exceeded max number of iterations in solver")
-            self.plot_fields()
-            self.plot_iterations()
-            exit(1)
+        # if (ovf):
+        #     print("\n")
+        #     print("Exceeded max number of iterations in solver")
+        #     self.plot_fields()
+        #     self.plot_iterations()
+        #     exit(1)
 
     ### Compute updated fields
     def corrector(self):
 
-        self.u_old[:,:] = self.u[:,:]
-        self.v_old[:,:] = self.v[:,:]
+        self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (self.p[2:-1,1:-1] - self.p[1:-2,1:-1])/self.dx
+        self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (self.p[1:-1,2:-1] - self.p[1:-1,1:-2])/self.dy
 
-        corrector(self.u,   self.v,   self.us, self.vs, self.phi,
-                  self.idx, self.idy, self.nx, self.ny, self.dt)
+        # self.u_old[:,:] = self.u[:,:]
+        # self.v_old[:,:] = self.v[:,:]
+
+        # corrector(self.u,   self.v,   self.us, self.vs, self.phi,
+        #           self.idx, self.idy, self.nx, self.ny, self.dt)
 
     ### Compute timestep
     def compute_dt(self):
@@ -260,8 +218,8 @@ class cavity():
         self.compute_dt()
         self.set_bc()
         self.predictor()
-        #self.poisson()
-        #self.corrector()
+        self.poisson()
+        self.corrector()
 
         self.t  += self.dt
         self.it += 1
