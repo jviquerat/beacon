@@ -238,25 +238,18 @@ class cavity():
         # Recreate fields at cells centers
         u = np.zeros((self.nx, self.ny))
         v = np.zeros((self.nx, self.ny))
-        #p = np.zeros((self.nx, self.ny))
+        p = np.zeros((self.nx, self.ny))
 
         u[:,:] = 0.5*(self.u[2:,1:-1] + self.u[1:-1,1:-1])
         v[:,:] = 0.5*(self.v[1:-1,2:] + self.v[1:-1,1:-1])
-
-        #u[:,:] = self.u[2:,1:-1]
-        #v[:,:] = self.v[1:-1,2:]
-        #p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
+        p[:,:] = self.p[1:-1,1:-1]
 
         # Compute velocity norm
         vn = np.sqrt(u*u+v*v)
 
-        # Mask obstacles
-        # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        # vn = np.ma.masked_where((vn < -10.0), vn)
+        # Rotate fields
         vn = np.rot90(vn)
-        # p [self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        # p = np.ma.masked_where((p < -10.0), p)
-        #p = np.rot90(p)
+        p = np.rot90(p)
 
         # Plot velocity
         plt.clf()
@@ -267,26 +260,24 @@ class cavity():
                    vmin = 0.0,
                    vmax = self.utop)
 
-        #plt.contourf(vn)
-
         filename = "velocity.png"
         plt.axis('off')
         plt.savefig(filename, dpi=200)
         plt.close()
 
         # Plot pressure
-        # plt.clf()
-        # fig, ax = plt.subplots(figsize=plt.figaspect(vn))
-        # fig.subplots_adjust(0,0,1,1)
-        # plt.imshow(p,
-        #            cmap = 'RdBu_r',
-        #            vmin =-2.0,
-        #            vmax = 4.0)
+        plt.clf()
+        fig, ax = plt.subplots(figsize=plt.figaspect(vn))
+        fig.subplots_adjust(0,0,1,1)
+        plt.imshow(p,
+                   cmap = 'RdBu_r',
+                   vmin =-2.0,
+                   vmax = 4.0)
 
-        # filename = "pressure.png"
-        # plt.axis('off')
-        # plt.savefig(filename, dpi=200)
-        # plt.close()
+        filename = "pressure.png"
+        plt.axis('off')
+        plt.savefig(filename, dpi=200)
+        plt.close()
 
     ### Plot nb of solver iterations
     def plot_iterations(self):
