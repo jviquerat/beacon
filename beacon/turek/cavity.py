@@ -209,7 +209,7 @@ class cavity():
 
         vn      = np.sqrt(self.u**2+self.v**2)
         vmax    = np.amax(vn)
-        vmax    = max(vmax, 1.0)
+        vmax    = max(vmax, 0.1)
         self.dt = self.cfl*min(self.dx,self.dy)/vmax
 
     ### Take one step
