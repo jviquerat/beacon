@@ -59,7 +59,7 @@ u = np.zeros([ny+2, nx+2]) # include ghost cells
 v = np.zeros([ny +2, nx+2]) # include ghost cells
 
 ut = np.zeros_like(u)
-vt = np.zeros_like(u)    
+vt = np.zeros_like(u)
 
 # initialize the pressure
 p = np.zeros([nx+2,ny+2]); # include ghost cells
@@ -101,7 +101,7 @@ def pressure_poisson2(p, b, dx, dy):
     maxit = 100
     β = 1.1
     while err > tol and it < maxit:
-        pn = p.copy()    
+        pn = p.copy()
         for i in range(1,nx+1):
             for j in range(1,ny+1):
                 ap = Ap[j,i]
@@ -113,45 +113,45 @@ def pressure_poisson2(p, b, dx, dy):
                 p[j,i] = β*rhs/ap + (1-β)*p[j,i]
         err = np.linalg.norm(p - pn)
         it += 1
-#     print('Poisson Error:', err)        
+#     print('Poisson Error:', err)
     return p, err
 
 # In[4]:
 
 
 # USE sparse solver
-import scipy.linalg
-import scipy.sparse
-import scipy.sparse.linalg
-# build pressure coefficient matrix
-Ap = np.zeros([ny,nx])
-Ae = 1.0/dx/dx*np.ones([ny,nx])
-As = 1.0/dy/dy*np.ones([ny,nx])
-An = 1.0/dy/dy*np.ones([ny,nx])
-Aw = 1.0/dx/dx*np.ones([ny,nx])
-# set left wall coefs
-Aw[:,0] = 0.0
-# set right wall coefs
-Ae[:,-1] = 0.0
-# set top wall coefs
-An[-1,:] = 0.0
-# set bottom wall coefs
-As[0,:] = 0.0
-Ap = -(Aw + Ae + An + As)
+# import scipy.linalg
+# import scipy.sparse
+# import scipy.sparse.linalg
+# # build pressure coefficient matrix
+# Ap = np.zeros([ny,nx])
+# Ae = 1.0/dx/dx*np.ones([ny,nx])
+# As = 1.0/dy/dy*np.ones([ny,nx])
+# An = 1.0/dy/dy*np.ones([ny,nx])
+# Aw = 1.0/dx/dx*np.ones([ny,nx])
+# # set left wall coefs
+# Aw[:,0] = 0.0
+# # set right wall coefs
+# Ae[:,-1] = 0.0
+# # set top wall coefs
+# An[-1,:] = 0.0
+# # set bottom wall coefs
+# As[0,:] = 0.0
+# Ap = -(Aw + Ae + An + As)
 
-n = nx*ny
-d0 = Ap.reshape(n)
-# print(d0)
-de = Ae.reshape(n)[:-1]
-# print(de)
-dw = Aw.reshape(n)[1:]
-# print(dw)
-ds = As.reshape(n)[nx:]
-# print(ds)
-dn = An.reshape(n)[:-nx]
-# print(dn)
-A1 = scipy.sparse.diags([d0, de, dw, dn, ds], [0, 1, -1, nx, -nx], format='csr')
-plt.matshow((A1.toarray()))
+# n = nx*ny
+# d0 = Ap.reshape(n)
+# # print(d0)
+# de = Ae.reshape(n)[:-1]
+# # print(de)
+# dw = Aw.reshape(n)[1:]
+# # print(dw)
+# ds = As.reshape(n)[nx:]
+# # print(ds)
+# dn = An.reshape(n)[:-nx]
+# # print(dn)
+# A1 = scipy.sparse.diags([d0, de, dw, dn, ds], [0, 1, -1, nx, -nx], format='csr')
+# plt.matshow((A1.toarray()))
 
 # In[16]:
 
@@ -160,7 +160,7 @@ plt.matshow((A1.toarray()))
 #t0 = time.clock()
 momtime = 0.0
 solvertime = 0.0
-nsteps = 10
+nsteps = 100
 for n in range(0,nsteps):
     # left wall
     u[1:-1,1] = 0.0
@@ -178,52 +178,52 @@ for n in range(0,nsteps):
     # bottom wall
     v[1,1:-1] = 0.0
     # top wall
-    v[-1,1:-1] = 0.0    
-  
+    v[-1,1:-1] = 0.0
+
 
     # do x-momentum first - u is of size (nx + 2) x (ny + 2) - only need to do the interior points
     #tic = time.clock()
     for i in range(2,nx+1):
         for j in range(1,ny+1):
             ue = 0.5*(u[j,i+1] + u[j,i])
-            uw = 0.5*(u[j,i]   + u[j,i-1])    
-            
+            uw = 0.5*(u[j,i]   + u[j,i-1])
+
             un = 0.5*(u[j+1,i] + u[j,i])
-            us = 0.5*(u[j,i] + u[j-1,i])            
-            
+            us = 0.5*(u[j,i] + u[j-1,i])
+
             vn = 0.5*(v[j+1,i] + v[j+1,i-1])
             vs = 0.5*(v[j,i] + v[j,i-1])
-            
+
             # convection = - d(uu)/dx - d(vu)/dy
             convection = - (ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
-            
+
             # diffusion = d2u/dx2 + d2u/dy2
             diffusion = ν*( (u[j,i+1] - 2.0*u[j,i] + u[j,i-1])/dx/dx + (u[j+1,i] - 2.0*u[j,i] + u[j-1,i])/dy/dy )
-            
+
             ut[j,i] = u[j,i] + dt *(convection + diffusion)
-                
+
     # do y-momentum - only need to do interior points
     for i in range(1,nx+1):
         for j in range(2,ny+1):
             ve = 0.5*(v[j,i+1] + v[j,i])
-            vw = 0.5*(v[j,i] + v[j,i-1])    
-            
+            vw = 0.5*(v[j,i] + v[j,i-1])
+
             ue = 0.5*(u[j,i+1] + u[j-1,i+1])
             uw = 0.5*(u[j,i] + u[j-1,i])
-            
+
             vn = 0.5*(v[j+1,i] + v[j,i])
-            vs = 0.5*(v[j,i] + v[j-1,i])            
+            vs = 0.5*(v[j,i] + v[j-1,i])
 
             # convection = d(uv)/dx + d(vv)/dy
             convection = - (ue*ve - uw*vw)/dx - (vn*vn - vs*vs)/dy
-            
+
             # diffusion = d2u/dx2 + d2u/dy2
             diffusion = ν*( (v[j,i+1] - 2.0*v[j,i] + v[j,i-1])/dx/dx + (v[j+1,i] - 2.0*v[j,i] + v[j-1,i])/dy/dy )
-            
-            vt[j,i] = v[j,i] + dt*(convection + diffusion)            
+
+            vt[j,i] = v[j,i] + dt*(convection + diffusion)
     # do pressure - prhs = 1/dt * div(uhat)
     # we will only need to fill the interior points. This size is for convenient indexing
-    divut = np.zeros([ny+2,nx+2]) 
+    divut = np.zeros([ny+2,nx+2])
 #     for i in range(1,nx+1):
 #         for j in range(1,ny+1):
 #             divutilde[j,i] = (ut[j,i+1] - ut[j,i])/dx + (vt[j+1,i] - vt[j,i])/dy
@@ -232,30 +232,31 @@ for n in range(0,nsteps):
     prhs = 1.0/dt * divut
     #toc = time.clock()
 #    momtime += (toc - tic)
-    
+
     ###### Use the direct solver
-#     tic=time.clock()    
-#     pressure_poisson2(p,prhs,dx,dy)
+#     tic=time.clock()
+    p = np.zeros([ny+2,nx+2])
+    pressure_poisson2(p,prhs,dx,dy)
 #     toc=time.clock()
 #     solvertime += toc - tic
-#     psol.append(p)
+    psol.append(p)
 
-    
-    
+
+
     ###### Use the sparse linear solver
 #    tic=time.clock()
 #     pt = scipy.sparse.linalg.spsolve(A1,prhs[1:-1,1:-1].ravel()) #theta=sc.linalg.solve_triangular(A,d)
-    pt,info = scipy.sparse.linalg.bicg(A1,prhs[1:-1,1:-1].ravel(),tol=1e-10) #theta=sc.linalg.solve_triangular(A,d)
+#pt,info = scipy.sparse.linalg.bicg(A1,prhs[1:-1,1:-1].ravel(),tol=1e-10) #theta=sc.linalg.solve_triangular(A,d)
 #    toc=time.clock()
 #    solvertime += toc - tic
-    p = np.zeros([ny+2,nx+2])
-    p[1:-1,1:-1] = pt.reshape([ny,nx])
+    #p = np.zeros([ny+2,nx+2])
+    #p[1:-1,1:-1] = pt.reshape([ny,nx])
 
     # time advance
     u[1:-1,2:-1] = ut[1:-1,2:-1] - dt * (p[1:-1,2:-1] - p[1:-1,1:-2])/dx
-    v[2:-1,1:-1] = vt[2:-1,1:-1] - dt * (p[2:-1,1:-1] - p[1:-2,1:-1])/dy       
-    
-        
+    v[2:-1,1:-1] = vt[2:-1,1:-1] - dt * (p[2:-1,1:-1] - p[1:-2,1:-1])/dy
+
+
 #     # Check mass residual
 #     divunp1 = np.zeros([ny+2,nx+2])
 #     for i in range(1,nx+1):
@@ -264,11 +265,11 @@ for n in range(0,nsteps):
 #     residual = np.linalg.norm(divunp1.ravel())
 #     if residual > 1e-6:
 #         print('Mass residual:',np.linalg.norm(divunp1.ravel()))
-    
+
     # save new solutions
 #     usol.append(u)
 #     vsol.append(v)
-    
+
     t += dt
 #tend = time.clock()
 #totaltime = tend - t0
@@ -280,23 +281,27 @@ for n in range(0,nsteps):
 
 # In[17]:
 
-
+plt.clf()
 divu = (u[1:-1,2:] - u[1:-1,1:-1])/dx + (v[2:,1:-1] - v[1:-1,1:-1])/dy
-plt.imshow(divu,origin='bottom')
+plt.imshow(divu)
 plt.colorbar()
+plt.savefig('div.png')
+plt.close()
 
 # In[18]:
 
-
+plt.clf()
 fig = plt.figure(figsize=[6,6],dpi=600)
 ucc = 0.5*(u[1:-1,2:] + u[1:-1,1:-1])
 vcc = 0.5*(v[2:,1:-1] + v[1:-1,1:-1])
 speed = np.sqrt(ucc*ucc + vcc*vcc)
 plt.contourf(speed)
+plt.savefig('speed.png')
+plt.close()
 
 # In[12]:
 
-
+plt.clf()
 x = np.linspace(0,lx,nx)
 y = np.linspace(0,ly,ny)
 xx,yy = np.meshgrid(x,y)
@@ -307,8 +312,6 @@ plt.xlim([xx[0,0],xx[0,-1]])
 plt.ylim([yy[0,0],yy[-1,0]])
 # ax.set_xlim([xx[0,0],xx[0,-1]])
 plt.streamplot(xx,yy,ucc, vcc, color=np.sqrt(ucc*ucc + vcc*vcc),density=1.5,cmap=plt.cm.autumn,linewidth=1.5)
-
+plt.savefig('stream.png')
+plt.close()
 # In[ ]:
-
-
-

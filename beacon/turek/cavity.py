@@ -160,7 +160,7 @@ class cavity():
 
         pt,info = scipy.sparse.linalg.bicg(self.A1,prhs[1:-1,1:-1].ravel(),tol=1e-10) #theta=sc.linalg.solve_triangular(A,d)
         p = np.zeros((self.nx+2,self.ny+2))
-        p[1:-1,1:-1] = pt.reshape((self.ny,self.nx))
+        p[1:-1,1:-1] = pt.reshape((self.nx,self.ny))
 
         self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (p[2:-1,1:-1] - p[1:-2,1:-1])/self.dx
         self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (p[1:-1,2:-1] - p[1:-1,1:-2])/self.dy
@@ -242,10 +242,13 @@ class cavity():
 
         u[:,:] = 0.5*(self.u[2:,1:-1] + self.u[1:-1,1:-1])
         v[:,:] = 0.5*(self.v[1:-1,2:] + self.v[1:-1,1:-1])
+
+        #u[:,:] = self.u[2:,1:-1]
+        #v[:,:] = self.v[1:-1,2:]
         #p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
 
         # Compute velocity norm
-        vn = np.sqrt(u**2+v**2)
+        vn = np.sqrt(u*u+v*v)
 
         # Mask obstacles
         # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
@@ -262,7 +265,9 @@ class cavity():
         plt.imshow(vn,
                    cmap = 'RdBu_r',
                    vmin = 0.0,
-                   vmax = 1.0)
+                   vmax = self.utop)
+
+        #plt.contourf(vn)
 
         filename = "velocity.png"
         plt.axis('off')
