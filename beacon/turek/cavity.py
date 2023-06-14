@@ -85,7 +85,8 @@ class cavity():
         itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
                            self.dx, self.dy, self.dt)
 
-        self.p[:,:] += self.phi[:,:]
+        #self.p[:,:] += self.phi[:,:]
+        self.p[:,:] = self.phi[:,:]
 
         self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
 
@@ -193,39 +194,39 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             uW = 0.5*(u[i,j]   + u[i-1,j])
 
             uN = 0.5*(u[i,j+1] + u[i,j])
-            uS = 0.5*(u[i,j] + u[i,j-1])
+            uS = 0.5*(u[i,j]   + u[i,j-1])
 
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
-            vS = 0.5*(v[i,j] + v[i-1,j])
+            vS = 0.5*(v[i,j]   + v[i-1,j])
 
-            conv =- (uE*uE-uW*uW)/dx - (uN*vN-uS*vS)/dy
+            conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
             diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
                     (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
 
             pres = (p[i,j] - p[i-1,j])/dx
 
-            us[i,j] = u[i,j] + dt*(conv + diff - pres)
+            us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
     for i in range(1,nx+1):
         for j in range(2,ny+1):
             vE = 0.5*(v[i+1,j] + v[i,j])
-            vW = 0.5*(v[i,j] + v[i-1,j])
+            vW = 0.5*(v[i,j]   + v[i-1,j])
 
             uE = 0.5*(u[i+1,j] + u[i+1,j-1])
-            uW = 0.5*(u[i,j] + u[i,j-1])
+            uW = 0.5*(u[i,j]   + u[i,j-1])
 
             vN = 0.5*(v[i,j+1] + v[i,j])
-            vS = 0.5*(v[i,j] + v[i,j-1])
+            vS = 0.5*(v[i,j]   + v[i,j-1])
 
-            conv = - (uE*vE-uW*vW)/dx - (vN*vN-vS*vS)/dy
+            conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
 
             diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
                     (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
 
             pres = (p[i,j] - p[i,j-1])/dy
 
-            vs[i,j] = v[i,j] + dt*(conv + diff - pres)
+            vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
 ###############################################
 # Poisson step
