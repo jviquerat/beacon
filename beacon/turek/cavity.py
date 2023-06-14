@@ -9,7 +9,7 @@ import numba             as nb
 class cavity():
 
     ### Initialize
-    def __init__(self, l=1.0, h=1.0, dx=0.01, dy=0.01, t_max=1.0, cfl=0.1, re=100.0):
+    def __init__(self, l=1.0, h=1.0, dx=0.01, dy=0.01, t_max=1.0, cfl=0.95, re=100.0):
 
         # Set parameters
         self.l     = l
@@ -91,43 +91,8 @@ class cavity():
     ### Compute pressure
     def poisson(self):
 
-        # Term including starred velocities
-        b            = np.zeros((self.nx+2,self.ny+2))
-        b[1:-1,1:-1] = ((self.us[2:,1:-1] - self.us[:-2,1:-1])*0.5*self.idx +
-                        (self.vs[1:-1,2:] - self.vs[1:-1,:-2])*0.5*self.idy)/self.dt
-
-        tol = 1.0e-2
-        err = 1.0e10
-        itp = 0
-        ovf = False
-        pn  = np.zeros((self.nx+2,self.ny+2))
-        while(err > tol):
-
-            pn[:,:] = self.p[:,:]
-            self.p[1:-1,1:-1] = ((pn[2:,1:-1] + pn[1:-1,:-2])*self.dy*self.dy +
-                                 (pn[1:-1,2:] + pn[:-2,1:-1])*self.dx*self.dx -
-                                 b[1:-1,1:-1]*self.dx*self.dx*self.dy*self.dy)*self.ifdxy
-
-            # Domain left (neumann)
-            self.p[ 0,1:-1] = self.p[ 1,1:-1]
-
-            # Domain right (neumann)
-            self.p[-1,1:-1] = self.p[-2,1:-1]
-
-            # Domain top (dirichlet)
-            self.p[1:-1,-1] = 0.0
-
-            # Domain bottom (neumann)
-            self.p[1:-1, 0] = self.p[1:-1, 1]
-
-            # Compute error
-            dp  = np.reshape(self.p - pn, (-1))
-            err = np.dot(dp,dp)
-
-            itp += 1
-            if (itp > 10000):
-                ovf = True
-                break
+        itp, ovf = poisson(self.us, self.vs, self.p, self.nx, self.ny,
+                           self.dx, self.dy, self.dt)
 
         self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
 
@@ -146,18 +111,21 @@ class cavity():
         # # Compute new pressure
         # self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
 
-        # if (ovf):
-        #     print("\n")
-        #     print("Exceeded max number of iterations in solver")
-        #     self.plot_fields()
-        #     self.plot_iterations()
-        #     exit(1)
+        if (ovf):
+            print("\n")
+            print("Exceeded max number of iterations in solver")
+            self.plot_fields()
+            self.plot_iterations()
+            exit(1)
 
     ### Compute updated fields
     def corrector(self):
 
-        self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (self.p[2:-1,1:-1] - self.p[1:-2,1:-1])/self.dx
-        self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (self.p[1:-1,2:-1] - self.p[1:-1,1:-2])/self.dy
+        corrector (self.u, self.v, self.us, self.vs, self.p,
+                   self.nx, self.ny, self.dx, self.dy, self.dt)
+
+        #self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (self.p[2:-1,1:-1] - self.p[1:-2,1:-1])/self.dx
+        #self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (self.p[1:-1,2:-1] - self.p[1:-1,1:-2])/self.dy
 
         # self.u_old[:,:] = self.u[:,:]
         # self.v_old[:,:] = self.v[:,:]
@@ -247,7 +215,7 @@ class cavity():
 
 ###############################################
 # Predictor step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
@@ -261,13 +229,12 @@ def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j] + v[i-1,j])
 
-            # convection = - d(uu)/dx - d(vu)/dy
-            convection = - (uE*uE - uW*uW)/dx - (uN*vN - uS*vS)/dy
+            conv = - (uE*uE-uW*uW)/dx - (uN*vN-uS*vS)/dy
 
-            # diffusion = d2u/dx2 + d2u/dy2
-            diffusion = ( (u[i+1,j] - 2.0*u[i,j] + u[i-1,j])/dx/dx + (u[i,j+1] - 2.0*u[i,j] + u[i,j-1])/dy/dy )/re
+            diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
+                    (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
 
-            us[i,j] = u[i,j] + dt *(convection + diffusion)
+            us[i,j] = u[i,j] + dt*(conv + diff)
 
     for i in range(1,nx+1):
         for j in range(2,ny+1):
@@ -280,83 +247,65 @@ def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j] + v[i,j-1])
 
-            # convection = d(uv)/dx + d(vv)/dy
-            convection = - (uE*vE - uW*vW)/dx - (vN*vN - vS*vS)/dy
+            conv = - (uE*vE-uW*vW)/dx - (vN*vN-vS*vS)/dy
 
-            # diffusion = d2u/dx2 + d2u/dy2
-            diffusion = ( (v[i+1,j] - 2.0*v[i,j] + v[i-1,j])/dx/dx + (v[i,j+1] - 2.0*v[i,j] + v[i,j-1])/dy/dy )/re
+            diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
+                    (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
 
-            vs[i,j] = v[i,j] + dt*(convection + diffusion)
+            vs[i,j] = v[i,j] + dt*(conv + diff)
 
 ###############################################
 # Poisson step
-#@nb.njit(cache=True)
-#def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
-#c_xmin, c_xmax, c_ymin, c_ymax):
+@nb.njit(cache=True)
+def poisson(us, vs, p, nx, ny, dx, dy, dt):
 
-    # # Set zero in obstacle
-    # us[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
-    # vs[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+    tol = 1.0e-2
+    err = 1.0e10
+    itp = 0
+    ovf = False
+    pn  = np.zeros((nx+2,ny+2))
+    while(err > tol):
 
-    # # Term including starred velocities
-    # b = np.zeros((nx+2,ny+2))
-    # b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
-    #                     (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
-    # #(vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)*3.0/(2.0*dt)
+        pn[:,:] = p[:,:]
 
+        for i in range(1,nx+1):
+            for j in range(1,ny+1):
 
-    # #b[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+                b = (0.5*(us[i+1,j] - us[i-1,j])/dx +
+                     0.5*(vs[i,j+1] - vs[i,j-1])/dy)/dt
 
-    # tol = 1.0e-2
-    # err = 1.0e10
-    # itp = 0
-    # ovf = False
-    # phi_old = np.zeros((nx+2,ny+2))
-    # while(err > tol):
+                p[i,j] = 0.5*((pn[i+1,j] + pn[i,j-1])*dy*dy +
+                              (pn[i,j+1] + pn[i-1,j])*dx*dx -
+                              b*dx*dx*dy*dy)/(dx**2+dy**2)
 
-    #     phi_old[:,:] = phi[:,:]
-    #     phi[1:nx+1,1:ny+1] = ((phi_old[2:nx+2,1:ny+1] + phi_old[0:nx,1:ny+1])*dy*dy +
-    #                           (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
-    #                           b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
+        # Domain left (neumann)
+        p[ 0,1:-1] = p[ 1,1:-1]
 
-    #     # # Domain left (neumann)
-    #     phi[ 0,1:ny+1] = phi[ 1,1:ny+1]
+        # Domain right (neumann)
+        p[-1,1:-1] = p[-2,1:-1]
 
-    #     # # Domain right (dirichlet)
-    #     phi[-1,1:ny+1] =-phi[-2,1:ny+1]
+        # Domain top (dirichlet)
+        p[1:-1,-1] = 0.0
 
-    #     # # Domain top (neumann)
-    #     #phi[1:nx+1,-1] = phi[1:nx+1,-2]
+        # Domain bottom (neumann)
+        p[1:-1, 0] = p[1:-1, 1]
 
-    #     # # Domain bottom (neumann)
-    #     #phi[1:nx+1, 0] = phi[1:nx+1, 1]
+        # Compute error
+        dp  = np.reshape(p - pn, (-1))
+        err = np.dot(dp,dp)
 
-    #     # # Obstacle left (neumann)
-    #     #phi[c_xmin,c_ymin:c_ymax] = phi[c_xmin-1,c_ymin:c_ymax]
+        itp += 1
+        if (itp > 10000):
+            ovf = True
+            break
 
-    #     # # Obstacle right (neumann)
-    #     # phi[c_xmax,c_ymin:c_ymax] = phi[c_xmax+1,c_ymin:c_ymax]
+    return itp, ovf
 
-    #     # # Obstacle top (neumann)
-    #     # phi[c_xmin:c_xmax,c_ymax] = phi[c_xmin:c_xmax,c_ymax+1]
-
-    #     # # Obstacle bottom (neumann)
-    #     # phi[c_xmin:c_xmax,c_ymin] = phi[c_xmin:c_xmax,c_ymin-1]
-
-    #     dp  = np.reshape(phi - phi_old, (-1))
-    #     err = np.dot(dp,dp)
-
-    #     itp += 1
-    #     if (itp > 10000):
-    #         ovf = True
-    #         break
-
-    # return ovf, itp
 
 ###############################################
 # Corrector step
-#@nb.njit(cache=True)
-#def corrector(u, v, us, vs, phi, idx, idy, nx, ny, dt):
+@nb.njit(cache=True)
+def corrector(u, v, us, vs, p, nx, ny, dx, dy, dt):
 
-    # u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[0:nx,1:ny+1])*idx
-    # v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[1:nx+1,0:ny])*idy
+    u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(p[2:-1,1:-1] - p[1:-2,1:-1])/dx
+    v[1:-1,2:-1] = vs[1:-1,2:-1] - dt*(p[1:-1,2:-1] - p[1:-1,1:-2])/dy
