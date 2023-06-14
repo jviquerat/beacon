@@ -104,15 +104,6 @@ class cavity():
         corrector (self.u, self.v, self.us, self.vs, self.phi,
                    self.nx, self.ny, self.dx, self.dy, self.dt)
 
-        #self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (self.p[2:-1,1:-1] - self.p[1:-2,1:-1])/self.dx
-        #self.v[1:-1,2:-1] = self.vs[1:-1,2:-1] - self.dt * (self.p[1:-1,2:-1] - self.p[1:-1,1:-2])/self.dy
-
-        # self.u_old[:,:] = self.u[:,:]
-        # self.v_old[:,:] = self.v[:,:]
-
-        # corrector(self.u,   self.v,   self.us, self.vs, self.phi,
-        #           self.idx, self.idy, self.nx, self.ny, self.dt)
-
     ### Take one step
     def step(self):
 
@@ -149,7 +140,7 @@ class cavity():
 
         # Rotate fields
         vn = np.rot90(vn)
-        p = np.rot90(p)
+        p  = np.rot90(p)
 
         # Plot velocity
         plt.clf()
