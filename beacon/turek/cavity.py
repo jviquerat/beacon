@@ -85,52 +85,8 @@ class cavity():
     ### Compute starred fields
     def predictor(self):
 
-        for i in range(2,self.nx+1):
-            for j in range(1,self.ny+1):
-                ue = 0.5*(self.u[i+1,j] + self.u[i,j])
-                uw = 0.5*(self.u[i,j]   + self.u[i-1,j])
-
-                un = 0.5*(self.u[i,j+1] + self.u[i,j])
-                us = 0.5*(self.u[i,j] + self.u[i,j-1])
-
-                vn = 0.5*(self.v[i,j+1] + self.v[i-1,j+1])
-                vs = 0.5*(self.v[i,j] + self.v[i-1,j])
-
-                # convection = - d(uu)/dx - d(vu)/dy
-                convection = - (ue*ue - uw*uw)/self.dx - (un*vn - us*vs)/self.dy
-
-                # diffusion = d2u/dx2 + d2u/dy2
-                diffusion = ( (self.u[i+1,j] - 2.0*self.u[i,j] + self.u[i-1,j])/self.dx/self.dx + (self.u[i,j+1] - 2.0*self.u[i,j] + self.u[i,j-1])/self.dy/self.dy )/self.re
-
-                self.us[i,j] = self.u[i,j] + self.dt *(convection + diffusion)
-
-        # do y-momentum - only need to do interior points
-        for i in range(1,self.nx+1):
-            for j in range(2,self.ny+1):
-                ve = 0.5*(self.v[i+1,j] + self.v[i,j])
-                vw = 0.5*(self.v[i,j] + self.v[i-1,j])
-
-                ue = 0.5*(self.u[i+1,j] + self.u[i+1,j-1])
-                uw = 0.5*(self.u[i,j] + self.u[i,j-1])
-
-                vn = 0.5*(self.v[i,j+1] + self.v[i,j])
-                vs = 0.5*(self.v[i,j] + self.v[i,j-1])
-
-                # convection = d(uv)/dx + d(vv)/dy
-                convection = - (ue*ve - uw*vw)/self.dx - (vn*vn - vs*vs)/self.dy
-
-                # diffusion = d2u/dx2 + d2u/dy2
-                diffusion = ( (self.v[i+1,j] - 2.0*self.v[i,j] + self.v[i-1,j])/self.dx/self.dx + (self.v[i,j+1] - 2.0*self.v[i,j] + self.v[i,j-1])/self.dy/self.dy )/self.re
-
-                self.vs[i,j] = self.v[i,j] + self.dt*(convection + diffusion)
-
-
-
-
-        # predictor(self.u,   self.v,   self.u_old, self.v_old,
-        #           self.us,  self.vs,  self.p,
-        #           self.idx, self.idy, self.nx,
-        #           self.ny,  self.dt,  self.re)
+        predictor(self.u, self.v, self.us, self.vs, self.nx, self.ny,
+                  self.dt, self.dx, self.dy, self.re)
 
     ### Compute pressure
     def poisson(self):
@@ -292,43 +248,45 @@ class cavity():
 ###############################################
 # Predictor step
 #@nb.njit(cache=True)
-#def predictor(u, v, u_old, v_old, us, vs, p, idx, idy, nx, ny, dt, re):
+def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
 
-    # d2ux = np.zeros((nx+2,ny+2))
-    # d2uy = np.zeros((nx+2,ny+2))
-    # udux = np.zeros((nx+2,ny+2))
-    # vduy = np.zeros((nx+2,ny+2))
-    # vloc = np.zeros((nx+2,ny+2))
-    # dpx  = np.zeros((nx+2,ny+2))
+    for i in range(2,nx+1):
+        for j in range(1,ny+1):
+            uE = 0.5*(u[i+1,j] + u[i,j])
+            uW = 0.5*(u[i,j]   + u[i-1,j])
 
-    # d2ux[1:nx+1,1:ny+1] = (u[0:nx,1:ny+1] - 2.0*u[1:nx+1,1:ny+1] + u[2:nx+2,1:ny+1])*idx*idx
-    # d2uy[1:nx+1,1:ny+1] = (u[1:nx+1,0:ny] - 2.0*u[1:nx+1,1:ny+1] + u[1:nx+1,2:ny+2])*idy*idy
+            uN = 0.5*(u[i,j+1] + u[i,j])
+            uS = 0.5*(u[i,j] + u[i,j-1])
 
-    # vloc[1:nx+1,1:ny+1] = 0.25*(v[0:nx,1:ny+1] + v[1:nx+1,1:ny+1] + v[0:nx,2:ny+2] + v[1:nx+1,2:ny+2])
-    # udux[1:nx+1,1:ny+1] = u[1:nx+1,1:ny+1]*(u[2:nx+2,1:ny+1] - u[0:nx,1:ny+1])*0.5*idx
-    # vduy[1:nx+1,1:ny+1] = vloc[1:nx+1,1:ny+1]*(u[1:nx+1,2:ny+2] - u[1:nx+1,0:ny])*0.5*idy
+            vN = 0.5*(v[i,j+1] + v[i-1,j+1])
+            vS = 0.5*(v[i,j] + v[i-1,j])
 
-    # dpx [1:nx+1,1:ny+1] = (p[2:nx+2,1:ny+1] - p[0:nx,1:ny+1])*0.5*idx
+            # convection = - d(uu)/dx - d(vu)/dy
+            convection = - (uE*uE - uW*uW)/dx - (uN*vN - uS*vS)/dy
 
-    # us[:,:] = u[:,:] + dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:])
+            # diffusion = d2u/dx2 + d2u/dy2
+            diffusion = ( (u[i+1,j] - 2.0*u[i,j] + u[i-1,j])/dx/dx + (u[i,j+1] - 2.0*u[i,j] + u[i,j-1])/dy/dy )/re
 
-    # d2vx = np.zeros((nx+2,ny+2))
-    # d2vy = np.zeros((nx+2,ny+2))
-    # udvx = np.zeros((nx+2,ny+2))
-    # vdvy = np.zeros((nx+2,ny+2))
-    # uloc = np.zeros((nx+2,ny+2))
-    # dpy  = np.zeros((nx+2,ny+2))
+            us[i,j] = u[i,j] + dt *(convection + diffusion)
 
-    # d2vx[1:nx+1,1:ny+1] = (v[0:nx,1:ny+1] - 2.0*v[1:nx+1,1:ny+1] + v[2:nx+2,1:ny+1])*idx*idx
-    # d2vy[1:nx+1,1:ny+1] = (v[1:nx+1,0:ny] - 2.0*v[1:nx+1,1:ny+1] + v[1:nx+1,2:ny+2])*idy*idy
+    for i in range(1,nx+1):
+        for j in range(2,ny+1):
+            vE = 0.5*(v[i+1,j] + v[i,j])
+            vW = 0.5*(v[i,j] + v[i-1,j])
 
-    # uloc[1:nx+1,1:ny+1] = 0.25*(u[1:nx+1,0:ny] + u[1:nx+1,1:ny+1] + u[2:nx+2,0:ny] + u[2:nx+2,1:ny+1])
-    # udvx[1:nx+1,1:ny+1] = uloc[1:nx+1,1:ny+1]*(v[2:nx+2,1:ny+1] - v[0:nx,1:ny+1])*0.5*idx
-    # vdvy[1:nx+1,1:ny+1] = v[1:nx+1,1:ny+1]*(v[1:nx+1,2:ny+2] - v[1:nx+1,0:ny])*0.5*idy
+            uE = 0.5*(u[i+1,j] + u[i+1,j-1])
+            uW = 0.5*(u[i,j] + u[i,j-1])
 
-    # dpy [1:nx+1,1:ny+1] = (p[1:nx+1,2:ny+2] - p[1:nx+1,0:ny])*0.5*idy
+            vN = 0.5*(v[i,j+1] + v[i,j])
+            vS = 0.5*(v[i,j] + v[i,j-1])
 
-    # vs[:,:] = v[:,:] + dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:])
+            # convection = d(uv)/dx + d(vv)/dy
+            convection = - (uE*vE - uW*vW)/dx - (vN*vN - vS*vS)/dy
+
+            # diffusion = d2u/dx2 + d2u/dy2
+            diffusion = ( (v[i+1,j] - 2.0*v[i,j] + v[i-1,j])/dx/dx + (v[i,j+1] - 2.0*v[i,j] + v[i,j-1])/dy/dy )/re
+
+            vs[i,j] = v[i,j] + dt*(convection + diffusion)
 
 ###############################################
 # Poisson step
