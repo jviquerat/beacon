@@ -25,7 +25,6 @@ class cavity():
         # Compute nb of unknowns
         self.nx = round(self.l/self.dx)
         self.ny = round(self.h/self.dy)
-        self.nc = self.nx*self.ny
 
         # Reset fields
         self.reset_fields()
@@ -196,7 +195,7 @@ class cavity():
 
 ###############################################
 # Predictor step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
@@ -241,7 +240,7 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
 ###############################################
 # Poisson step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
     tol      = 1.0e-2
@@ -287,10 +286,9 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
     return itp, ovf
 
-
 ###############################################
 # Corrector step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def corrector(u, v, us, vs, p, nx, ny, dx, dy, dt):
 
     u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(p[2:-1,1:-1] - p[1:-2,1:-1])/dx
