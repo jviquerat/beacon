@@ -199,7 +199,8 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j]   + v[i-1,j])
 
-            conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
+            #conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
+            conv = (u[i,j]*uE-u[i,j]*uW)/dx + (u[i,j]*vN-u[i,j]*vS)/dy
 
             diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
                     (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
@@ -219,7 +220,8 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j]   + v[i,j-1])
 
-            conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
+            #conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
+            conv = (v[i,j]*uE-v[i,j]*uW)/dx + (v[i,j]*vN-v[i,j]*vS)/dy
 
             diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
                     (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re

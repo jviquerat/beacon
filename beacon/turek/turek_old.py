@@ -34,7 +34,8 @@ class turek():
         self.nc = self.nx*self.ny
 
         # Compute timestep
-        #self.dt   = self.cfl*min(self.dx,self.dy)
+        self.dt   = self.cfl*min(self.dx,self.dy)
+        #self.dt   = 0.005
 
         # Compute obstacle position
         self.x0 = 2.0
@@ -81,58 +82,24 @@ class turek():
     ### Set boundary conditions
     def set_bc(self):
 
-        nx = self.nx
-        ny = self.ny
-
-        # Poiseuille at inlet
-        for j in range(self.ny):
+        # Left wall
+        for j in range(1,self.ny+1):
             y             = j*self.dy
             u_pois        = 4.0*(self.h-y)*y/(self.h**2)
-            self.u[0,j+1] = u_pois          # Dirichlet for u
-            self.u[1,j+1] = u_pois          # Dirichlet for u
-        self.v[0,1:ny+1] =-self.v[1,1:ny+1] # Dirichlet for v
-        self.p[0,1:ny+1] = self.p[1,1:ny+1] # Neumann   for p
+            self.u[1,j+1] = u_pois
+        self.v[0,1:] =-self.v[1,1:]
 
-        # No-slip BC at top
-        self.u[1:nx+1,-1] =-self.u[1:nx+1,-2] # Dirichlet for u
-        self.v[1:nx+1,-1] = 0.0               # Dirichlet for v
-        self.p[1:nx+1,-1] = self.p[1:nx+1,-2] # Neumann   for p
+        # Right wall
+        self.u[-1,1:-1] = self.u[-2,1:-1]
+        self.v[-1,1:]   =-self.v[-2,1:]
 
-        # No-slip BC at bottom
-        self.u[1:nx+1,0] =-self.u[1:nx+1,1] # Dirichlet for u
-        self.v[1:nx+1,0] = 0.0              # Dirichlet for v
-        #self.v[1:nx+1,1] = 0.0              # Dirichlet for v
-        self.p[1:nx+1,0] = self.p[1:nx+1,1] # Neumann   for p
+        # Top wall
+        self.u[1:,-1]   =-self.u[1:,-2]
+        self.v[1:-1,-1] = 0.0
 
-        # Output BC at outlet
-        self.u[-1,1:ny+1] = self.u[-2,1:ny+1] # Neumann   for u
-        self.v[-1,1:ny+1] =-self.v[-2,1:ny+1] # Dirichlet for v
-        self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
-
-        # Set zero in obstacle
-        self.u[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        #self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
-
-        # No-slip BC on obstacle bottom
-        self.u[self.c_xmin:self.c_xmax,self.c_ymin] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin-1]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymin] = 0.0
-        self.p[self.c_xmin:self.c_xmax,self.c_ymin] = self.p[self.c_xmin:self.c_xmax,self.c_ymin-1]
-
-        # No-slip BC on obstacle top
-        self.u[self.c_xmin:self.c_xmax,self.c_ymax]   =-self.u[self.c_xmin:self.c_xmax,self.c_ymax+1]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymax+1] = 0.0
-        self.p[self.c_xmin:self.c_xmax,self.c_ymax]   = self.p[self.c_xmin:self.c_xmax,self.c_ymax+1]
-
-        # No-slip BC on obstacle left
-        self.u[self.c_xmin,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmin,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin-1,self.c_ymin:self.c_ymax]
-        self.p[self.c_xmin,self.c_ymin:self.c_ymax] = self.p[self.c_xmin-1,self.c_ymin:self.c_ymax]
-
-        # No-slip BC on obstacle right
-        self.u[self.c_xmax+1,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.v[self.c_xmax+1,self.c_ymin:self.c_ymax]
-        self.p[self.c_xmax,  self.c_ymin:self.c_ymax] = self.p[self.c_xmax+1,self.c_ymin:self.c_ymax]
+        # Bottom wall
+        self.u[1:,0]    =-self.u[1:,1]
+        self.v[1:-1,1]  = 0.0
 
     ### Compute starred fields
     def predictor(self):
@@ -145,20 +112,11 @@ class turek():
     ### Compute pressure
     def poisson(self):
 
-        # Save previous pressure field
-        self.p_old[:,:] = self.p[:,:]
-
-        # Set pressure difference
-        self.phi[:,:] = 0.0
-
-        ovf, n_itp = poisson(self.us, self.vs, self.phi,
+        ovf, n_itp = poisson(self.us, self.vs, self.p,
                              self.dx, self.dy, self.idx, self.idy,
                              self.nx, self.ny, self.dt,  self.ifdxy,
                              self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
         self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
-
-        # Compute new pressure
-        self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
 
         if (ovf):
             print("\n")
@@ -176,18 +134,10 @@ class turek():
         corrector(self.u,   self.v,   self.us, self.vs, self.phi,
                   self.idx, self.idy, self.nx, self.ny, self.dt)
 
-    ### Compute timestep
-    def compute_dt(self):
-
-        vn      = np.sqrt(self.u**2+self.v**2)
-        vmax    = np.amax(vn)
-        vmax    = max(vmax, 1.0)
-        self.dt = self.cfl*min(self.dx,self.dy)/vmax
-
     ### Take one step
     def step(self):
 
-        self.compute_dt()
+        #self.compute_dt()
         self.set_bc()
         self.predictor()
         self.poisson()
@@ -213,7 +163,7 @@ class turek():
         p = np.zeros((self.nx, self.ny))
 
         u[0:nx,0:ny] = 0.5*(self.u[0:nx,1:ny+1] + self.u[1:nx+1,1:ny+1])
-        v[0:nx,0:ny] = 0.5*(self.v[1:nx+1,0:ny] + self.u[1:nx+1,1:ny+1])
+        v[0:nx,0:ny] = 0.5*(self.v[1:nx+1,0:ny] + self.v[1:nx+1,1:ny+1])
         p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
 
         # Compute velocity norm
@@ -319,22 +269,19 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
             c_xmin, c_xmax, c_ymin, c_ymax):
 
     # Set zero in obstacle
-    us[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
-    vs[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+    #us[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
+    #vs[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
 
     # Term including starred velocities
     b = np.zeros((nx+2,ny+2))
     b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
                         (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
-    #(vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)*3.0/(2.0*dt)
-
-
-    #b[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
 
     tol = 1.0e-2
     err = 1.0e10
     itp = 0
     ovf = False
+    phi[:,:] = 0.0
     phi_old = np.zeros((nx+2,ny+2))
     while(err > tol):
 
@@ -343,29 +290,18 @@ def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
                               (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
                               b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
 
-        # # Domain left (neumann)
-        phi[ 0,1:ny+1] = phi[ 1,1:ny+1]
+        # Domain left (dirichlet)
+        #phi[ 0,1:-1] = phi[ 1,1:-1]
+        phi[ 0,1:-1] = 0.0
 
-        # # Domain right (dirichlet)
-        phi[-1,1:ny+1] =-phi[-2,1:ny+1]
+        # Domain right (dirichlet)
+        phi[-1,1:-1] = 0.0
 
-        # # Domain top (neumann)
-        #phi[1:nx+1,-1] = phi[1:nx+1,-2]
+        # Domain top (neumann)
+        phi[1:-1,-1] = phi[1:-1,-2]
 
-        # # Domain bottom (neumann)
-        #phi[1:nx+1, 0] = phi[1:nx+1, 1]
-
-        # # Obstacle left (neumann)
-        #phi[c_xmin,c_ymin:c_ymax] = phi[c_xmin-1,c_ymin:c_ymax]
-
-        # # Obstacle right (neumann)
-        # phi[c_xmax,c_ymin:c_ymax] = phi[c_xmax+1,c_ymin:c_ymax]
-
-        # # Obstacle top (neumann)
-        # phi[c_xmin:c_xmax,c_ymax] = phi[c_xmin:c_xmax,c_ymax+1]
-
-        # # Obstacle bottom (neumann)
-        # phi[c_xmin:c_xmax,c_ymin] = phi[c_xmin:c_xmax,c_ymin-1]
+        # Domain bottom (neumann)
+        phi[1:-1, 0] = phi[1:-1, 1]
 
         dp  = np.reshape(phi - phi_old, (-1))
         err = np.dot(dp,dp)
