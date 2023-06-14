@@ -63,7 +63,7 @@ class cavity():
 
         # Right wall
         self.u[-1,1:-1] = 0.0
-        self.v[-1,1:]   = 0.0
+        self.v[-1,1:]   =-self.v[-2,1:]
 
         # Top wall
         self.u[1:,-1]   = 2.0*self.utop - self.u[1:,-2]

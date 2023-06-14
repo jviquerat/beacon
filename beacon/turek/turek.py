@@ -9,19 +9,18 @@ import numba             as nb
 class turek():
 
     ### Initialize
-    def __init__(self, l=22.0, h=4.0, dx=0.1, dy=0.1, t_max=40.0, cfl=0.1, re=100.0):
+    def __init__(self, l=22.0, h=4.0, dx=0.1, dy=0.1, t_max=1.0, cfl=0.95, re=10.0):
 
         # Set parameters
         self.l     = l
         self.h     = h
         self.dx    = dx
         self.dy    = dy
-        self.idx   = 1.0/dx
-        self.idy   = 1.0/dy
-        self.ifdxy = 0.5/(dx**2+dy**2)
         self.t_max = t_max
         self.cfl   = cfl
+        self.nu    = 0.01
         self.re    = re
+        self.umax  = 1.0
 
         # Check sizes compatibility
         self.eps = 1.0e-8
@@ -31,10 +30,6 @@ class turek():
         # Compute nb of unknowns
         self.nx = round(self.l/self.dx)
         self.ny = round(self.h/self.dy)
-        self.nc = self.nx*self.ny
-
-        # Compute timestep
-        #self.dt   = self.cfl*min(self.dx,self.dy)
 
         # Compute obstacle position
         self.x0 = 2.0
@@ -48,21 +43,23 @@ class turek():
         # Reset fields
         self.reset_fields()
 
+        # Compute timestep
+        self.tau = self.l/self.umax
+        mdxy     = min(self.dx, self.dy)
+        self.dt  = self.cfl*min(self.tau/self.re,
+                                self.tau*self.re*mdxy**2/(4.0*self.l**2))
+
     ### Reset fields
     def reset_fields(self):
 
         # Set fields
         # Accound for boundary cells
-        self.u     = np.zeros((self.nx+2, self.ny+2))
-        self.v     = np.zeros((self.nx+2, self.ny+2))
-        self.u_old = np.zeros((self.nx+2, self.ny+2))
-        self.v_old = np.zeros((self.nx+2, self.ny+2))
-        self.p     = np.zeros((self.nx+2, self.ny+2))
-        self.p_old = np.zeros((self.nx+2, self.ny+2))
-        self.phi   = np.zeros((self.nx+2, self.ny+2))
-
-        self.us = np.zeros((self.nx+2, self.ny+2))
-        self.vs = np.zeros((self.nx+2, self.ny+2))
+        self.u   = np.zeros((self.nx+2, self.ny+2))
+        self.v   = np.zeros((self.nx+2, self.ny+2))
+        self.p   = np.zeros((self.nx+2, self.ny+2))
+        self.us  = np.zeros((self.nx+2, self.ny+2))
+        self.vs  = np.zeros((self.nx+2, self.ny+2))
+        self.phi = np.zeros((self.nx+2, self.ny+2))
 
         # Array to store iterations of poisson resolution
         self.n_itp = np.array([], dtype=np.int16)
@@ -81,84 +78,41 @@ class turek():
     ### Set boundary conditions
     def set_bc(self):
 
-        nx = self.nx
-        ny = self.ny
-
-        # Poiseuille at inlet
-        for j in range(self.ny):
+        # Left wall
+        for j in range(1,self.ny+1):
             y             = j*self.dy
-            u_pois        = 4.0*(self.h-y)*y/(self.h**2)
-            self.u[0,j+1] = u_pois          # Dirichlet for u
-            self.u[1,j+1] = u_pois          # Dirichlet for u
-        self.v[0,1:ny+1] =-self.v[1,1:ny+1] # Dirichlet for v
-        self.p[0,1:ny+1] = self.p[1,1:ny+1] # Neumann   for p
+            u_pois        = 4.0*self.umax*(self.h-y)*y/(self.h**2)
+            self.u[1,j+1] = u_pois
+        self.v[0,1:] =-self.v[1,1:]
 
-        # No-slip BC at top
-        self.u[1:nx+1,-1] =-self.u[1:nx+1,-2] # Dirichlet for u
-        self.v[1:nx+1,-1] = 0.0               # Dirichlet for v
-        self.p[1:nx+1,-1] = self.p[1:nx+1,-2] # Neumann   for p
+        # Right wall
+        self.u[-1,1:-1] = self.u[-2,1:-1]
+        self.v[-1,1:]   =-self.v[-2,1:]
 
-        # No-slip BC at bottom
-        self.u[1:nx+1,0] =-self.u[1:nx+1,1] # Dirichlet for u
-        self.v[1:nx+1,0] = 0.0              # Dirichlet for v
-        #self.v[1:nx+1,1] = 0.0              # Dirichlet for v
-        self.p[1:nx+1,0] = self.p[1:nx+1,1] # Neumann   for p
+        # Top wall
+        self.u[1:,-1]   =-self.u[1:,-2]
+        self.v[1:-1,-1] = 0.0
 
-        # Output BC at outlet
-        self.u[-1,1:ny+1] = self.u[-2,1:ny+1] # Neumann   for u
-        self.v[-1,1:ny+1] =-self.v[-2,1:ny+1] # Dirichlet for v
-        self.p[-1,1:ny+1] =-self.p[-2,1:ny+1] # Dirichlet for pressure
-
-        # Set zero in obstacle
-        self.u[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = 0.0
-        #self.p[self.c_xmin:self.c_xmax,  self.c_ymin:self.c_ymax  ] = 0.0
-
-        # No-slip BC on obstacle bottom
-        self.u[self.c_xmin:self.c_xmax,self.c_ymin] =-self.u[self.c_xmin:self.c_xmax,self.c_ymin-1]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymin] = 0.0
-        self.p[self.c_xmin:self.c_xmax,self.c_ymin] = self.p[self.c_xmin:self.c_xmax,self.c_ymin-1]
-
-        # No-slip BC on obstacle top
-        self.u[self.c_xmin:self.c_xmax,self.c_ymax]   =-self.u[self.c_xmin:self.c_xmax,self.c_ymax+1]
-        self.v[self.c_xmin:self.c_xmax,self.c_ymax+1] = 0.0
-        self.p[self.c_xmin:self.c_xmax,self.c_ymax]   = self.p[self.c_xmin:self.c_xmax,self.c_ymax+1]
-
-        # No-slip BC on obstacle left
-        self.u[self.c_xmin,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmin,self.c_ymin:self.c_ymax] =-self.v[self.c_xmin-1,self.c_ymin:self.c_ymax]
-        self.p[self.c_xmin,self.c_ymin:self.c_ymax] = self.p[self.c_xmin-1,self.c_ymin:self.c_ymax]
-
-        # No-slip BC on obstacle right
-        self.u[self.c_xmax+1,self.c_ymin:self.c_ymax] = 0.0
-        self.v[self.c_xmax,  self.c_ymin:self.c_ymax] =-self.v[self.c_xmax+1,self.c_ymin:self.c_ymax]
-        self.p[self.c_xmax,  self.c_ymin:self.c_ymax] = self.p[self.c_xmax+1,self.c_ymin:self.c_ymax]
+        # Bottom wall
+        self.u[1:,0]    =-self.u[1:,1]
+        self.v[1:-1,1]  = 0.0
 
     ### Compute starred fields
     def predictor(self):
 
-        predictor(self.u,   self.v,   self.u_old, self.v_old,
-                  self.us,  self.vs,  self.p,
-                  self.idx, self.idy, self.nx,
-                  self.ny,  self.dt,  self.re)
+        predictor(self.u, self.v, self.us, self.vs, self.p,
+                  self.nx, self.ny, self.dt, self.dx, self.dy, self.re)
 
     ### Compute pressure
     def poisson(self):
 
-        # Save previous pressure field
-        self.p_old[:,:] = self.p[:,:]
+        itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
+                           self.dx, self.dy, self.dt)
 
-        # Set pressure difference
-        self.phi[:,:] = 0.0
+        #self.p[:,:] += self.phi[:,:]
+        self.p[:,:] = self.phi[:,:]
 
-        ovf, n_itp = poisson(self.us, self.vs, self.phi,
-                             self.dx, self.dy, self.idx, self.idy,
-                             self.nx, self.ny, self.dt,  self.ifdxy,
-                             self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
-        self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
-
-        # Compute new pressure
-        self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
+        self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
 
         if (ovf):
             print("\n")
@@ -170,24 +124,12 @@ class turek():
     ### Compute updated fields
     def corrector(self):
 
-        self.u_old[:,:] = self.u[:,:]
-        self.v_old[:,:] = self.v[:,:]
-
-        corrector(self.u,   self.v,   self.us, self.vs, self.phi,
-                  self.idx, self.idy, self.nx, self.ny, self.dt)
-
-    ### Compute timestep
-    def compute_dt(self):
-
-        vn      = np.sqrt(self.u**2+self.v**2)
-        vmax    = np.amax(vn)
-        vmax    = max(vmax, 1.0)
-        self.dt = self.cfl*min(self.dx,self.dy)/vmax
+        corrector (self.u, self.v, self.us, self.vs, self.phi,
+                   self.nx, self.ny, self.dx, self.dy, self.dt)
 
     ### Take one step
     def step(self):
 
-        self.compute_dt()
         self.set_bc()
         self.predictor()
         self.poisson()
@@ -212,20 +154,16 @@ class turek():
         v = np.zeros((self.nx, self.ny))
         p = np.zeros((self.nx, self.ny))
 
-        u[0:nx,0:ny] = 0.5*(self.u[0:nx,1:ny+1] + self.u[1:nx+1,1:ny+1])
-        v[0:nx,0:ny] = 0.5*(self.v[1:nx+1,0:ny] + self.u[1:nx+1,1:ny+1])
-        p[0:nx,0:ny] = self.p[1:nx+1,1:ny+1]
+        u[:,:] = 0.5*(self.u[2:,1:-1] + self.u[1:-1,1:-1])
+        v[:,:] = 0.5*(self.v[1:-1,2:] + self.v[1:-1,1:-1])
+        p[:,:] = self.p[1:-1,1:-1]
 
         # Compute velocity norm
-        vn = np.sqrt(u**2+v**2)
+        vn = np.sqrt(u*u+v*v)
 
-        # Mask obstacles
-        # vn[self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        # vn = np.ma.masked_where((vn < -10.0), vn)
+        # Rotate fields
         vn = np.rot90(vn)
-        # p [self.c_xmin:self.c_xmax,self.c_ymin:self.c_ymax] = -11.0
-        # p = np.ma.masked_where((p < -10.0), p)
-        p = np.rot90(p)
+        p  = np.rot90(p)
 
         # Plot velocity
         plt.clf()
@@ -234,11 +172,11 @@ class turek():
         plt.imshow(vn,
                    cmap = 'RdBu_r',
                    vmin = 0.0,
-                   vmax = 1.5)
+                   vmax = self.umax)
 
         filename = "velocity.png"
         plt.axis('off')
-        plt.savefig(filename, dpi=200)
+        plt.savefig(filename, dpi=100)
         plt.close()
 
         # Plot pressure
@@ -252,7 +190,7 @@ class turek():
 
         filename = "pressure.png"
         plt.axis('off')
-        plt.savefig(filename, dpi=200)
+        plt.savefig(filename, dpi=100)
         plt.close()
 
     ### Plot nb of solver iterations
@@ -272,118 +210,100 @@ class turek():
 ###############################################
 # Predictor step
 @nb.njit(cache=True)
-def predictor(u, v, u_old, v_old, us, vs, p, idx, idy, nx, ny, dt, re):
+def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
-    d2ux = np.zeros((nx+2,ny+2))
-    d2uy = np.zeros((nx+2,ny+2))
-    udux = np.zeros((nx+2,ny+2))
-    vduy = np.zeros((nx+2,ny+2))
-    vloc = np.zeros((nx+2,ny+2))
-    dpx  = np.zeros((nx+2,ny+2))
+    for i in range(2,nx+1):
+        for j in range(1,ny+1):
+            uE = 0.5*(u[i+1,j] + u[i,j])
+            uW = 0.5*(u[i,j]   + u[i-1,j])
 
-    d2ux[1:nx+1,1:ny+1] = (u[0:nx,1:ny+1] - 2.0*u[1:nx+1,1:ny+1] + u[2:nx+2,1:ny+1])*idx*idx
-    d2uy[1:nx+1,1:ny+1] = (u[1:nx+1,0:ny] - 2.0*u[1:nx+1,1:ny+1] + u[1:nx+1,2:ny+2])*idy*idy
+            uN = 0.5*(u[i,j+1] + u[i,j])
+            uS = 0.5*(u[i,j]   + u[i,j-1])
 
-    vloc[1:nx+1,1:ny+1] = 0.25*(v[0:nx,1:ny+1] + v[1:nx+1,1:ny+1] + v[0:nx,2:ny+2] + v[1:nx+1,2:ny+2])
-    udux[1:nx+1,1:ny+1] = u[1:nx+1,1:ny+1]*(u[2:nx+2,1:ny+1] - u[0:nx,1:ny+1])*0.5*idx
-    vduy[1:nx+1,1:ny+1] = vloc[1:nx+1,1:ny+1]*(u[1:nx+1,2:ny+2] - u[1:nx+1,0:ny])*0.5*idy
+            vN = 0.5*(v[i,j+1] + v[i-1,j+1])
+            vS = 0.5*(v[i,j]   + v[i-1,j])
 
-    dpx [1:nx+1,1:ny+1] = (p[2:nx+2,1:ny+1] - p[0:nx,1:ny+1])*0.5*idx
+            conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
-    #us[:,:] = (1.0/3.0)*(4.0*u[:,:] - u_old[:,:] + 2.0*dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:]))
-    us[:,:] = u[:,:] + dt*((d2ux[:,:] + d2uy[:,:])/re - (udux[:,:] + vduy[:,:]) - dpx[:,:])
+            diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
+                    (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
 
-    d2vx = np.zeros((nx+2,ny+2))
-    d2vy = np.zeros((nx+2,ny+2))
-    udvx = np.zeros((nx+2,ny+2))
-    vdvy = np.zeros((nx+2,ny+2))
-    uloc = np.zeros((nx+2,ny+2))
-    dpy  = np.zeros((nx+2,ny+2))
+            pres = (p[i,j] - p[i-1,j])/dx
 
-    d2vx[1:nx+1,1:ny+1] = (v[0:nx,1:ny+1] - 2.0*v[1:nx+1,1:ny+1] + v[2:nx+2,1:ny+1])*idx*idx
-    d2vy[1:nx+1,1:ny+1] = (v[1:nx+1,0:ny] - 2.0*v[1:nx+1,1:ny+1] + v[1:nx+1,2:ny+2])*idy*idy
+            us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
-    uloc[1:nx+1,1:ny+1] = 0.25*(u[1:nx+1,0:ny] + u[1:nx+1,1:ny+1] + u[2:nx+2,0:ny] + u[2:nx+2,1:ny+1])
-    udvx[1:nx+1,1:ny+1] = uloc[1:nx+1,1:ny+1]*(v[2:nx+2,1:ny+1] - v[0:nx,1:ny+1])*0.5*idx
-    vdvy[1:nx+1,1:ny+1] = v[1:nx+1,1:ny+1]*(v[1:nx+1,2:ny+2] - v[1:nx+1,0:ny])*0.5*idy
+    for i in range(1,nx+1):
+        for j in range(2,ny+1):
+            vE = 0.5*(v[i+1,j] + v[i,j])
+            vW = 0.5*(v[i,j]   + v[i-1,j])
 
-    dpy [1:nx+1,1:ny+1] = (p[1:nx+1,2:ny+2] - p[1:nx+1,0:ny])*0.5*idy
+            uE = 0.5*(u[i+1,j] + u[i+1,j-1])
+            uW = 0.5*(u[i,j]   + u[i,j-1])
 
-    #vs[:,:] = (1.0/3.0)*(4.0*v[:,:] - v_old[:,:] + 2.0*dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:]))
-    vs[:,:] = v[:,:] + dt*((d2vx[:,:] + d2vy[:,:])/re - (udvx[:,:] + vdvy[:,:]) - dpy[:,:])
+            vN = 0.5*(v[i,j+1] + v[i,j])
+            vS = 0.5*(v[i,j]   + v[i,j-1])
+
+            conv = (vE*uE-vW*uW)/dx + (vN*vN-vS*vS)/dy
+
+            diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
+                    (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
+
+            pres = (p[i,j] - p[i,j-1])/dy
+
+            vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
 ###############################################
 # Poisson step
 @nb.njit(cache=True)
-def poisson(us, vs, phi, dx, dy, idx, idy, nx, ny, dt, ifdxy,
-            c_xmin, c_xmax, c_ymin, c_ymax):
+def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
-    # Set zero in obstacle
-    us[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
-    vs[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
-
-    # Term including starred velocities
-    b = np.zeros((nx+2,ny+2))
-    b[1:nx+1,1:ny+1] = ((us[2:nx+2,1:ny+1] - us[0:nx,1:ny+1])*0.5*idx +
-                        (vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)/dt
-    #(vs[1:nx+1,2:ny+2] - vs[1:nx+1,0:ny])*0.5*idy)*3.0/(2.0*dt)
-
-
-    #b[c_xmin:c_xmax,c_ymin:c_ymax] = 0.0
-
-    tol = 1.0e-2
-    err = 1.0e10
-    itp = 0
-    ovf = False
-    phi_old = np.zeros((nx+2,ny+2))
+    tol      = 1.0e-2
+    err      = 1.0e10
+    itp      = 0
+    ovf      = False
+    phi[:,:] = 0.0
+    phin     = np.zeros((nx+2,ny+2))
     while(err > tol):
 
-        phi_old[:,:] = phi[:,:]
-        phi[1:nx+1,1:ny+1] = ((phi_old[2:nx+2,1:ny+1] + phi_old[0:nx,1:ny+1])*dy*dy +
-                              (phi_old[1:nx+1,2:ny+2] + phi_old[1:nx+1,0:ny])*dx*dx -
-                              b[1:nx+1,1:ny+1]*dx*dx*dy*dy)*ifdxy
+        phin[:,:] = phi[:,:]
 
-        # # Domain left (neumann)
-        phi[ 0,1:ny+1] = phi[ 1,1:ny+1]
+        for i in range(1,nx+1):
+            for j in range(1,ny+1):
 
-        # # Domain right (dirichlet)
-        phi[-1,1:ny+1] =-phi[-2,1:ny+1]
+                b = (0.5*(us[i+1,j] - us[i-1,j])/dx +
+                     0.5*(vs[i,j+1] - vs[i,j-1])/dy)/dt
 
-        # # Domain top (neumann)
-        #phi[1:nx+1,-1] = phi[1:nx+1,-2]
+                phi[i,j] = 0.5*((phin[i+1,j] + phin[i,j-1])*dy*dy +
+                                (phin[i,j+1] + phin[i-1,j])*dx*dx -
+                                b*dx*dx*dy*dy)/(dx**2+dy**2)
 
-        # # Domain bottom (neumann)
-        #phi[1:nx+1, 0] = phi[1:nx+1, 1]
+        # Domain left (dirichlet)
+        phi[ 0,1:-1] = phi[ 1,1:-1]
 
-        # # Obstacle left (neumann)
-        #phi[c_xmin,c_ymin:c_ymax] = phi[c_xmin-1,c_ymin:c_ymax]
+        # Domain right (dirichlet)
+        phi[-1,1:-1] = 0.0
 
-        # # Obstacle right (neumann)
-        # phi[c_xmax,c_ymin:c_ymax] = phi[c_xmax+1,c_ymin:c_ymax]
+        # Domain top (neumann)
+        phi[1:-1,-1] = phi[1:-1,-2]
 
-        # # Obstacle top (neumann)
-        # phi[c_xmin:c_xmax,c_ymax] = phi[c_xmin:c_xmax,c_ymax+1]
+        # Domain bottom (neumann)
+        phi[1:-1, 0] = phi[1:-1, 1]
 
-        # # Obstacle bottom (neumann)
-        # phi[c_xmin:c_xmax,c_ymin] = phi[c_xmin:c_xmax,c_ymin-1]
-
-        dp  = np.reshape(phi - phi_old, (-1))
-        err = np.dot(dp,dp)
+        # Compute error
+        dphi = np.reshape(phi - phin, (-1))
+        err  = np.dot(dphi,dphi)
 
         itp += 1
         if (itp > 10000):
             ovf = True
             break
 
-    return ovf, itp
+    return itp, ovf
 
 ###############################################
 # Corrector step
 @nb.njit(cache=True)
-def corrector(u, v, us, vs, phi, idx, idy, nx, ny, dt):
+def corrector(u, v, us, vs, p, nx, ny, dx, dy, dt):
 
-    #u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - (2.0*dt/3.0)*(phi[1:nx+1,1:ny+1] - phi[0:nx,1:ny+1])*idx
-    #v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - (2.0*dt/3.0)*(phi[1:nx+1,1:ny+1] - phi[1:nx+1,0:ny])*idy
-
-    u[1:nx+1,1:ny+1] = us[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[0:nx,1:ny+1])*idx
-    v[1:nx+1,1:ny+1] = vs[1:nx+1,1:ny+1] - dt*(phi[1:nx+1,1:ny+1] - phi[1:nx+1,0:ny])*idy
+    u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(p[2:-1,1:-1] - p[1:-2,1:-1])/dx
+    v[1:-1,2:-1] = vs[1:-1,2:-1] - dt*(p[1:-1,2:-1] - p[1:-1,1:-2])/dy

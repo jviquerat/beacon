@@ -2,7 +2,7 @@
 import time
 
 # Custom imports
-from cavity import *
+from turek import *
 
 #######################################
 # Run without control
@@ -10,7 +10,7 @@ from cavity import *
 
 # Initialize
 #t = turek(cfl=0.1, re=10.0, t_max=20.0)
-t = cavity(dx=0.02, dy=0.02, t_max=1.0, cfl=0.95, re=100.0)
+t = turek(dx=0.1, dy=0.1, t_max=100.0, cfl=0.95, re=100.0)
 t.reset_fields()
 
 # Set parameters for control-free run
