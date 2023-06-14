@@ -40,14 +40,12 @@ class cavity():
 
         # Set fields
         # Accound for boundary cells
-        self.u  = np.zeros((self.nx+2, self.ny+2))
-        self.v  = np.zeros((self.nx+2, self.ny+2))
-        self.p  = np.zeros((self.nx+2, self.ny+2))
-        self.us = np.zeros((self.nx+2, self.ny+2))
-        self.vs = np.zeros((self.nx+2, self.ny+2))
-        # self.u_old = np.zeros((self.nx+2, self.ny+2))
-        # self.v_old = np.zeros((self.nx+2, self.ny+2))
-        self.phi   = np.zeros((self.nx+2, self.ny+2))
+        self.u   = np.zeros((self.nx+2, self.ny+2))
+        self.v   = np.zeros((self.nx+2, self.ny+2))
+        self.p   = np.zeros((self.nx+2, self.ny+2))
+        self.us  = np.zeros((self.nx+2, self.ny+2))
+        self.vs  = np.zeros((self.nx+2, self.ny+2))
+        self.phi = np.zeros((self.nx+2, self.ny+2))
 
         # Array to store iterations of poisson resolution
         self.n_itp = np.array([], dtype=np.int16)
