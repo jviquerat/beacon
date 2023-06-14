@@ -16,9 +16,6 @@ class cavity():
         self.h     = h
         self.dx    = dx
         self.dy    = dy
-        self.idx   = 1.0/dx
-        self.idy   = 1.0/dy
-        self.ifdxy = 0.5/(dx**2+dy**2)
         self.t_max = t_max
         self.cfl   = cfl
         self.nu    = 0.01
@@ -51,10 +48,7 @@ class cavity():
         self.vs = np.zeros((self.nx+2, self.ny+2))
         # self.u_old = np.zeros((self.nx+2, self.ny+2))
         # self.v_old = np.zeros((self.nx+2, self.ny+2))
-        # self.p_old = np.zeros((self.nx+2, self.ny+2))
-        # self.phi   = np.zeros((self.nx+2, self.ny+2))
-
-
+        self.phi   = np.zeros((self.nx+2, self.ny+2))
 
         # Array to store iterations of poisson resolution
         self.n_itp = np.array([], dtype=np.int16)
@@ -85,31 +79,18 @@ class cavity():
     ### Compute starred fields
     def predictor(self):
 
-        predictor(self.u, self.v, self.us, self.vs, self.nx, self.ny,
-                  self.dt, self.dx, self.dy, self.re)
+        predictor(self.u, self.v, self.us, self.vs, self.p,
+                  self.nx, self.ny, self.dt, self.dx, self.dy, self.re)
 
     ### Compute pressure
     def poisson(self):
 
-        itp, ovf = poisson(self.us, self.vs, self.p, self.nx, self.ny,
+        itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
                            self.dx, self.dy, self.dt)
 
+        self.p[:,:] += self.phi[:,:]
+
         self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
-
-        # # Save previous pressure field
-        # self.p_old[:,:] = self.p[:,:]
-
-        # # Set pressure difference
-        # self.phi[:,:] = 0.0
-
-        # ovf, n_itp = poisson(self.us, self.vs, self.phi,
-        #                      self.dx, self.dy, self.idx, self.idy,
-        #                      self.nx, self.ny, self.dt,  self.ifdxy,
-        #                      self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax)
-        # self.n_itp = np.append(self.n_itp, np.array([self.it, n_itp]))
-
-        # # Compute new pressure
-        # self.p[:,:] = self.phi[:,:] + self.p_old[:,:]
 
         if (ovf):
             print("\n")
@@ -121,7 +102,7 @@ class cavity():
     ### Compute updated fields
     def corrector(self):
 
-        corrector (self.u, self.v, self.us, self.vs, self.p,
+        corrector (self.u, self.v, self.us, self.vs, self.phi,
                    self.nx, self.ny, self.dx, self.dy, self.dt)
 
         #self.u[2:-1,1:-1] = self.us[2:-1,1:-1] - self.dt * (self.p[2:-1,1:-1] - self.p[1:-2,1:-1])/self.dx
@@ -215,8 +196,8 @@ class cavity():
 
 ###############################################
 # Predictor step
-@nb.njit(cache=True)
-def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
+#@nb.njit(cache=True)
+def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
         for j in range(1,ny+1):
@@ -229,12 +210,14 @@ def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j] + v[i-1,j])
 
-            conv = - (uE*uE-uW*uW)/dx - (uN*vN-uS*vS)/dy
+            conv =- (uE*uE-uW*uW)/dx - (uN*vN-uS*vS)/dy
 
             diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
                     (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
 
-            us[i,j] = u[i,j] + dt*(conv + diff)
+            pres = (p[i,j] - p[i-1,j])/dx
+
+            us[i,j] = u[i,j] + dt*(conv + diff - pres)
 
     for i in range(1,nx+1):
         for j in range(2,ny+1):
@@ -252,21 +235,24 @@ def predictor(u, v, us, vs, nx, ny, dt, dx, dy, re):
             diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
                     (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
 
-            vs[i,j] = v[i,j] + dt*(conv + diff)
+            pres = (p[i,j] - p[i,j-1])/dy
+
+            vs[i,j] = v[i,j] + dt*(conv + diff - pres)
 
 ###############################################
 # Poisson step
-@nb.njit(cache=True)
-def poisson(us, vs, p, nx, ny, dx, dy, dt):
+#@nb.njit(cache=True)
+def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
-    tol = 1.0e-2
-    err = 1.0e10
-    itp = 0
-    ovf = False
-    pn  = np.zeros((nx+2,ny+2))
+    tol      = 1.0e-2
+    err      = 1.0e10
+    itp      = 0
+    ovf      = False
+    phi[:,:] = 0.0
+    phin     = np.zeros((nx+2,ny+2))
     while(err > tol):
 
-        pn[:,:] = p[:,:]
+        phin[:,:] = phi[:,:]
 
         for i in range(1,nx+1):
             for j in range(1,ny+1):
@@ -274,25 +260,25 @@ def poisson(us, vs, p, nx, ny, dx, dy, dt):
                 b = (0.5*(us[i+1,j] - us[i-1,j])/dx +
                      0.5*(vs[i,j+1] - vs[i,j-1])/dy)/dt
 
-                p[i,j] = 0.5*((pn[i+1,j] + pn[i,j-1])*dy*dy +
-                              (pn[i,j+1] + pn[i-1,j])*dx*dx -
-                              b*dx*dx*dy*dy)/(dx**2+dy**2)
+                phi[i,j] = 0.5*((phin[i+1,j] + phin[i,j-1])*dy*dy +
+                                (phin[i,j+1] + phin[i-1,j])*dx*dx -
+                                b*dx*dx*dy*dy)/(dx**2+dy**2)
 
         # Domain left (neumann)
-        p[ 0,1:-1] = p[ 1,1:-1]
+        phi[ 0,1:-1] = phi[ 1,1:-1]
 
         # Domain right (neumann)
-        p[-1,1:-1] = p[-2,1:-1]
+        phi[-1,1:-1] = phi[-2,1:-1]
 
         # Domain top (dirichlet)
-        p[1:-1,-1] = 0.0
+        phi[1:-1,-1] = 0.0
 
         # Domain bottom (neumann)
-        p[1:-1, 0] = p[1:-1, 1]
+        phi[1:-1, 0] = phi[1:-1, 1]
 
         # Compute error
-        dp  = np.reshape(p - pn, (-1))
-        err = np.dot(dp,dp)
+        dphi = np.reshape(phi - phin, (-1))
+        err  = np.dot(dphi,dphi)
 
         itp += 1
         if (itp > 10000):
@@ -304,7 +290,7 @@ def poisson(us, vs, p, nx, ny, dx, dy, dt):
 
 ###############################################
 # Corrector step
-@nb.njit(cache=True)
+#@nb.njit(cache=True)
 def corrector(u, v, us, vs, p, nx, ny, dx, dy, dt):
 
     u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(p[2:-1,1:-1] - p[1:-2,1:-1])/dx
