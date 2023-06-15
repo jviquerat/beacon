@@ -85,7 +85,6 @@ class cavity():
         itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
                            self.dx, self.dy, self.dt)
 
-        #self.p[:,:] += self.phi[:,:]
         self.p[:,:] = self.phi[:,:]
 
         self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))
@@ -256,7 +255,6 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
         phi[-1,1:-1] = phi[-2,1:-1]
 
         # Domain top (dirichlet)
-        #phi[1:-1,-1] =-phi[1:-1,-2]
         phi[1:-1,-1] = 0.0
 
         # Domain bottom (neumann)

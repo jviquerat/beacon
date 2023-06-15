@@ -20,7 +20,7 @@ class turek():
         self.cfl   = cfl
         self.nu    = 0.01
         self.re    = re
-        self.umax  = 1.0
+        self.umax  = self.re*self.nu/self.h
 
         # Check sizes compatibility
         self.eps = 1.0e-8
@@ -48,7 +48,6 @@ class turek():
         mdxy     = min(self.dx, self.dy)
         self.dt  = self.cfl*min(self.tau/self.re,
                                 self.tau*self.re*mdxy**2/(4.0*self.l**2))
-        self.dt = 0.0001
 
     ### Reset fields
     def reset_fields(self):
@@ -88,14 +87,14 @@ class turek():
 
         # Right wall
         self.u[-1,1:-1] = self.u[-2,1:-1]
-        self.v[-1,1:]   =-self.v[-2,1:]
+        self.v[-1,2:-1] =-self.v[-2,2:-1]
 
         # Top wall
-        self.u[2:-1,-1] =-self.u[2:-1,-2]
+        self.u[1:,-1] =-self.u[1:,-2]
         self.v[1:-1,-1] = 0.0
 
         # Bottom wall
-        self.u[2:-1,0]  =-self.u[2:-1,1]
+        self.u[1:,0]  =-self.u[1:,1]
         self.v[1:-1,1]  = 0.0
 
     ### Compute starred fields
@@ -107,7 +106,6 @@ class turek():
     ### Compute pressure
     def poisson(self):
 
-        #self.phi[:,:] = self.p[:,:]
         itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
                            self.dx, self.dy, self.dt)
 
@@ -216,23 +214,12 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
         for j in range(1,ny+1):
-
             uE = 0.5*(u[i+1,j] + u[i,j])
             uW = 0.5*(u[i,j]   + u[i-1,j])
-            vN = 0.5*(v[i,j+1] + v[i-1,j+1])
-            vS = 0.5*(v[i,j]   + v[i-1,j])
             uN = 0.5*(u[i,j+1] + u[i,j])
             uS = 0.5*(u[i,j]   + u[i,j-1])
-
-            # conv = 0.0
-            # if (uE > 0.0): conv += uE*u[i,j]/dx
-            # else: conv += uE*u[i+1,j]/dx
-            # if (uW > 0.0): conv -= uW*u[i-1,j]/dx
-            # else: conv -= uW*u[i,j]/dx
-            # if (vN > 0.0): conv += vN*u[i,j]/dx
-            # else: conv += vN*u[i,j+1]/dx
-            # if (vS > 0.0): conv -= vS*u[i,j-1]/dx
-            # else: conv -= vS*u[i,j]/dx
+            vN = 0.5*(v[i,j+1] + v[i-1,j+1])
+            vS = 0.5*(v[i,j]   + v[i-1,j])
 
             conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
@@ -245,23 +232,12 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(1,nx+1):
         for j in range(2,ny+1):
-
+            vE = 0.5*(v[i+1,j] + v[i,j])
+            vW = 0.5*(v[i,j]   + v[i-1,j])
             uE = 0.5*(u[i+1,j] + u[i+1,j-1])
             uW = 0.5*(u[i,j]   + u[i,j-1])
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j]   + v[i,j-1])
-            vE = 0.5*(v[i+1,j] + v[i,j])
-            vW = 0.5*(v[i,j]   + v[i-1,j])
-
-            # conv = 0.0
-            # if (uE > 0.0): conv += uE*v[i,j]/dx
-            # else: conv += uE*v[i+1,j]/dx
-            # if (uW > 0.0): conv -= uW*v[i-1,j]/dx
-            # else: conv -= uW*v[i,j]/dx
-            # if (vN > 0.0): conv += vN*v[i,j]/dx
-            # else: conv += vN*v[i,j+1]/dx
-            # if (vS > 0.0): conv -= vS*v[i,j-1]/dx
-            # else: conv -= vS*v[i,j]/dx
 
             conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
 
@@ -293,17 +269,18 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
                 b = ((us[i+1,j] - us[i,j])/dx +
                      (vs[i,j+1] - vs[i,j])/dy)/dt
 
-                phi[i,j] = ((phin[i+1,j] + phin[i-1,j])*dy*dy +
-                            (phin[i,j+1] + phin[i,j-1])*dx*dx -
-                            b*dx*dx*dy*dy)/(2.0*dx*dx+dy*dy)
+                phi[i,j] = 0.5*((phin[i+1,j] + phin[i-1,j])*dy*dy +
+                                (phin[i,j+1] + phin[i,j-1])*dx*dx -
+                                b*dx*dx*dy*dy)/(dx*dx+dy*dy)
 
         # Domain left (dirichlet)
         #phi[ 0,1:-1] = 1.0
-        phi[ 0,1:-1] = phi[1,1:-1]
+        #phi[ 1,1:-1] = phi[2,1:-1]
+        #phi[ 0,1:-1] = phi[1,1:-1]
 
         # Domain right (dirichlet)
         #phi[-1,1:-1] = phi[-2,1:-1]
-        phi[-1,1:-1] = 0.0
+        #phi[-1,1:-1] = 0.0
 
         # Domain top (neumann)
         phi[1:-1,-1] = phi[1:-1,-2]
@@ -314,7 +291,6 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
         # Compute error
         dphi = np.reshape(phi - phin, (-1))
         err  = np.dot(dphi,dphi)
-        print(err)
 
         itp += 1
         if (itp > 10000):
@@ -325,10 +301,10 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
 ###############################################
 # Corrector step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def corrector(u, v, us, vs, phi, nx, ny, dx, dy, dt):
 
     u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(phi[2:-1,1:-1] - phi[1:-2,1:-1])/dx
     v[1:-1,2:-1] = vs[1:-1,2:-1] - dt*(phi[1:-1,2:-1] - phi[1:-1,1:-2])/dy
 
-    
+
