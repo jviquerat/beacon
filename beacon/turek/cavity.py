@@ -85,6 +85,7 @@ class cavity():
         itp, ovf = poisson(self.us, self.vs, self.phi, self.nx, self.ny,
                            self.dx, self.dy, self.dt)
 
+        #self.p[:,:] += self.phi[:,:]
         self.p[:,:] = self.phi[:,:]
 
         self.n_itp = np.append(self.n_itp, np.array([self.it, itp]))

@@ -90,11 +90,11 @@ class turek():
         self.v[-1,2:-1] =-self.v[-2,2:-1]
 
         # Top wall
-        self.u[1:,-1] =-self.u[1:,-2]
+        self.u[1:,-1]   =-self.u[1:,-2]
         self.v[1:-1,-1] = 0.0
 
         # Bottom wall
-        self.u[1:,0]  =-self.u[1:,1]
+        self.u[1:,0]    =-self.u[1:,1]
         self.v[1:-1,1]  = 0.0
 
     ### Compute starred fields
