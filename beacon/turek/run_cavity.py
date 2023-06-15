@@ -10,7 +10,7 @@ from cavity import *
 
 # Initialize
 #t = turek(cfl=0.1, re=10.0, t_max=20.0)
-t = cavity(dx=0.01, dy=0.01, t_max=5.0, cfl=0.95, re=200.0)
+t = cavity(dx=0.02, dy=0.02, t_max=10.0, cfl=0.95, re=500.0)
 t.reset_fields()
 
 # Set parameters for control-free run

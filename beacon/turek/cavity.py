@@ -59,11 +59,11 @@ class cavity():
 
         # Left wall
         self.u[1,1:-1]  = 0.0
-        self.v[0,1:]    =-self.v[1,1:]
+        self.v[0,2:-1]  =-self.v[1,2:-1]
 
         # Right wall
         self.u[-1,1:-1] = 0.0
-        self.v[-1,1:]   =-self.v[-2,1:]
+        self.v[-1,2:-1] =-self.v[-2,2:-1]
 
         # Top wall
         self.u[1:,-1]   = 2.0*self.utop - self.u[1:,-2]
@@ -192,20 +192,17 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
         for j in range(1,ny+1):
             uE = 0.5*(u[i+1,j] + u[i,j])
             uW = 0.5*(u[i,j]   + u[i-1,j])
-
             uN = 0.5*(u[i,j+1] + u[i,j])
             uS = 0.5*(u[i,j]   + u[i,j-1])
-
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j]   + v[i-1,j])
 
-            #conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
-            conv = (u[i,j]*uE-u[i,j]*uW)/dx + (u[i,j]*vN-u[i,j]*vS)/dy
+            conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
             diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
                     (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
 
-            pres = (p[i,j] - p[i-1,j])/dx
+            #pres = (p[i,j] - p[i-1,j])/dx
 
             us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
@@ -213,20 +210,17 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
         for j in range(2,ny+1):
             vE = 0.5*(v[i+1,j] + v[i,j])
             vW = 0.5*(v[i,j]   + v[i-1,j])
-
             uE = 0.5*(u[i+1,j] + u[i+1,j-1])
             uW = 0.5*(u[i,j]   + u[i,j-1])
-
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j]   + v[i,j-1])
 
-            #conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
-            conv = (v[i,j]*uE-v[i,j]*uW)/dx + (v[i,j]*vN-v[i,j]*vS)/dy
+            conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
 
             diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
                     (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
 
-            pres = (p[i,j] - p[i,j-1])/dy
+            #pres = (p[i,j] - p[i,j-1])/dy
 
             vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
@@ -248,11 +242,11 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
         for i in range(1,nx+1):
             for j in range(1,ny+1):
 
-                b = (0.5*(us[i+1,j] - us[i-1,j])/dx +
-                     0.5*(vs[i,j+1] - vs[i,j-1])/dy)/dt
+                b = ((us[i+1,j] - us[i,j])/dx +
+                     (vs[i,j+1] - vs[i,j])/dy)/dt
 
-                phi[i,j] = 0.5*((phin[i+1,j] + phin[i,j-1])*dy*dy +
-                                (phin[i,j+1] + phin[i-1,j])*dx*dx -
+                phi[i,j] = 0.5*((phin[i+1,j] + phin[i-1,j])*dy*dy +
+                                (phin[i,j+1] + phin[i,j-1])*dx*dx -
                                 b*dx*dx*dy*dy)/(dx**2+dy**2)
 
         # Domain left (neumann)
@@ -262,6 +256,7 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
         phi[-1,1:-1] = phi[-2,1:-1]
 
         # Domain top (dirichlet)
+        #phi[1:-1,-1] =-phi[1:-1,-2]
         phi[1:-1,-1] = 0.0
 
         # Domain bottom (neumann)
