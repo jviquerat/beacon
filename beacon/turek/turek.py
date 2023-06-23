@@ -209,7 +209,7 @@ class turek():
 
 ###############################################
 # Predictor step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
@@ -231,7 +231,7 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             diff = ((u[i+1,j] - 2.0*u[i,j] + u[i-1,j])/(dx**2) +
                     (u[i,j+1] - 2.0*u[i,j] + u[i,j-1])/(dy**2))/re
 
-            pres = (p[i,j] - p[i-1,j])/dx
+            #pres = (p[i,j] - p[i-1,j])/dx
 
             us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
@@ -254,13 +254,13 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             diff = ((v[i+1,j] - 2.0*v[i,j] + v[i-1,j])/(dx**2) +
                     (v[i,j+1] - 2.0*v[i,j] + v[i,j-1])/(dy**2))/re
 
-            pres = (p[i,j] - p[i,j-1])/dy
+            #pres = (p[i,j] - p[i,j-1])/dy
 
             vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
 ###############################################
 # Poisson step
-#@nb.njit(cache=True)
+@nb.njit(cache=True)
 def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
     tol      = 1.0e-3
@@ -284,13 +284,9 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
                                 b*dx*dx*dy*dy)/(dx*dx+dy*dy)
 
         # Domain left (dirichlet)
-        #phi[ 0,1:-1] = 0.0
-        phi[ 0,1:-1] =-phi[1,1:-1]
-        #phi[ 0,1:-1] = phi[1,1:-1] + 0.5*(phi[2,1:-1]-phi[1,1:-1])#/dx
+              #phi[ 0,1:-1] =-phi[1,1:-1]
 
         # Domain right (dirichlet)
-        #phi[-1,1:-1] = 0.0
-        #phi[-1,1:-1] = -0.1
         phi[-1,1:-1] =-phi[-2,1:-1]
 
         # Domain top (neumann)
