@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numba             as nb
 
 ###############################################
-### Cavity class
-class cavity():
+### Rayleigh class
+class rayleigh():
 
     ### Initialize
-    def __init__(self, l=1.0, h=1.0, dx=0.01, dy=0.01, t_max=1.0, cfl=0.95, re=100.0):
+    def __init__(self, l=1.0, h=1.0, dx=0.1, dy=0.1, t_max=1.0, cfl=0.95, ra=1000.0, pr=0.71):
 
         # Set parameters
         self.l     = l
@@ -20,17 +20,31 @@ class cavity():
         self.cfl   = cfl
         self.nu    = 0.01
         self.re    = re
-        self.utop  = self.re*self.nu/self.l
+        self.umax  = self.re*self.nu/self.h
+
+        # Check sizes compatibility
+        self.eps = 1.0e-8
+        self.check_size(l, dx, "l")
+        self.check_size(h, dy, "h")
 
         # Compute nb of unknowns
         self.nx = round(self.l/self.dx)
         self.ny = round(self.h/self.dy)
 
+        # Compute obstacle position
+        self.x0 = 2.0
+        self.y0 = 2.0
+        self.r0 = 0.5
+        self.c_xmin = round((self.x0-self.r0)/self.dx)
+        self.c_xmax = round((self.x0+self.r0)/self.dx)
+        self.c_ymin = round((self.y0-self.r0)/self.dy)
+        self.c_ymax = round((self.y0+self.r0)/self.dy)
+
         # Reset fields
         self.reset_fields()
 
         # Compute timestep
-        self.tau = self.l/self.utop
+        self.tau = self.l/self.umax
         mdxy     = min(self.dx, self.dy)
         self.dt  = self.cfl*min(self.tau/self.re,
                                 self.tau*self.re*mdxy**2/(4.0*self.l**2))
@@ -54,19 +68,29 @@ class cavity():
         self.it = 0
         self.t  = 0.0
 
+    ### Check size compatibility
+    def check_size(self, x, dx, name):
+
+        if (abs(x-round(x/dx)*dx) > self.eps):
+            print("Incompatible size: "+name+" must be a multiple of dx")
+            exit()
+
     ### Set boundary conditions
     def set_bc(self):
 
         # Left wall
-        self.u[1,1:-1]  = 0.0
-        self.v[0,2:-1]  =-self.v[1,2:-1]
+        for j in range(1,self.ny+1):
+            y           = (j-0.5)*self.dy
+            u_pois      = 4.0*self.umax*(self.h-y)*y/(self.h**2)
+            self.u[1,j] = u_pois
+        self.v[0,2:-1] =-self.v[1,2:-1]
 
         # Right wall
-        self.u[-1,1:-1] = 0.0
+        self.u[-1,1:-1] = self.u[-2,1:-1]
         self.v[-1,2:-1] =-self.v[-2,2:-1]
 
         # Top wall
-        self.u[1:,-1]   = 2.0*self.utop - self.u[1:,-2]
+        self.u[1:,-1]   =-self.u[1:,-2]
         self.v[1:-1,-1] = 0.0
 
         # Bottom wall
@@ -100,8 +124,8 @@ class cavity():
     ### Compute updated fields
     def corrector(self):
 
-        corrector (self.u, self.v, self.us, self.vs, self.phi,
-                   self.nx, self.ny, self.dx, self.dy, self.dt)
+        corrector(self.u, self.v, self.us, self.vs, self.phi,
+                  self.nx, self.ny, self.dx, self.dy, self.dt)
 
     ### Take one step
     def step(self):
@@ -146,9 +170,9 @@ class cavity():
         fig, ax = plt.subplots(figsize=plt.figaspect(vn))
         fig.subplots_adjust(0,0,1,1)
         plt.imshow(vn,
-                   cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = self.utop)
+                   cmap = 'RdBu_r')
+                   # vmin = 0.0,
+                   # vmax = self.umax)
 
         filename = "velocity.png"
         plt.axis('off')
@@ -160,9 +184,9 @@ class cavity():
         fig, ax = plt.subplots(figsize=plt.figaspect(vn))
         fig.subplots_adjust(0,0,1,1)
         plt.imshow(p,
-                   cmap = 'RdBu_r',
-                   vmin =-2.0,
-                   vmax = 4.0)
+                   cmap = 'RdBu_r')
+        #vmin =-2.0,
+        #vmax = 4.0)
 
         filename = "pressure.png"
         plt.axis('off')
@@ -181,11 +205,11 @@ class cavity():
         fig.tight_layout()
         filename = "iterations.png"
         fig.savefig(filename)
-        np.savetxt("iterations.dat", n_itp, fmt='%d')
+        np.savetxt("iterations.dat", self.n_itp, fmt='%d')
 
 ###############################################
 # Predictor step
-@nb.njit(cache=True)
+#@nb.njit(cache=True)
 def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 
     for i in range(2,nx+1):
@@ -196,17 +220,18 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             uS = 0.5*(u[i,j]   + u[i,j-1])
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j]   + v[i-1,j])
-            conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
-            # vloc = 0.25*(v[i,j] + v[i,j+1] + v[i-1,j+1] + v[i-1,j])
-            # conv = u[i,j]*(u[i+1,j] - u[i,j])/(2.0*dx)
-            # + vloc*(u[i,j+1] - u[i,j])/(2.0*dy)
+            if (i==2):
+                conv = -u[i-1,j]*u[i-1,j]/dx + (uN*vN-uS*vS)/dy
+            elif (i==nx):
+                conv =  u[i+1,j]*u[i+1,j]/dx + (uN*vN-uS*vS)/dy
+            else:
+                conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
 
+            diff = ((u[i+1,j] - 2.0*u[i,j] + u[i-1,j])/(dx**2) +
+                    (u[i,j+1] - 2.0*u[i,j] + u[i,j-1])/(dy**2))/re
 
-            diff = ((u[i+1,j]-2.0*u[i,j]+u[i-1,j])/(dx**2) +
-                    (u[i,j+1]-2.0*u[i,j]+u[i,j-1])/(dy**2))/re
-
-            pres = (p[i,j] - p[i-1,j])/dx
+            #pres = (p[i,j] - p[i-1,j])/dx
 
             us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
@@ -218,25 +243,27 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             uW = 0.5*(u[i,j]   + u[i,j-1])
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j]   + v[i,j-1])
-            conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
 
-            # uloc = 0.25*(u[i,j] + u[i+1,j] + u[i+1,j-1] + u[i,j-1])
-            # conv = uloc*(v[i+1,j] - v[i,j])/(2.0*dx)
-            # + v[i,j]*(v[i,j+1] - v[i,j])/(2.0*dy)
+            if (i==2):
+                conv = -uW*v[i-1,j]/dx + (uN*vN-uS*vS)/dy
+            elif (i==nx):
+                conv =  uE*v[i,j]/dx + (uN*vN-uS*vS)/dy
+            else:
+                conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
 
-            diff = ((v[i+1,j]-2.0*v[i,j]+v[i-1,j])/(dx**2) +
-                    (v[i,j+1]-2.0*v[i,j]+v[i,j-1])/(dy**2))/re
+            diff = ((v[i+1,j] - 2.0*v[i,j] + v[i-1,j])/(dx**2) +
+                    (v[i,j+1] - 2.0*v[i,j] + v[i,j-1])/(dy**2))/re
 
-            pres = (p[i,j] - p[i,j-1])/dy
+            #pres = (p[i,j] - p[i,j-1])/dy
 
             vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
 ###############################################
 # Poisson step
-@nb.njit(cache=True)
+#@nb.njit(cache=True)
 def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
-    tol      = 1.0e-2
+    tol      = 1.0e-3
     err      = 1.0e10
     itp      = 0
     ovf      = False
@@ -254,16 +281,20 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
                 phi[i,j] = 0.5*((phin[i+1,j] + phin[i-1,j])*dy*dy +
                                 (phin[i,j+1] + phin[i,j-1])*dx*dx -
-                                b*dx*dx*dy*dy)/(dx**2+dy**2)
+                                b*dx*dx*dy*dy)/(dx*dx+dy*dy)
 
-        # Domain left (neumann)
-        phi[ 0,1:-1] = phi[ 1,1:-1]
+        # Domain left (dirichlet)
+        #phi[ 0,1:-1] = 0.0
+        #phi[ 0,1:-1] =-phi[1,1:-1]
+        #phi[ 0,1:-1] = phi[1,1:-1] + 0.5*(phi[2,1:-1]-phi[1,1:-1])#/dx
 
-        # Domain right (neumann)
-        phi[-1,1:-1] = phi[-2,1:-1]
+        # Domain right (dirichlet)
+        #phi[-1,1:-1] = 0.0
+        #phi[-1,1:-1] = -0.1
+        phi[-1,1:-1] =-phi[-2,1:-1]
 
-        # Domain top (dirichlet)
-        phi[1:-1,-1] = 0.0
+        # Domain top (neumann)
+        phi[1:-1,-1] = phi[1:-1,-2]
 
         # Domain bottom (neumann)
         phi[1:-1, 0] = phi[1:-1, 1]
@@ -282,7 +313,9 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 ###############################################
 # Corrector step
 @nb.njit(cache=True)
-def corrector(u, v, us, vs, p, nx, ny, dx, dy, dt):
+def corrector(u, v, us, vs, phi, nx, ny, dx, dy, dt):
 
-    u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(p[2:-1,1:-1] - p[1:-2,1:-1])/dx
-    v[1:-1,2:-1] = vs[1:-1,2:-1] - dt*(p[1:-1,2:-1] - p[1:-1,1:-2])/dy
+    u[2:-1,1:-1] = us[2:-1,1:-1] - dt*(phi[2:-1,1:-1] - phi[1:-2,1:-1])/dx
+    v[1:-1,2:-1] = vs[1:-1,2:-1] - dt*(phi[1:-1,2:-1] - phi[1:-1,1:-2])/dy
+
+

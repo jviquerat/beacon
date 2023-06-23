@@ -2,7 +2,7 @@
 import time
 
 # Custom imports
-from cavity import *
+from rayleigh import *
 
 #######################################
 # Run without control
@@ -10,7 +10,7 @@ from cavity import *
 
 # Initialize
 #t = turek(cfl=0.1, re=10.0, t_max=20.0)
-t = cavity(dx=0.01, dy=0.01, t_max=10.0, cfl=0.95, re=500.0)
+t = rayleigh(l=1.0, h=1.0, dx=0.2, dy=0.2, t_max=1.0, cfl=0.95, ra=1000.0, pr=0.71)
 t.reset_fields()
 
 # Set parameters for control-free run

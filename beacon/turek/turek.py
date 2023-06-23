@@ -83,7 +83,7 @@ class turek():
             y           = (j-0.5)*self.dy
             u_pois      = 4.0*self.umax*(self.h-y)*y/(self.h**2)
             self.u[1,j] = u_pois
-        self.v[0,1:-1] =-self.v[1,1:-1]
+        self.v[0,2:-1] =-self.v[1,2:-1]
 
         # Right wall
         self.u[-1,1:-1] = self.u[-2,1:-1]
@@ -170,9 +170,9 @@ class turek():
         fig, ax = plt.subplots(figsize=plt.figaspect(vn))
         fig.subplots_adjust(0,0,1,1)
         plt.imshow(vn,
-                   cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = self.umax)
+                   cmap = 'RdBu_r')
+                   # vmin = 0.0,
+                   # vmax = self.umax)
 
         filename = "velocity.png"
         plt.axis('off')
@@ -184,9 +184,9 @@ class turek():
         fig, ax = plt.subplots(figsize=plt.figaspect(vn))
         fig.subplots_adjust(0,0,1,1)
         plt.imshow(p,
-                   cmap = 'RdBu_r',
-                   vmin =-2.0,
-                   vmax = 4.0)
+                   cmap = 'RdBu_r')
+        #vmin =-2.0,
+        #vmax = 4.0)
 
         filename = "pressure.png"
         plt.axis('off')
@@ -220,13 +220,18 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             uS = 0.5*(u[i,j]   + u[i,j-1])
             vN = 0.5*(v[i,j+1] + v[i-1,j+1])
             vS = 0.5*(v[i,j]   + v[i-1,j])
-
             conv = (uE*uE-uW*uW)/dx + (uN*vN-uS*vS)/dy
+
+            #conv = 0.5*(
+            #    (uE*(u[i+1,j] + u[i,j])     - abs(uE)*(u[i+1,j] - u[i,j])    )/dx -
+            #    (uW*(u[i,j]   + u[i-1,j])   - abs(uW)*(u[i,j]   - u[i-1,j])  )/dx +
+            #    (uN*(v[i,j+1] + v[i-1,j+1]) - abs(uN)*(v[i,j+1] - v[i-1,j+1]))/dy -
+            #    (uS*(v[i,j]   + v[i-1,j])   - abs(uS)*(v[i,j]   - v[i-1,j])  )/dy)
 
             diff = ((u[i+1,j] - 2.0*u[i,j] + u[i-1,j])/(dx**2) +
                     (u[i,j+1] - 2.0*u[i,j] + u[i,j-1])/(dy**2))/re
 
-            #pres = (p[i,j] - p[i-1,j])/dx
+            pres = (p[i,j] - p[i-1,j])/dx
 
             us[i,j] = u[i,j] + dt*(diff - conv)# - pres)
 
@@ -238,13 +243,18 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
             uW = 0.5*(u[i,j]   + u[i,j-1])
             vN = 0.5*(v[i,j+1] + v[i,j])
             vS = 0.5*(v[i,j]   + v[i,j-1])
-
             conv = (uE*vE-uW*vW)/dx + (vN*vN-vS*vS)/dy
+
+            #conv = 0.5*(
+            #    (uE*(v[i+1,j] + v[i,j])     - abs(uE)*(v[i+1,j] - v[i,j])    )/dx -
+            #    (uW*(v[i,j]   + v[i-1,j])   - abs(uW)*(v[i,j]   - v[i-1,j])  )/dx +
+            #    (vN*(v[i,j+1] + v[i,j])     - abs(vN)*(v[i,j+1] - v[i,j])    )/dy -
+            #    (vS*(v[i,j]   + v[i,j-1])   - abs(vS)*(v[i,j]   - v[i,j-1])  )/dy)
 
             diff = ((v[i+1,j] - 2.0*v[i,j] + v[i-1,j])/(dx**2) +
                     (v[i,j+1] - 2.0*v[i,j] + v[i,j-1])/(dy**2))/re
 
-            #pres = (p[i,j] - p[i,j-1])/dy
+            pres = (p[i,j] - p[i,j-1])/dy
 
             vs[i,j] = v[i,j] + dt*(diff - conv)# - pres)
 
@@ -253,7 +263,7 @@ def predictor(u, v, us, vs, p, nx, ny, dt, dx, dy, re):
 #@nb.njit(cache=True)
 def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
-    tol      = 1.0e-2
+    tol      = 1.0e-3
     err      = 1.0e10
     itp      = 0
     ovf      = False
@@ -263,7 +273,7 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
 
         phin[:,:] = phi[:,:]
 
-        for i in range(1,nx+1):
+        for i in range(2,nx):
             for j in range(1,ny+1):
 
                 b = ((us[i+1,j] - us[i,j])/dx +
@@ -274,13 +284,14 @@ def poisson(us, vs, phi, nx, ny, dx, dy, dt):
                                 b*dx*dx*dy*dy)/(dx*dx+dy*dy)
 
         # Domain left (dirichlet)
-        #phi[ 0,1:-1] = 1.0
-        #phi[ 1,1:-1] = phi[2,1:-1]
-        #phi[ 0,1:-1] = phi[1,1:-1]
+        #phi[ 0,1:-1] = 0.0
+        phi[ 0,1:-1] =-phi[1,1:-1]
+        #phi[ 0,1:-1] = phi[1,1:-1] + 0.5*(phi[2,1:-1]-phi[1,1:-1])#/dx
 
         # Domain right (dirichlet)
-        #phi[-1,1:-1] = phi[-2,1:-1]
         #phi[-1,1:-1] = 0.0
+        #phi[-1,1:-1] = -0.1
+        phi[-1,1:-1] =-phi[-2,1:-1]
 
         # Domain top (neumann)
         phi[1:-1,-1] = phi[1:-1,-2]
