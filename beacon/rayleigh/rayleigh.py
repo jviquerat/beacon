@@ -31,9 +31,9 @@ class rayleigh(gym.Env):
         self.Th         = 0.5               # bottom plate reference temperature
         self.C          = 0.75              # max temperature variation at the bottom
         self.dt         = 0.0025            # timestep
-        self.dt_act     = 0.05              # action timestep
+        self.dt_act     = 0.25              # action timestep
         self.t_warmup   = 50.0              # warmup time
-        self.t_act      = 20.0              # action time after warmup
+        self.t_act      = 125.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
         self.n_obs_pts  = 5                 # nb of obs pts per direction
         self.n_obs_tot  = self.n_obs_pts**2 # total number of observation pts
@@ -173,6 +173,9 @@ class rayleigh(gym.Env):
 
         if (a is None): a = self.a.copy()
 
+        # Zero-mean the actions
+        a[:] = a[:] - np.mean(a)
+
         # Save actions
         self.ap[:] = self.a[:]
         self.a[:]  = a[:]
@@ -203,14 +206,12 @@ class rayleigh(gym.Env):
             self.u[1:,0]    =-self.u[1:,1]
             self.v[1:-1,1]  = 0.0
 
-            #print(self.a)
+            #self.T[1:-1,0]  = 2.0*self.Th - self.T[1:-1,1]
 
-            self.T[1:-1,0]  = 2.0*self.Th - self.T[1:-1,1]
-
-            # for i in range(self.n_sgts):
-            #     s = 1 + i*self.nx_sgts
-            #     e = 1 + (i+1)*self.nx_sgts
-            #     self.T[s:e,0]  = 2.0*self.a[i] - self.T[s:e,1]
+            for i in range(self.n_sgts):
+                s = 1 + i*self.nx_sgts
+                e = 1 + (i+1)*self.nx_sgts
+                self.T[s:e,0]  = 2.0*(self.Th + self.a[i]) - self.T[s:e,1]
 
             #########################
             # Predictor step
@@ -289,8 +290,8 @@ class rayleigh(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         ### Initialize plot
-        if (self.stp_plot == 0):
-            plt.figure(figsize=(10,2))
+        #if (self.stp_plot == 0):
+        #    plt.figure(figsize=(10,2))
 
         # Recreate fields at cells centers
         pu = np.zeros((self.nx, self.ny))
@@ -309,7 +310,8 @@ class rayleigh(gym.Env):
         pT = np.rot90(pT)
 
         # Create figure
-        plt.clf()
+        plt.cla()
+
         fig, ax = plt.subplots(1, 2, figsize=(10,5))
         fig.subplots_adjust(0.01, 0.01, 0.99, 0.99, wspace=0.02, hspace=0)
 
@@ -334,10 +336,12 @@ class rayleigh(gym.Env):
         ax[1].scatter(pts[:,0], pts[:,1], marker="o", color="red", s=50)
 
         # Save figure
+        if show:
+            #plt.show(block=False)
+            plt.pause(0.01)
         filename = self.path+"/"+str(self.stp_plot)+".png"
         plt.savefig(filename, dpi=100)
-        if show: plt.pause(0.0001)
-        plt.close()
+        #plt.close()
 
         # Dump if required
         if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
