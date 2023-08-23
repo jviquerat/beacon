@@ -22,7 +22,7 @@ class shkadov(gym.Env):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
-        self.nx         = 5*int(self.L)    # nb of discretization points
+        self.nx         = 2*int(self.L)    # nb of discretization points
         self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 200.0            # warmup time
@@ -46,6 +46,7 @@ class shkadov(gym.Env):
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
         self.dx         = float(self.L/self.nx)          # spatial step
+        print(self.dx)
         self.ndt_max    = int(self.t_max/self.dt)        # nb of numerical timesteps
         self.ndt_act    = int(self.dt_act/self.dt)       # nb of numerical timesteps per action
         self.ndt_warmup = int(self.t_warmup/self.dt)     # nb of numerical timesteps for warmup
