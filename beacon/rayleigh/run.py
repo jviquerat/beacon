@@ -9,15 +9,15 @@ from rayleigh import *
 #######################################
 
 # Initialize
-s = rayleigh(init=False)
+s = rayleigh(init=True)
 s.reset()
 
 # Set parameters for control-free run
 n        = s.n_act
 sum_rwd  = 0.0
 s_time   = time.time()
-plt_freq = 1    # plotting frequency
-show     = False # set to True to show while running
+plt_freq = 100    # plotting frequency
+show     = True # set to True to show while running
 
 for i in range(n):
     obs, rwd, done, trunc, _ = s.step()

@@ -32,7 +32,7 @@ class rayleigh(gym.Env):
         self.C          = 0.75              # max temperature variation at the bottom
         self.dt         = 0.0025            # timestep
         self.dt_act     = 0.05              # action timestep
-        self.t_warmup   = 200.0             # warmup time
+        self.t_warmup   = 50.0              # warmup time
         self.t_act      = 20.0              # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
         self.n_obs_pts  = 5                 # nb of obs pts per direction
@@ -59,10 +59,6 @@ class rayleigh(gym.Env):
         ### Path
         self.path = "png"
         os.makedirs(self.path, exist_ok=True)
-        self.path_u = self.path+"/velocity"
-        self.path_T = self.path+"/temperature"
-        os.makedirs(self.path_u, exist_ok=True)
-        os.makedirs(self.path_T, exist_ok=True)
 
         ### Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
@@ -290,12 +286,10 @@ class rayleigh(gym.Env):
         # Recreate fields at cells centers
         pu = np.zeros((self.nx, self.ny))
         pv = np.zeros((self.nx, self.ny))
-        pp = np.zeros((self.nx, self.ny))
         pT = np.zeros((self.nx, self.ny))
 
         pu[:,:] = 0.5*(self.u[2:,1:-1] + self.u[1:-1,1:-1])
         pv[:,:] = 0.5*(self.v[1:-1,2:] + self.v[1:-1,1:-1])
-        pp[:,:] = self.p[1:-1,1:-1]
         pT[:,:] = self.T[1:-1,1:-1]
 
         # Compute velocity norm
@@ -303,61 +297,58 @@ class rayleigh(gym.Env):
 
         # Rotate fields
         vn = np.rot90(vn)
-        pp = np.rot90(pp)
         pT = np.rot90(pT)
 
-        # Plot velocity
+        # Create figure
         plt.clf()
-        fig, ax = plt.subplots(figsize=plt.figaspect(vn))
-        fig.subplots_adjust(0,0,1,1)
-        plt.imshow(vn,
-                   cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = 0.3)
+        fig, ax = plt.subplots(1, 2, figsize=(10,5))
+        fig.subplots_adjust(0.01, 0.01, 0.99, 0.99, wspace=0.02, hspace=0)
 
-        filename = self.path_u+"/"+str(self.stp_plot)+".png"
-        plt.axis('off')
-        plt.savefig(filename, dpi=100)
-        plt.close()
+        # Plot velocity
+        ax[0].axis('off')
+        ax[0].imshow(vn,
+                     cmap = 'RdBu_r',
+                     vmin = 0.0,
+                     vmax = 0.3)
 
         # Plot temperature
-        plt.clf()
-        fig, ax = plt.subplots(figsize=plt.figaspect(vn))
-        fig.subplots_adjust(0,0,1,1)
-        plt.imshow(pT,
-                   cmap = 'RdBu_r',
-                   vmin = self.Tc,
-                   vmax = self.Th)
+        ax[1].axis('off')
+        ax[1].imshow(pT,
+                     cmap = 'RdBu_r',
+                     vmin = self.Tc,
+                     vmax = self.Th)
 
-        filename = self.path_T+"/"+str(self.stp_plot)+".png"
-        plt.axis('off')
+        # Save figure
+        filename = self.path+"/"+str(self.stp_plot)+".png"
         plt.savefig(filename, dpi=100)
         if show: plt.pause(0.0001)
         plt.close()
 
-        #if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-        #                   self.path+"/jet_"+str(self.stp_plot)+".dat")
+        # Dump if required
+        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
+                           self.path+"/a_"+str(self.stp_plot)+".dat")
 
         self.stp_plot += 1
 
-    # # Dump (h,q)
-    # def dump(self, field_name, jet_name):
+    # Dump fields
+    def dump(self, field_name, act_name):
 
-    #     array = self.x.copy()
-    #     array = np.vstack((array, self.h))
-    #     array = np.vstack((array, self.q))
-    #     array = np.transpose(array)
+        array = self.u.copy()
+        array = np.vstack((array, self.v))
+        array = np.vstack((array, self.p))
+        array = np.vstack((array, self.T))
 
-    #     np.savetxt(field_name, array,  fmt='%.5e')
-    #     np.savetxt(jet_name,   self.u, fmt='%.5e')
+        np.savetxt(field_name, array, fmt='%.5e')
+        np.savetxt(act_name, self.a, fmt='%.5e')
 
     # Load (h,q)
     def load(self, filename):
 
-        pass
-        # f = np.loadtxt(filename)
-        # self.h_init[:self.nx] = f[:self.nx,1]
-        # self.q_init[:self.nx] = f[:self.nx,2]
+        f = np.loadtxt(filename)
+        self.u_init[:,:] = f[0*(self.nx+2):1*(self.nx+2),:]
+        self.v_init[:,:] = f[1*(self.nx+2):2*(self.nx+2),:]
+        self.p_init[:,:] = f[2*(self.nx+2):3*(self.nx+2),:]
+        self.T_init[:,:] = f[3*(self.nx+2):4*(self.nx+2),:]
 
     # Closing
     def close(self):
