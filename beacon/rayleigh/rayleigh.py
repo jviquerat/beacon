@@ -41,7 +41,7 @@ class rayleigh(gym.Env):
         self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
         self.init_file  = "init_field.dat"  # initialization file
-        self.rand_init  = True              # random initialization
+        self.rand_init  = False             # random initialization
         self.rand_steps = 400               # nb of rand. steps for random initialization
 
         # Deduced parameters
