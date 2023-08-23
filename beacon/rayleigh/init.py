@@ -8,7 +8,7 @@ from rayleigh import *
 # Generate initial data
 #######################################
 
-plot_freq = 500
+plot_freq = 100
 control = 0.0
 s = rayleigh(init=False, n_sgts=1)
 s.reset_fields()

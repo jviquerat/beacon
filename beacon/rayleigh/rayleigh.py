@@ -55,6 +55,7 @@ class rayleigh(gym.Env):
         self.n_act      = int(self.t_act/self.dt_act)    # nb of action steps per episode
         self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
+        self.nx_sgts    = self.nx//self.n_sgts           # nb of pts in each segment
 
         ### Path
         self.path = "png"
@@ -201,7 +202,15 @@ class rayleigh(gym.Env):
             # Bottom wall
             self.u[1:,0]    =-self.u[1:,1]
             self.v[1:-1,1]  = 0.0
+
+            #print(self.a)
+
             self.T[1:-1,0]  = 2.0*self.Th - self.T[1:-1,1]
+
+            # for i in range(self.n_sgts):
+            #     s = 1 + i*self.nx_sgts
+            #     e = 1 + (i+1)*self.nx_sgts
+            #     self.T[s:e,0]  = 2.0*self.a[i] - self.T[s:e,1]
 
             #########################
             # Predictor step
@@ -317,6 +326,12 @@ class rayleigh(gym.Env):
                      cmap = 'RdBu_r',
                      vmin = self.Tc,
                      vmax = self.Th)
+
+        # Plot delimitations of control zones
+        pts = np.empty((0,2))
+        for i in range(self.n_sgts+1):
+            pts = np.vstack((pts, np.array([max(0,i*self.nx_sgts-1),self.nx+5])))
+        ax[1].scatter(pts[:,0], pts[:,1], marker="o", color="red", s=50)
 
         # Save figure
         filename = self.path+"/"+str(self.stp_plot)+".png"
