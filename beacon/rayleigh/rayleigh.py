@@ -38,7 +38,7 @@ class rayleigh(gym.Env):
         self.n_obs_pts  = 5                 # nb of obs pts per direction
         self.n_obs_tot  = self.n_obs_pts**2 # total number of observation pts
         self.u_interp   = 0.02              # time on which action is interpolated
-        self.blowup_rwd =-1.0               # reward in case of blow-up
+        #self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
         self.init_file  = "init_field.dat"  # initialization file
         self.rand_init  = False             # random initialization
@@ -58,8 +58,12 @@ class rayleigh(gym.Env):
         self.nx_sgts    = self.nx//self.n_sgts           # nb of pts in each segment
 
         ### Path
-        self.path = "png"
-        os.makedirs(self.path, exist_ok=True)
+        self.path             = "png"
+        self.velocity_path    = self.path+"/velocity"
+        self.temperature_path = self.path+"/temperature"
+        os.makedirs(self.path,             exist_ok=True)
+        os.makedirs(self.velocity_path,    exist_ok=True)
+        os.makedirs(self.temperature_path, exist_ok=True)
 
         ### Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
@@ -157,11 +161,6 @@ class rayleigh(gym.Env):
         if (self.stp == self.n_act-1):
             done  = True
             trunc = True
-        # if (np.any((self.h < -5.0*self.h_max) | (self.h > 5.0*self.h_max))):
-        #     print("Blowup")
-        #     done  = True
-        #     trunc = False
-        #     rwd   = self.blowup_rwd
 
         # Update step
         self.stp += 1
@@ -290,8 +289,8 @@ class rayleigh(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         ### Initialize plot
-        #if (self.stp_plot == 0):
-        #    plt.figure(figsize=(10,2))
+        if (self.stp_plot == 0):
+            plt.figure(figsize=(5,5))
 
         # Recreate fields at cells centers
         pu = np.zeros((self.nx, self.ny))
@@ -309,41 +308,41 @@ class rayleigh(gym.Env):
         vn = np.rot90(vn)
         pT = np.rot90(pT)
 
-        # Create figure
-        plt.cla()
-
-        fig, ax = plt.subplots(1, 2, figsize=(10,5))
-        fig.subplots_adjust(0.01, 0.01, 0.99, 0.99, wspace=0.02, hspace=0)
-
         # Plot velocity
-        ax[0].axis('off')
-        ax[0].imshow(vn,
-                     cmap = 'RdBu_r',
-                     vmin = 0.0,
-                     vmax = 0.3)
+        plt.axis('off')
+        plt.imshow(vn,
+                   cmap = 'RdBu_r',
+                   vmin = 0.0,
+                   vmax = 0.3)
+
+        # Save figure
+        filename = self.velocity_path+"/"+str(self.stp_plot)+".png"
+        fig = plt.gcf()
+        fig.tight_layout()
+        plt.savefig(filename, dpi=100, bbox_inches='tight')
 
         # Plot temperature
-        ax[1].axis('off')
-        ax[1].imshow(pT,
-                     cmap = 'RdBu_r',
-                     vmin = self.Tc,
-                     vmax = self.Th)
+        plt.clf()
+        plt.axis('off')
+        plt.imshow(pT,
+                   cmap = 'RdBu_r',
+                   vmin = self.Tc,
+                   vmax = self.Th)
 
         # Plot delimitations of control zones
         pts = np.empty((0,2))
         for i in range(self.n_sgts+1):
             pts = np.vstack((pts, np.array([max(0,i*self.nx_sgts-1),self.nx+5])))
-        ax[1].scatter(pts[:,0], pts[:,1], marker="o", color="red", s=50)
+        plt.scatter(pts[:,0], pts[:,1], marker="o", color="red", s=50)
 
         # Save figure
-        if show:
-            #plt.show(block=False)
-            plt.pause(0.01)
-        filename = self.path+"/"+str(self.stp_plot)+".png"
-        plt.savefig(filename, dpi=100)
-        #plt.close()
+        filename = self.temperature_path+"/"+str(self.stp_plot)+".png"
+        fig = plt.gcf()
+        fig.tight_layout()
+        plt.savefig(filename, dpi=100, bbox_inches='tight')
 
-        # Dump if required
+        if show: plt.pause(0.0001)
+        plt.clf()
         if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
                            self.path+"/a_"+str(self.stp_plot)+".dat")
 
