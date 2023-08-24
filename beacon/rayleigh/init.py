@@ -24,4 +24,4 @@ for it in range(s.n_warmup):
 end_time = time.time()
 print("# Loop time = {:f}".format(end_time - start_time))
 
-s.dump("init_field.dat", "init_act.dat")
+s.dump("init_field.dat", "init_act.dat", "init_nusselt.dat")

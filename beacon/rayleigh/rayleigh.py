@@ -31,12 +31,12 @@ class rayleigh(gym.Env):
         self.Th         = 0.5               # bottom plate reference temperature
         self.C          = 0.75              # max temperature variation at the bottom
         self.dt         = 0.0025            # timestep
-        self.dt_act     = 0.25              # action timestep
-        self.t_warmup   = 50.0              # warmup time
-        self.t_act      = 125.0             # action time after warmup
+        self.dt_act     = 1.0               # action timestep
+        self.t_warmup   = 200.0             # warmup time
+        self.t_act      = 200.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
         self.n_obs_pts  = 5                 # nb of obs pts per direction
-        self.u_interp   = 0.02              # time on which action is interpolated
+        #self.u_interp   = 0.02              # time on which action is interpolated
         #self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
         self.init_file  = "init_field.dat"  # initialization file
@@ -53,7 +53,7 @@ class rayleigh(gym.Env):
         self.ndt_warmup = int(self.t_warmup/self.dt)     # nb of numerical timesteps for warmup
         self.n_act      = int(self.t_act/self.dt_act)    # nb of action steps per episode
         self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
-        self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
+        #self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
         self.nx_sgts    = self.nx//self.n_sgts           # nb of pts in each segment
         self.n_obs_tot  = self.n_obs_pts**2              # total number of observation pts
         self.nx_obs     = self.nx//self.n_obs_pts        # nb of pts between each observation pt
@@ -135,6 +135,9 @@ class rayleigh(gym.Env):
         self.a  = [0.0]*self.n_sgts
         self.ap = [0.0]*self.n_sgts
 
+        # Nusselt
+        self.nu = []
+
         # Running indices
         self.stp      = 0
         self.stp_plot = 0
@@ -175,6 +178,9 @@ class rayleigh(gym.Env):
 
         # Zero-mean the actions
         a[:] = a[:] - np.mean(a)
+        m    = np.amax(a)
+        for i in range(self.n_sgts):
+            a[i] = a[i]*self.C/max(1.0, m)
 
         # Save actions
         self.ap[:] = self.a[:]
@@ -275,12 +281,6 @@ class rayleigh(gym.Env):
                 y       += self.nx_obs
             x += self.nx_obs
 
-        #     s = self.jet_pos + i*self.jet_space - self.l_obs
-        #     e = s + self.l_obs
-        #     stp = int(1.0/self.dx)
-        #     tmp[:self.n_obs] = self.q[s:e:stp]
-        #     obs = np.append(obs, tmp)
-
         obs = np.reshape(obs, [-1])
 
         return obs
@@ -293,6 +293,8 @@ class rayleigh(gym.Env):
             dT  = (self.T[i,1] - self.Th)/(0.5*self.dy)
             nu -= dT
         nu /= self.nx
+
+        self.nu.append(nu)
 
         return -nu
 
@@ -355,20 +357,22 @@ class rayleigh(gym.Env):
         if show: plt.pause(0.0001)
         plt.clf()
         if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-                           self.path+"/a_"+str(self.stp_plot)+".dat")
+                           self.path+"/a_"+str(self.stp_plot)+".dat",
+                           self.path+"/nu.dat")
 
         self.stp_plot += 1
 
     # Dump fields
-    def dump(self, field_name, act_name):
+    def dump(self, field_name, act_name, nusselt_name):
 
         array = self.u.copy()
         array = np.vstack((array, self.v))
         array = np.vstack((array, self.p))
         array = np.vstack((array, self.T))
 
-        np.savetxt(field_name, array, fmt='%.5e')
-        np.savetxt(act_name, self.a, fmt='%.5e')
+        np.savetxt(field_name,   array,   fmt='%.5e')
+        np.savetxt(act_name,     self.a,  fmt='%.5e')
+        np.savetxt(nusselt_name, self.nu, fmt='%.5e')
 
     # Load (h,q)
     def load(self, filename):
