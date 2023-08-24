@@ -36,7 +36,6 @@ class rayleigh(gym.Env):
         self.t_act      = 125.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
         self.n_obs_pts  = 5                 # nb of obs pts per direction
-        self.n_obs_tot  = self.n_obs_pts**2 # total number of observation pts
         self.u_interp   = 0.02              # time on which action is interpolated
         #self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
@@ -56,6 +55,8 @@ class rayleigh(gym.Env):
         self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
         self.nx_sgts    = self.nx//self.n_sgts           # nb of pts in each segment
+        self.n_obs_tot  = self.n_obs_pts**2              # total number of observation pts
+        self.nx_obs     = self.nx//self.n_obs_pts        # nb of pts between each observation pt
 
         ### Path
         self.path             = "png"
@@ -264,13 +265,23 @@ class rayleigh(gym.Env):
     # Retrieve observations
     def get_obs(self):
 
-        obs = np.array([self.n_obs_pts, self.n_obs_pts])
-        # for i in range(self.n_obs_pts):
+        obs = np.zeros((self.n_obs_pts, self.n_obs_pts))
+
+        x = self.nx_obs//2
+        for i in range(self.n_obs_pts):
+            y = self.nx_obs//2
+            for j in range(self.n_obs_pts):
+                obs[i,j] = self.T[x,y]
+                y       += self.nx_obs
+            x += self.nx_obs
+
         #     s = self.jet_pos + i*self.jet_space - self.l_obs
         #     e = s + self.l_obs
         #     stp = int(1.0/self.dx)
         #     tmp[:self.n_obs] = self.q[s:e:stp]
         #     obs = np.append(obs, tmp)
+
+        obs = np.reshape(obs, [-1])
 
         return obs
 
