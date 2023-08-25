@@ -18,7 +18,7 @@ class rayleigh(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L=math.pi, H=1.0, n_sgts=5, ra=1.0e4):
+                 L=1.0, H=1.0, n_sgts=5, ra=1.0e4):
 
         # Main parameters
         self.L          = L                 # length of the domain
@@ -33,11 +33,12 @@ class rayleigh(gym.Env):
         self.C          = 0.75              # max temperature variation at the bottom
         self.dt         = 0.01            # timestep
         self.dt_act     = 1.0               # action timestep
-        self.t_warmup   = 200.0             # warmup time
+        self.t_warmup   = 400.0             # warmup time
         self.t_act      = 200.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
-        self.nx_obs_pts = 10                # nb of obs pts in x direction
+        self.nx_obs_pts = 5                # nb of obs pts in x direction
         self.ny_obs_pts = 5                 # nb of obs pts in y direction
+        self.n_obs_steps = 2                     # nb of observations steps
         #self.u_interp   = 0.02             # time on which action is interpolated
         #self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
@@ -57,7 +58,7 @@ class rayleigh(gym.Env):
         self.n_warmup   = int(self.t_warmup/self.dt_act)  # nb of action steps for warmup
         #self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
         self.nx_sgts    = self.nx//self.n_sgts            # nb of pts in each segment
-        self.n_obs_tot  = self.nx_obs_pts*self.ny_obs_pts # total number of observation pts
+        self.n_obs_tot  = self.n_obs_steps*self.nx_obs_pts*self.ny_obs_pts # total number of observation pts
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
@@ -141,6 +142,11 @@ class rayleigh(gym.Env):
         # Actions
         self.a  = [0.0]*self.n_sgts
         self.ap = [0.0]*self.n_sgts
+
+        # Observations
+        self.obs = np.zeros((self.n_obs_steps,
+                             self.nx_obs_pts,
+                             self.ny_obs_pts))
 
         # Nusselt
         self.nu = []
@@ -278,17 +284,20 @@ class rayleigh(gym.Env):
     # Retrieve observations
     def get_obs(self):
 
-        obs = np.zeros((self.nx_obs_pts, self.ny_obs_pts))
+        # Copy previous observations
+        for i in range(1,self.n_obs_steps):
+            self.obs[i-1,:,:] = self.obs[i,:,:]
 
+        # Fill new observations
         x = self.nx_obs//2
         for i in range(self.nx_obs_pts):
             y = self.ny_obs//2
             for j in range(self.ny_obs_pts):
-                obs[i,j] = self.T[x,y]
-                y       += self.ny_obs
+                self.obs[-1,i,j] = self.T[x,y]
+                y               += self.ny_obs
             x += self.nx_obs
 
-        obs = np.reshape(obs, [-1])
+        obs = np.reshape(self.obs, [-1])
 
         return obs
 
@@ -361,12 +370,13 @@ class rayleigh(gym.Env):
         # Plot control
         ax  = plt.gca()
         fig = plt.gcf()
-        for i in range(self.n_sgts):
-            x = (max(0,i*self.nx_sgts-1) + self.nx_sgts//2)*self.dx
-            y = (self.nx + 5)*self.dy
-            ax.add_patch(Rectangle((x, y),
-                                   self.a[i], 0.1,
-                                   facecolor='red', fill=True, lw=1))
+        # scale = self.nx_sgts/self.L
+        # for i in range(self.n_sgts):
+        #     x = (max(0,i*self.nx_sgts-1) + self.nx_sgts//2)*self.dx
+        #     y = 5.0*self.dy
+        #     ax.add_patch(Rectangle((x, y),
+        #                            self.a[i], 0.1,
+        #                            facecolor='red', fill=True, lw=1))
         #pts = np.empty((0,2))
         #for i in range(self.n_sgts+1):
         #    pts = np.vstack((pts, np.array([max(0,i*self.nx_sgts-1),self.nx+5])))

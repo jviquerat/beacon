@@ -20,7 +20,7 @@ plt_freq = 50    # plotting frequency
 show     = False # set to True to show while running
 
 for i in range(n):
-    obs, rwd, done, trunc, _ = s.step([1.0, 0.0, 0.0, 0.0, 0.0])
+    obs, rwd, done, trunc, _ = s.step([1.0, -1.0, 0.0, 0.0, 0.0])
     sum_rwd += rwd
     end="\r"
     if (i==n-1): end="\n"
