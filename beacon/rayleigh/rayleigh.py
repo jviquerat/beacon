@@ -18,7 +18,7 @@ class rayleigh(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L=1.0, H=1.0, n_sgts=10, ra=1.0e4):
+                 L=math.pi, H=1.0, n_sgts=10, ra=1.0e4):
 
         # Main parameters
         self.L          = L                 # length of the domain
@@ -35,7 +35,7 @@ class rayleigh(gym.Env):
         self.t_warmup   = 400.0             # warmup time
         self.t_act      = 200.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
-        self.nx_obs_pts = 8                # nb of obs pts in x direction
+        self.nx_obs_pts = 24                # nb of obs pts in x direction
         self.ny_obs_pts = 8                 # nb of obs pts in y direction
         self.n_obs_steps = 4                     # nb of observations steps
         #self.u_interp   = 0.02             # time on which action is interpolated
