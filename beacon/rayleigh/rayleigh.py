@@ -18,7 +18,7 @@ class rayleigh(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L=1.0, H=1.0, n_sgts=5, ra=1.0e4):
+                 L=1.0, H=1.0, n_sgts=10, ra=1.0e4):
 
         # Main parameters
         self.L          = L                 # length of the domain
@@ -27,7 +27,6 @@ class rayleigh(gym.Env):
         self.ny         = 100*int(self.H)   # nb of pts in y direction
         self.ra         = ra                # rayleigh number
         self.pr         = 0.71              # prandtl number
-        self.g          = 9.81              # gravity
         self.Tc         =-0.5               # top plate temperature
         self.Th         = 0.5               # bottom plate reference temperature
         self.C          = 0.75              # max temperature variation at the bottom
@@ -36,15 +35,15 @@ class rayleigh(gym.Env):
         self.t_warmup   = 400.0             # warmup time
         self.t_act      = 200.0             # action time after warmup
         self.n_sgts     = n_sgts            # nb of temperature segments
-        self.nx_obs_pts = 5                # nb of obs pts in x direction
-        self.ny_obs_pts = 5                 # nb of obs pts in y direction
-        self.n_obs_steps = 2                     # nb of observations steps
+        self.nx_obs_pts = 8                # nb of obs pts in x direction
+        self.ny_obs_pts = 8                 # nb of obs pts in y direction
+        self.n_obs_steps = 4                     # nb of observations steps
         #self.u_interp   = 0.02             # time on which action is interpolated
         #self.blowup_rwd =-1.0               # reward in case of blow-up
         self.eps        = 1.0e-8            # avoid division by zero
         self.init_file  = "init_field.dat"  # initialization file
-        self.rand_init  = False             # random initialization
-        self.rand_steps = 400               # nb of rand. steps for random initialization
+        #self.rand_init  = False             # random initialization
+        #self.rand_steps = 400               # nb of rand. steps for random initialization
 
         # Deduced parameters
         #self.ny         = self.nx                        # nb of pts in y direction
@@ -115,11 +114,11 @@ class rayleigh(gym.Env):
         self.p[:] = self.p_init[:]
         self.T[:] = self.T_init[:]
 
-        if (self.rand_init):
-            n = random.randint(0,self.rand_steps)
-            for i in range(n):
-                self.step(self.a)
-            self.stp = 0
+#        if (self.rand_init):
+#            n = random.randint(0,self.rand_steps)
+#            for i in range(n):
+#                self.step(self.a)
+#            self.stp = 0
 
         obs = self.get_obs()
 
@@ -191,9 +190,9 @@ class rayleigh(gym.Env):
 
         # Zero-mean the actions
         a[:] = a[:] - np.mean(a)
-        m    = np.amax(a)
-        for i in range(self.n_sgts):
-            a[i] = a[i]*self.C/max(1.0, m)
+        #m    = np.amax(a)
+        #for i in range(self.n_sgts):
+        #    a[i] = a[i]*self.C/max(1.0, m)
 
         # Save actions
         self.ap[:] = self.a[:]

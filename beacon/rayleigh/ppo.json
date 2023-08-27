@@ -13,13 +13,13 @@
     },
     "n_avg": 2,
     "n_cpu": 1,
-    "n_stp_max": 200000,
+    "n_stp_max": 300000,
     "trainer": {
         "style": "buffer",
         "buff_size": 1600,
         "n_buff": 1,
         "batch_frac": 0.5,
-        "n_epochs": 64,
+        "n_epochs": 32,
         "rnd_style": "ascii",
         "render_every": 10000
     },
@@ -30,12 +30,12 @@
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [64],
+                    "arch": [128],
                     "actv": "tanh"
                 },
                 "heads": {
                     "nb": 2,
-                    "arch": [[64],[64]],
+                    "arch": [[128],[128]],
                     "actv": ["tanh","tanh"],
                     "final": ["tanh","sigmoid"]
                 }
@@ -56,7 +56,7 @@
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [64,64],
+                    "arch": [128,128],
                     "actv": "relu"
                 },
                 "heads": {
@@ -67,7 +67,7 @@
                 }
             },
             "optimizer": {
-                "type": "nadam",
+                "type": "adam",
                 "lr": 5.0e-3,
                 "grd_clip": 0.1
             },
@@ -78,7 +78,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.99,
+            "gae_lambda": 0.90,
             "ret_norm": true
         },
         "termination": {
