@@ -109,7 +109,7 @@ Finally, each episode starts with the loading of a fully developed initial state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The environment as described in the previous section is referred to as \codeinline{rayleigh-v0}, and its default parameters are provided in table \ref{table:rayleigh_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 2000$, $n_\text{batch} = 2$, $n_\text{epoch} = 16$ and $n_\text{max} = 200k$.
+The environment as described in the previous section is referred to as \codeinline{rayleigh-v0}, and its default parameters are provided in table \ref{table:rayleigh_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 500$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 200k$.
 %
 %The score curve obtained with the PPO algorithm is presented in \ref{fig:sloshing_score}, while the time evolutions of the controlled versus uncontrolled fluid level are shown in figure \ref{fig:sloshing_fields}. As can be observed, the agent manages to roughly cut the uncontrolled reward in half, by suppressing the back and forth wavefront using large actuations in the early stages of control, after what the control amplitude drops significantly.
 

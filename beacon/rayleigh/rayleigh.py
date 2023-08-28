@@ -292,7 +292,7 @@ class rayleigh(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         ### Initialize plot
-        plt.figure(figsize=(math.pi*5,5))
+        vfig = plt.figure(figsize=(5,5))
 
         # Recreate fields at cells centers
         pu = np.zeros((self.nx, self.ny))
@@ -322,22 +322,21 @@ class rayleigh(gym.Env):
 
         # Save figure
         filename = self.velocity_path+"/"+str(self.stp_plot)+".png"
-        fig = plt.gcf()
-        fig.tight_layout()
+        #vfig = plt.gcf()
+        vfig.tight_layout()
         plt.savefig(filename, dpi=100, bbox_inches='tight')
 
         # Plot temperature
-        plt.clf()
-        plt.figure(figsize=(math.pi*5,5))
+        tfig = plt.figure(figsize=(5,10))
+        ax  = plt.gca()
+        #fig = plt.gcf()
         plt.axis('off')
         plt.imshow(pT,
                    cmap = 'RdBu_r',
                    vmin = self.Tc,
-                   vmax = self.Th + 0.5*self.C)
+                   vmax = self.Th)
 
         # Plot control
-        ax  = plt.gca()
-        fig = plt.gcf()
         # scale = self.nx_sgts/self.L
         # for i in range(self.n_sgts):
         #     x = (max(0,i*self.nx_sgts-1) + self.nx_sgts//2)*self.dx
@@ -352,8 +351,8 @@ class rayleigh(gym.Env):
 
         # Save figure
         filename = self.temperature_path+"/"+str(self.stp_plot)+".png"
-        fig = plt.gcf()
-        fig.tight_layout()
+        #fig = plt.gcf()
+        tfig.tight_layout()
         plt.savefig(filename, dpi=100, bbox_inches='tight')
 
         if show: plt.pause(0.0001)
