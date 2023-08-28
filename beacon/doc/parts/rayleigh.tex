@@ -41,6 +41,7 @@ where $\nu$ is the kinematic viscosity and $\kappa$ the thermal diffusivity. Sec
 with $g$ the magnitude of the acceleration of the gravity and $\alpha$ the thermal expansion coefficient. We also define the instantaneous Nusselt number, $\nus$, as the adimensionalized heat flux averaged over the hot wall:
 
 \begin{equation}
+\label{eq:nusselt}
 	\nus_t = - \int_{0}^{L} \partial_y \theta (x',y=0,t) dx'.
 \end{equation}
 
@@ -75,17 +76,15 @@ Above a critical value $\ra_c$, natural convection is triggered in the cell, inc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discretization}
-%
-%The system (\ref{eq:stvenant}) is discretized using a finite volume scheme with Rusanov fluxes \cite{cordier2007}, which is an improved form of the Lax-Friedrichs flux. The time derivatives for both $h$ and $q$ are discretized using the second-order Adams-Bashforth scheme, already introduced in (\ref{eq:adams_bashforth}).
-%
+
+The system (\ref{eq:rayleigh}) is discretized using a structured finite volume incremental projection scheme with centered fluxes, in the fashion of \cite{boivin2000}. For simplicity, the scheme is solved in a fully explicit way, except for the resolution of the Poisson equation for pressure. As is standard, a staggered grid is used for the finite volume scheme: the horizontal velocity is located on the west face of the cells, the vertical velocity is on the south face of the cells, while the pressure and temperature are located at the center of the cells. The computation of the instantaneous Nusselt number (\ref{eq:nusselt}) is performed by computing the first-order finite difference of the temperature between the center of the first cell at the bottom of the mesh and the reference temperature $T_H$. Doing so, we obtain $\nus = 2.16$  for $\ra = \num{1e4}$ once the permanent regime is reached, which is close to the reference values found in the literature, that range between $2.20$ and $2.24$ \cite{markatos1984}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The proposed environment is re-implemented based on the original publication
-
-In the following, we set $\pr=0.71$, which corresponds to the parameter for air.
+The proposed environment is re-implemented based on the original publication of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$.
 %
 %The control of the system (\ref{eq:stvenant}) is performed through the cart acceleration term $\ddot{y}$. The system is first set in motion during $t_\text{exc} = 2$ time units using a sinusoid-based signal:
 %

@@ -18,7 +18,7 @@ class rayleigh(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L=math.pi, H=1.0, n_sgts=10, ra=1.0e4):
+                 L=1.0, H=1.0, n_sgts=10, ra=1.0e4):
 
         # Main parameters
         self.L          = L                 # length of the domain
@@ -37,16 +37,11 @@ class rayleigh(gym.Env):
         self.n_sgts     = n_sgts            # nb of temperature segments
         self.nx_obs_pts = 24                # nb of obs pts in x direction
         self.ny_obs_pts = 8                 # nb of obs pts in y direction
-        self.n_obs_steps = 4                     # nb of observations steps
-        #self.u_interp   = 0.02             # time on which action is interpolated
-        #self.blowup_rwd =-1.0               # reward in case of blow-up
+        self.n_obs_steps = 4                # nb of observations steps
         self.eps        = 1.0e-8            # avoid division by zero
         self.init_file  = "init_field.dat"  # initialization file
-        #self.rand_init  = False             # random initialization
-        #self.rand_steps = 400               # nb of rand. steps for random initialization
 
         # Deduced parameters
-        #self.ny         = self.nx                        # nb of pts in y direction
         self.t_max      = self.t_warmup + self.t_act      # total simulation time
         self.dx         = float(self.L/self.nx)           # x spatial step
         self.dy         = float(self.H/self.ny)           # y spatial step
@@ -55,7 +50,6 @@ class rayleigh(gym.Env):
         self.ndt_warmup = int(self.t_warmup/self.dt)      # nb of numerical timesteps for warmup
         self.n_act      = int(self.t_act/self.dt_act)     # nb of action steps per episode
         self.n_warmup   = int(self.t_warmup/self.dt_act)  # nb of action steps for warmup
-        #self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
         self.nx_sgts    = self.nx//self.n_sgts            # nb of pts in each segment
         self.n_obs_tot  = self.n_obs_steps*self.nx_obs_pts*self.ny_obs_pts # total number of observation pts
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
@@ -113,12 +107,6 @@ class rayleigh(gym.Env):
         self.v[:] = self.v_init[:]
         self.p[:] = self.p_init[:]
         self.T[:] = self.T_init[:]
-
-#        if (self.rand_init):
-#            n = random.randint(0,self.rand_steps)
-#            for i in range(n):
-#                self.step(self.a)
-#            self.stp = 0
 
         obs = self.get_obs()
 
@@ -224,8 +212,6 @@ class rayleigh(gym.Env):
             self.u[1:,0]    =-self.u[1:,1]
             self.v[1:-1,1]  = 0.0
 
-            #self.T[1:-1,0]  = 2.0*self.Th - self.T[1:-1,1]
-
             for i in range(self.n_sgts):
                 s = 1 + i*self.nx_sgts
                 e = 1 + (i+1)*self.nx_sgts
@@ -269,17 +255,6 @@ class rayleigh(gym.Env):
             transport(self.u, self.v, self.T,
                       self.nx, self.ny, self.dx, self.dy, self.dt, self.pr, self.ra)
 
-            # # Add control
-            # alpha = min(float(i)/float(self.n_interp), 1.0)
-            # for j in range(self.n_jets):
-            #     u[j] = (1.0-alpha)*self.up[j] + alpha*self.u[j]
-            #     s = self.jet_pos + j*self.jet_space - self.jet_hw
-            #     e = s + 2*self.jet_hw
-            #     for k in range(s,e+1):
-            #         v  = (k-s)*(e-k)/(0.25*(e-s)**2)
-            #         dq = self.jet_amp*u[j]*v
-            #         self.rhsq[k] += dq
-
     # Retrieve observations
     def get_obs(self):
 
@@ -317,8 +292,6 @@ class rayleigh(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         ### Initialize plot
-        #if (self.stp_plot == 0):
-        #    plt.figure(figsize=(math.pi*5,5))
         plt.figure(figsize=(math.pi*5,5))
 
         # Recreate fields at cells centers
@@ -342,10 +315,6 @@ class rayleigh(gym.Env):
         # Plot velocity
         y, x = np.mgrid[0:self.H:self.dy, 0:self.L:self.dx]
         plt.axis('off')
-        #start = np.column_stack((np.arange(0,self.L,self.dx),
-        #                         np.ones(self.nx)*self.H*0.5))
-        #plt.streamplot(x, y, -pu, pv, start_points=start,
-        #               density=5, color=pv)
         plt.imshow(vn,
                    cmap = 'RdBu_r',
                    vmin = 0.0,
