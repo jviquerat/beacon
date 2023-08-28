@@ -21,25 +21,25 @@ class rayleigh(gym.Env):
                  L=1.0, H=1.0, n_sgts=10, ra=1.0e4):
 
         # Main parameters
-        self.L          = L                 # length of the domain
-        self.H          = H                 # height of the domain
-        self.nx         = 50*int(self.L)   # nb of pts in x direction
-        self.ny         = 50*int(self.H)   # nb of pts in y direction
-        self.ra         = ra                # rayleigh number
-        self.pr         = 0.71              # prandtl number
-        self.Tc         =-0.5               # top plate temperature
-        self.Th         = 0.5               # bottom plate reference temperature
-        self.C          = 0.75              # max temperature variation at the bottom
-        self.dt         = 0.01            # timestep
-        self.dt_act     = 1.0               # action timestep
-        self.t_warmup   = 400.0             # warmup time
-        self.t_act      = 200.0             # action time after warmup
-        self.n_sgts     = n_sgts            # nb of temperature segments
-        self.nx_obs_pts = 24                # nb of obs pts in x direction
-        self.ny_obs_pts = 8                 # nb of obs pts in y direction
+        self.L           = L                # length of the domain
+        self.H           = H                # height of the domain
+        self.nx          = 50*int(self.L)   # nb of pts in x direction
+        self.ny          = 50*int(self.H)   # nb of pts in y direction
+        self.ra          = ra               # rayleigh number
+        self.pr          = 0.71             # prandtl number
+        self.Tc          =-0.5              # top plate temperature
+        self.Th          = 0.5              # bottom plate reference temperature
+        self.C           = 0.75             # max temperature variation at the bottom
+        self.dt          = 0.01             # timestep
+        self.dt_act      = 1.0              # action timestep
+        self.t_warmup    = 200.0            # warmup time
+        self.t_act       = 100.0            # action time after warmup
+        self.n_sgts      = n_sgts           # nb of temperature segments
+        self.nx_obs_pts  = 8*int(self.L)    # nb of obs pts in x direction
+        self.ny_obs_pts  = 8*int(self.H)    # nb of obs pts in y direction
         self.n_obs_steps = 4                # nb of observations steps
-        self.eps        = 1.0e-8            # avoid division by zero
-        self.init_file  = "init_field.dat"  # initialization file
+        self.eps         = 1.0e-8           # avoid division by zero
+        self.init_file   = "init_field.dat" # initialization file
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act      # total simulation time
@@ -178,9 +178,9 @@ class rayleigh(gym.Env):
 
         # Zero-mean the actions
         a[:] = a[:] - np.mean(a)
-        #m    = np.amax(a)
-        #for i in range(self.n_sgts):
-        #    a[i] = a[i]*self.C/max(1.0, m)
+        m    = max(1.0, np.amax(np.abs(a)/self.C))
+        for i in range(self.n_sgts):
+            a[i] = a[i]/m
 
         # Save actions
         self.ap[:] = self.a[:]
@@ -333,7 +333,7 @@ class rayleigh(gym.Env):
         plt.imshow(pT,
                    cmap = 'RdBu_r',
                    vmin = self.Tc,
-                   vmax = self.Th)
+                   vmax = self.Th + 0.5*self.C)
 
         # Plot control
         ax  = plt.gca()
