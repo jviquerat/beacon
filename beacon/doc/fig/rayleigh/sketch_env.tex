@@ -11,7 +11,7 @@
 	\draw[fill=white, draw=black, very thick] (-0.01,-1) rectangle (10.01,10);
 
 	%%% picture
-	\node[anchor=south west,inner sep=0, scale=\sc] (image) at (0,0) {\includegraphics[width=9.99cm]{fig/rayleigh/T_no_control.png}};
+	\node[anchor=south west,inner sep=0, scale=\sc] (image) at (0,0) {\includegraphics[width=9.99cm]{fig/rayleigh/T_control.png}};
 
 	%%% probes
 	\foreach \x in {0,...,7}
@@ -24,9 +24,9 @@
 	\foreach \x in {1,...,9}
 		\draw[dash pattern=on 1pt] (\x,-1) -- (\x,0);
 		
-	\draw[blue, thick] (0,-0.8) -- (1, -0.8);
-	\draw[blue, thick] (1,-0.6) -- (2, -0.6);
-	\draw[red,   thick] (2,-0.3) -- (3, -0.3);
+	\draw[red, thick] (0,-0.5+0.5/0.75*0.75) -- (1, -0.5+0.5/0.75*0.75);
+	\draw[blue, thick] (1,-0.5-0.5/0.75*0.42) -- (2, -0.5-0.5/0.75*0.42);
+	\draw[blue,   thick] (2,-0.5-0.5/0.75*0.47) -- (3, -0.5-0.5/0.75*0.47);
 	\draw[blue, thick] (3, -0.6) -- (4, -0.6);
 	\draw[red, thick] (4,-0.2) -- (5, -0.2);
 	\draw[red, thick] (5,-0.1) -- (6, -0.1);
