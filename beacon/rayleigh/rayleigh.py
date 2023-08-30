@@ -35,8 +35,8 @@ class rayleigh(gym.Env):
         self.t_warmup    = 200.0            # warmup time
         self.t_act       = 300.0             # action time after warmup
         self.n_sgts      = n_sgts           # nb of temperature segments
-        self.nx_obs_pts  = 8*int(self.L)    # nb of obs pts in x direction
-        self.ny_obs_pts  = 8*int(self.H)    # nb of obs pts in y direction
+        self.nx_obs_pts  = 4*int(self.L)    # nb of obs pts in x direction
+        self.ny_obs_pts  = 4*int(self.H)    # nb of obs pts in y direction
         self.n_obs_steps = 4                # nb of observations steps
         self.eps         = 1.0e-8           # avoid division by zero
         self.init_file   = "init_field.dat" # initialization file
@@ -51,7 +51,7 @@ class rayleigh(gym.Env):
         self.n_act      = int(self.t_act/self.dt_act)     # nb of action steps per episode
         self.n_warmup   = int(self.t_warmup/self.dt_act)  # nb of action steps for warmup
         self.nx_sgts    = self.nx//self.n_sgts            # nb of pts in each segment
-        self.n_obs_tot  = self.n_obs_steps*self.nx_obs_pts*self.ny_obs_pts # total number of observation pts
+        self.n_obs_tot  = 3*self.n_obs_steps*self.nx_obs_pts*self.ny_obs_pts # total number of observation pts
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
@@ -131,7 +131,7 @@ class rayleigh(gym.Env):
         self.ap = [0.0]*self.n_sgts
 
         # Observations
-        self.obs = np.zeros((self.n_obs_steps,
+        self.obs = np.zeros((self.n_obs_steps, 3,
                              self.nx_obs_pts,
                              self.ny_obs_pts))
 
@@ -260,14 +260,16 @@ class rayleigh(gym.Env):
 
         # Copy previous observations
         for i in range(1,self.n_obs_steps):
-            self.obs[i-1,:,:] = self.obs[i,:,:]
+            self.obs[i-1,:,:,:] = self.obs[i,:,:,:]
 
         # Fill new observations
         x = self.nx_obs//2
         for i in range(self.nx_obs_pts):
             y = self.ny_obs//2
             for j in range(self.ny_obs_pts):
-                self.obs[-1,i,j] = self.T[x,y]
+                self.obs[-1,0,i,j] = self.T[x,y]
+                self.obs[-1,1,i,j] = self.u[x,y]
+                self.obs[-1,2,i,j] = self.v[x,y]
                 y               += self.ny_obs
             x += self.nx_obs
 
