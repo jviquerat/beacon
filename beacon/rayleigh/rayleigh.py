@@ -31,9 +31,9 @@ class rayleigh(gym.Env):
         self.Th          = 0.5              # bottom plate reference temperature
         self.C           = 0.75             # max temperature variation at the bottom
         self.dt          = 0.01             # timestep
-        self.dt_act      = 1.0              # action timestep
+        self.dt_act      = 3.0              # action timestep
         self.t_warmup    = 200.0            # warmup time
-        self.t_act       = 100.0            # action time after warmup
+        self.t_act       = 300.0             # action time after warmup
         self.n_sgts      = n_sgts           # nb of temperature segments
         self.nx_obs_pts  = 8*int(self.L)    # nb of obs pts in x direction
         self.ny_obs_pts  = 8*int(self.H)    # nb of obs pts in y direction

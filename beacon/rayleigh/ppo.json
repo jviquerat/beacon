@@ -13,7 +13,7 @@
     },
     "n_avg": 2,
     "n_cpu": 1,
-    "n_stp_max": 400000,
+    "n_stp_max": 600000,
     "trainer": {
         "style": "buffer",
         "buff_size": 1000,
