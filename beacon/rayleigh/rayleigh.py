@@ -135,7 +135,7 @@ class rayleigh(gym.Env):
                              self.ny_obs_pts))
 
         # Nusselt
-        self.nu = []
+        self.nu = np.zeros((self.n_act,2))
 
         # Running indices
         self.stp      = 0
@@ -285,7 +285,8 @@ class rayleigh(gym.Env):
             nu -= dT
         nu /= self.nx
 
-        self.nu.append(nu)
+        self.nu[self.stp,0] = self.stp
+        self.nu[self.stp,1] = nu
 
         return -nu
 
