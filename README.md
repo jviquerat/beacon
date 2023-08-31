@@ -21,7 +21,7 @@ The agent actuates several jets to damp the instabilities of a falling fluid fil
 The agent learns to disable the convection in a Rayleigh-Benard cell by locally modifying the temperature of different segments on the bottom plate (original approach was from Beintema et al. in <a href="https://www.tandfonline.com/doi/full/10.1080/14685248.2020.1797059">this paper</a>.) States are the temperature and velocities collected at probe points in the domain. One episode represents 100 actions, and the training is made on 600000 transitions.
 
 <p align="center">
-  <img width="700" alt="" src="beacon/msc/rayleigh.gif">
+  <img width="350" alt="" src="beacon/msc/rayleigh.gif">
 </p>
 
 ## `sloshing`
