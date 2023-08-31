@@ -3,6 +3,8 @@ __pycache__
 *~
 *.txt
 *.sh
+*.dat
+*.png
 save/
 png/
 results/
