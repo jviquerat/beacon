@@ -28,6 +28,10 @@ The agent learns to disable the convection in a Rayleigh-Benard cell by locally 
 <br />
 <br />
 <br />
+<br />
+<br />
+<br />
+<br />
 
 ## `sloshing`
 
