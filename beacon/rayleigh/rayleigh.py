@@ -56,12 +56,12 @@ class rayleigh(gym.Env):
 
         ### Path
         self.path             = "png"
-        self.velocity_path    = self.path+"/velocity"
+        # self.velocity_path    = self.path+"/velocity"
         self.temperature_path = self.path+"/temperature"
         self.field_path       = self.path+"/field"
         self.action_path      = self.path+"/action"
         os.makedirs(self.path,             exist_ok=True)
-        os.makedirs(self.velocity_path,    exist_ok=True)
+        # os.makedirs(self.velocity_path,    exist_ok=True)
         os.makedirs(self.temperature_path, exist_ok=True)
         os.makedirs(self.field_path,       exist_ok=True)
         os.makedirs(self.action_path,      exist_ok=True)
@@ -293,72 +293,46 @@ class rayleigh(gym.Env):
     # Render environment
     def render(self, mode="human", show=False, dump=True):
 
-        ### Initialize plot
-        vfig = plt.figure(figsize=(5,5))
+        # Set field
+        margin = 0.2
+        rny    = self.ny+int(margin*self.ny)
+        pT     = np.zeros((self.nx, rny))
+        pT[0:self.nx,rny-self.ny:rny] = self.T[1:-1,1:-1]
 
-        # Recreate fields at cells centers
-        pu = np.zeros((self.nx, self.ny))
-        pv = np.zeros((self.nx, self.ny))
-        pT = np.zeros((self.nx, self.ny))
-
-        pu[:,:] = 0.5*(self.u[2:,1:-1] + self.u[1:-1,1:-1])
-        pv[:,:] = 0.5*(self.v[1:-1,2:] + self.v[1:-1,1:-1])
-        pT[:,:] = self.T[1:-1,1:-1]
-
-        # Compute velocity norm
-        vn = np.sqrt(pu*pu+pv*pv)
-
-        # Rotate fields
-        vn = np.rot90(vn)
-        pu = np.rot90(pu)
-        pv = np.rot90(pv)
+        # Rotate field
         pT = np.rot90(pT)
 
-        # Plot velocity
-        y, x = np.mgrid[0:self.H:self.dy, 0:self.L:self.dx]
-        plt.axis('off')
-        plt.imshow(vn,
-                   cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = 0.3)
-
-        # Save figure
-        filename = self.velocity_path+"/"+str(self.stp_plot)+".png"
-        #vfig = plt.gcf()
-        vfig.tight_layout()
-        plt.savefig(filename, dpi=100, bbox_inches='tight')
-
         # Plot temperature
-        tfig = plt.figure(figsize=(5,10))
+        fig = plt.figure(figsize=(5,5))
         ax  = plt.gca()
-        #fig = plt.gcf()
         plt.axis('off')
         plt.imshow(pT,
                    cmap = 'RdBu_r',
                    vmin = self.Tc,
-                   vmax = self.Th)
+                   vmax = self.Th,
+                   extent=[0.0, self.L, -margin*self.H, self.H])
 
         # Plot control
-        # scale = self.nx_sgts/self.L
-        # for i in range(self.n_sgts):
-        #     x = (max(0,i*self.nx_sgts-1) + self.nx_sgts//2)*self.dx
-        #     y = 5.0*self.dy
-        #     ax.add_patch(Rectangle((x, y),
-        #                            self.a[i], 0.1,
-        #                            facecolor='red', fill=True, lw=1))
-        #pts = np.empty((0,2))
-        #for i in range(self.n_sgts+1):
-        #    pts = np.vstack((pts, np.array([max(0,i*self.nx_sgts-1),self.nx+5])))
-        #plt.scatter(pts[:,0], pts[:,1], marker="o", color="red", s=50)
+        scale = self.L/self.n_sgts
+        ax.add_patch(Rectangle((0.0,-0.99*margin), 0.998*self.L, margin*self.H,
+                               color='k', fill=False, lw=0.5))
+        ax.add_patch(Rectangle((0.0,-0.51*margin), 0.998*self.L, 0.001,
+                               color='k', fill=False, lw=0.3))
+        for i in range(self.n_sgts):
+            x = (0.5 + i)*scale - 0.5*self.dx
+            y = -0.5*margin
+            color = 'r' if self.a[i] > 0.0 else 'b'
+            ax.add_patch(Rectangle((x, y),
+                                   0.25*scale, 0.5*margin*self.a[i],
+                                   color=color, fill=True, lw=1))
 
         # Save figure
         filename = self.temperature_path+"/"+str(self.stp_plot)+".png"
-        #fig = plt.gcf()
-        tfig.tight_layout()
+        fig.tight_layout()
         plt.savefig(filename, dpi=100, bbox_inches='tight')
 
+        # Show and dump
         if show: plt.pause(0.0001)
-        #plt.clf()
         if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
                            self.action_path+"/a_"+str(self.stp_plot)+".dat",
                            self.path+"/nu.dat")

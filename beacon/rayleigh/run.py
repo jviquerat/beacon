@@ -16,11 +16,12 @@ s.reset()
 n        = s.n_act
 sum_rwd  = 0.0
 s_time   = time.time()
-plt_freq = 50    # plotting frequency
+plt_freq = 10    # plotting frequency
 show     = False # set to True to show while running
 
 for i in range(n):
-    obs, rwd, done, trunc, _ = s.step(10*[0.0])
+    act = np.random.uniform(-1.0, 1.0, 10).tolist()
+    obs, rwd, done, trunc, _ = s.step(act)
     sum_rwd += rwd
     end="\r"
     if (i==n-1): end="\n"
