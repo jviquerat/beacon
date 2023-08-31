@@ -77,26 +77,26 @@ Above a critical value $\ra_c$, natural convection is triggered in the cell, inc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discretization}
 
-The system (\ref{eq:rayleigh}) is discretized using a structured finite volume incremental projection scheme with centered fluxes, in the fashion of \cite{boivin2000}. For simplicity, the scheme is solved in a fully explicit way, except for the resolution of the Poisson equation for pressure. As is standard, a staggered grid is used for the finite volume scheme: the horizontal velocity is located on the west face of the cells, the vertical velocity is on the south face of the cells, while the pressure and temperature are located at the center of the cells. The computation of the instantaneous Nusselt number (\ref{eq:nusselt}) is performed by computing the first-order finite difference of the temperature between the center of the first cell at the bottom of the mesh and the reference temperature $T_H$. Doing so, we obtain $\nus = 2.16$  for $\ra = \num{1e4}$ once the permanent regime is reached, which is close to the reference values found in the literature, that range between $2.20$ and $2.24$ \cite{markatos1984}.
+The system (\ref{eq:rayleigh}) is discretized using a structured finite volume incremental projection scheme with centered fluxes, in the fashion of \cite{boivin2000}. For simplicity, the scheme is solved in a fully explicit way, except for the resolution of the Poisson equation for pressure. As is standard, a staggered grid is used for the finite volume scheme: the horizontal velocity is located on the west face of the cells, the vertical velocity is on the south face of the cells, while the pressure and temperature are located at the center of the cells. The computation of the instantaneous Nusselt number (\ref{eq:nusselt}) is performed by computing the first-order finite difference of the temperature between the center of the first cell at the bottom of the mesh and the reference temperature $T_H$. Doing so, we obtain $\nus = 2.16$  for $\ra = \num{1e4}$ once the permanent regime is reached, which is close to the reference values found in the literature \cite{ouertatani2008}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The proposed environment is re-implemented based on the original publication of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$ in order to avoid high computational load. Similarly to \cite{beintema2020}, the control is performed by letting the DRL agent adjust the temperature of $n_s=10$ individual segments at the bottom of the cavity, the average temperature of the bottom plate being enforced to remain equal to $\theta_H$ (see figure \ref{fig:rayleigh_sketch_env}). To do so, the actions proposed by the agent are continuous temperature fluctuations $\left\{ \hat{\theta}_i \right\}_{i \in \llbracket 0, n_s-1 \rrbracket}$ in the range $\left[-C, +C\right]$, with $C=0.75$. To enforce $\left< \theta(y=0,x,t) \right> = \theta_H$, the provided $\hat{\theta}_i$ are normalized into the zero-average control $\theta_i$ as:
+The proposed environment is re-implemented based on the original work of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$ in order to avoid too high computational load. Similarly to \cite{beintema2020}, the control is performed by letting the DRL agent adjust the temperature of $n_s=10$ individual segments at the bottom of the cavity (see figure \ref{fig:rayleigh_sketch_env}). To do so, the actions proposed by the agent are continuous temperature fluctuations $\left\{ \hat{\theta}_i \right\}_{i \in \llbracket 0, n_s-1 \rrbracket}$ in the range $\left[-C, +C\right]$, with $C=0.75$. To enforce $\left< \theta(y=0,x,t) \right> = \theta_H$ and $\theta(y=0,x,t) \in \left[ \theta_H - C, \theta_H + C\right]$, the provided $\hat{\theta}_i$ are normalized as \cite{beintema2020}:
 
 \begin{equation}
-	\theta_i = \hat{\theta}_i - \left< \hat{\theta}_i \right>.
+	\theta_i = \frac{\hat{\theta}_i - \left< \hat{\theta} \right>}{\max \left( 1, \max_j \left( \frac{\hat{\theta}_j - \left< \hat{\theta} \right>}{C} \right) \right)}.
 \end{equation}
 
-For simplicity, no interpolation is performed between actions, neither spatially nor temporally. The spatial discretization step is set as $\Delta x = 0.02$, while the numerical time step is $\Delta t = 0.01$. The action time-step $\Delta t_\text{act}$ is equal to $1$ time unit, with the total episode length being fixed to $200$ time units, corresponding to $200$ actions.
+For simplicity, no interpolation is performed between actions, neither spatially nor temporally. The spatial discretization step is set as $\Delta x = 0.02$, while the numerical time step is $\Delta t = 0.01$. The action time-step $\Delta t_\text{act}$ is equal to $2$ time units, with the total episode length being fixed to $200$ time units, corresponding to $100$ actions.
 
 \input{fig/rayleigh/sketch_env}
 
-The observations provided to the agent are the temperatures collected on a grid of $n_p \times n_p$ probes evenly spaced in the computational domain (see figure \ref{fig:rayleigh_sketch_env}), along with the observations of the previous $n_h = 3$ time-steps. Contrarily to \cite{beintema2020}, the velocities are not provided to the agent. The resulting set of observations is flattened in a vector of size $(n_h+1) \times n_p^2$.
+The observations provided to the agent are the temperatures and velocities collected on a grid of $n_p \times n_p$ probes evenly spaced in the computational domain (see figure \ref{fig:rayleigh_sketch_env}), along with the observations of the previous $n_h = 3$ time-steps. The resulting set of observations is flattened in a vector of size $3 \times (n_h+1) \times n_p^2$, and we select $n_p = 4$.
 
-The reward at each times-step is simply set as the negative instantaneous Nusselt number, such that increasing the reward corresponds to a decrease of the temperature convection:
+The reward at each time-step is simply set as the negative instantaneous Nusselt number, such that increasing the reward corresponds to a decrease of the temperature convection:
 
 \begin{equation}
 	r(t) = - \nus (t).
@@ -109,12 +109,12 @@ Finally, each episode starts with the loading of a fully developed initial state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The environment as described in the previous section is referred to as \codeinline{rayleigh-v0}, and its default parameters are provided in table \ref{table:rayleigh_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 500$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 200k$.
-%
-%The score curve obtained with the PPO algorithm is presented in \ref{fig:sloshing_score}, while the time evolutions of the controlled versus uncontrolled fluid level are shown in figure \ref{fig:sloshing_fields}. As can be observed, the agent manages to roughly cut the uncontrolled reward in half, by suppressing the back and forth wavefront using large actuations in the early stages of control, after what the control amplitude drops significantly.
+The environment as described in the previous section is referred to as \codeinline{rayleigh-v0}, and its default parameters are provided in table \ref{table:rayleigh_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}), with the specificity that the entropy bonus parameter is reduced to $\beta = 0.001$. For the training, we set $n_\text{rollout} = 1000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 600k$.
 
-%%%%%%%%%%%%
-%%%%%%%%%%%%
+The score curve obtained with the PPO algorithm is presented in \ref{fig:rayleigh_score}, while the time evolution of the Nusselt for the controlled versus uncontrolled cases are shown in figure \ref{fig:rayleigh_nusselt}. As can be observed, the agent manages to devise a set of transition actions toward a stationary state with $\nus (t) = 1$. The results of figure \ref{fig:rayleigh_nusselt} are in line with those of \cite{beintema2020}. In figure \ref{fig:rayleigh_fields}, we present the evolution of the temperature field during the first steps of the environment under the control of the agent using the default parameters.
+
+%%%%%%%%%%%
+%%%%%%%%%%%
 \begin{table}
     \footnotesize
     \caption{\textbf{Default parameters used for the \codeinline{rayleigh-v0} environment.}}
@@ -129,9 +129,11 @@ The environment as described in the previous section is referred to as \codeinli
         \bottomrule
     \end{tabular}
 \end{table}
-%%%%%%%%%%%%
-%%%%%%%%%%%%
-%%
-%\input{fig/sloshing/score}
-%%
-%\input{fig/sloshing/fields}
+%%%%%%%%%%%
+%%%%%%%%%%%
+
+\input{fig/rayleigh/score}
+
+\input{fig/rayleigh/nusselt}
+
+\input{fig/rayleigh/fields}

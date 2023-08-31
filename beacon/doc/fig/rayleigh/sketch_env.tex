@@ -5,7 +5,7 @@
 \def\sc{0.6}
 %%%%%%%%%%%%
 \begin{tikzpicture}[	scale=\sc,
-				probe/.style={circle, fill=gray1, inner sep=0pt, minimum size=2.5pt}]
+				probe/.style={circle, fill=gray2, inner sep=0pt, minimum size=2.5pt}]
 
 	%%% large rectangle
 	\draw[fill=white, draw=black, very thick] (-0.01,-1) rectangle (10.01,10);
@@ -14,9 +14,9 @@
 	\node[anchor=south west,inner sep=0, scale=\sc] (image) at (0,0) {\includegraphics[width=9.99cm]{fig/rayleigh/T_control.png}};
 
 	%%% probes
-	\foreach \x in {0,...,7}
-		\foreach \y in {0,...,7}
-			\node[probe] at (0.5*1.25+1.25*\x,0.5*1.25+1.25*\y) {} ;
+	\foreach \x in {0,...,3}
+		\foreach \y in {0,...,3}
+			\node[probe] at (0.5*2.5+2.5*\x,0.5*2.5+2.5*\y) {} ;
 			
 	%%% bottom frame
 	\draw[fill=white] (0,-1) rectangle (10,0);
