@@ -1,0 +1,35 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\begin{tikzpicture}[	trim axis left, trim axis right, font=\scriptsize,
+				upper/.style={	name path=upper, smooth, draw=none},
+				lower/.style={	name path=lower, smooth, draw=none},]
+	\begin{axis}[	xmin=0, xmax=600000, scale=0.75,
+				ymin=-230, ymax=-100,
+				scaled x ticks=false,
+				xtick={0, 100000, 200000, 300000, 400000, 500000, 600000},
+				xticklabels={$0$,$100k$,$200k$,$300k$,$400k$,$500k$,$600k$},
+				legend cell align=left, legend pos=south east,
+				legend style={nodes={scale=0.8, transform shape}},
+				every tick label/.append style={font=\scriptsize},
+				grid=major, xlabel=transitions, ylabel=score]
+				
+		\legend{no control, \ppo}
+		
+		\addplot[thick, opacity=0.7, dash pattern=on 2pt]	coordinates {(0,-216) (600000,-216)};
+		
+		\addplot [upper, forget plot] 				table[x index=0,y index=7] {fig/rayleigh/ppo.dat};
+		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/rayleigh/ppo.dat}; 
+		\addplot [fill=blue3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
+		\addplot[draw=blue1, thick, smooth] 			table[x index=0,y index=5] {fig/rayleigh/ppo.dat}; 
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Score curves using the \textsc{ppo} algorithm to solve the \codeinline{rayleigh-v0} environment.} The dashed line indicates the reward obtained for the uncontrolled environement.} 
+\label{fig:rayleigh_score}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%

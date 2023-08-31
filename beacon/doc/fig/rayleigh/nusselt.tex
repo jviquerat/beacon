@@ -1,0 +1,30 @@
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{figure}
+\centering
+%%%%%%%%%%%%
+\begin{tikzpicture}[	trim axis left, trim axis right, font=\scriptsize,
+				upper/.style={	name path=upper, smooth, draw=none},
+				lower/.style={	name path=lower, smooth, draw=none},]
+	\begin{axis}[	xmin=0, xmax=250, scale=0.75,
+				ymin=1, ymax=2.5,
+				scaled x ticks=false,
+				legend cell align=left, legend pos=north east,
+				legend style={nodes={scale=0.8, transform shape}},
+				every tick label/.append style={font=\scriptsize},
+				grid=major, xlabel=$t$, ylabel=$\nus(t)$]
+				
+		\legend{no control, \ppo}
+		
+		\addplot[thick, opacity=0.7, dash pattern=on 2pt]	coordinates {(0,2.16) (250,2.16)};
+		
+		\addplot[draw=blue1, thick, smooth, tension=0.05] 	table[x index=0,y index=1] {fig/rayleigh/nu.dat}; 
+			
+	\end{axis}
+\end{tikzpicture}
+%%%%%%%%%%%%
+\caption{\textbf{Evolution of the instantaneous Nusselt number during an episode of the \codeinline{rayleigh-v0} environment} with and without control. The agent totally disables the convection, leading to a final Nusselt equal to $1$.} 
+\label{fig:rayleigh_nusselt}
+\end{figure} 
+%%%%%%%%%%%%
+%%%%%%%%%%%%

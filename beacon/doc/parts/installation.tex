@@ -33,15 +33,15 @@ All the environments of the library follow the same pattern:
     \caption{\textbf{Overview of the different environments.} The informations in this table correspond to the default parameters of each environment. Modifying the latter could have a significant impact on the quantities proposed hereafter.}
     \label{table:environments}
     \centering
-    \begin{tabular}{rccccc}
+    \begin{tabular}{rcccc}
         \toprule
-        env. name				& action dim.	& CPU requirements 	& problem type		& control type			& baseline reward\\\midrule
-	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous		& continuous			& --\\
-	\codeinline{sloshing-v0}	& $1$		& low				& episodic			& --					& --\\
-	\codeinline{karman-v0}	& $1$		& high				& --				& -- 					& --\\
-	\codeinline{lorenz-v0}	& $1$		& low				& --				& -- 					& --\\
-	\codeinline{silo-v0}		& --			& moderate			& --				& -- 					& --\\
-	\codeinline{rayleigh-v0}	& -- 			& high				& --				& -- 					& --\\
+        env. name				& action dim.	& CPU requirements 	& problem type		& control type	\\\midrule
+	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous		& continuous	\\
+	\codeinline{sloshing-v0}	& $1$		& low				& episodic			& continuous	\\
+	\codeinline{karman-v0}	& $1$		& high				& --				& -- 			\\
+	\codeinline{lorenz-v0}	& $1$		& low				& --				& -- 			\\
+	\codeinline{silo-v0}		& --			& moderate			& --				& -- 			\\
+	\codeinline{rayleigh-v0}	& $10$		& high				& continuous		& continuous 	\\
         \bottomrule
     \end{tabular}
 \end{table}
