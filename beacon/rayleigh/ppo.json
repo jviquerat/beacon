@@ -48,7 +48,7 @@
             "loss": {
                 "type": "surrogate",
                 "pol_clip": 0.2,
-                "ent_coef": 0.01
+                "ent_coef": 0.001
             }
         },
         "value": {
@@ -78,7 +78,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.90,
+            "gae_lambda": 0.99,
             "ret_norm": true
         },
         "termination": {
