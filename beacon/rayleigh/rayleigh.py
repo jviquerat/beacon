@@ -56,12 +56,10 @@ class rayleigh(gym.Env):
 
         ### Path
         self.path             = "png"
-        # self.velocity_path    = self.path+"/velocity"
         self.temperature_path = self.path+"/temperature"
         self.field_path       = self.path+"/field"
         self.action_path      = self.path+"/action"
         os.makedirs(self.path,             exist_ok=True)
-        # os.makedirs(self.velocity_path,    exist_ok=True)
         os.makedirs(self.temperature_path, exist_ok=True)
         os.makedirs(self.field_path,       exist_ok=True)
         os.makedirs(self.action_path,      exist_ok=True)
@@ -135,7 +133,7 @@ class rayleigh(gym.Env):
                              self.ny_obs_pts))
 
         # Nusselt
-        self.nu = np.zeros((self.n_act,2))
+        self.nu = np.empty((0,2))
 
         # Running indices
         self.stp      = 0
@@ -285,8 +283,7 @@ class rayleigh(gym.Env):
             nu -= dT
         nu /= self.nx
 
-        self.nu[self.stp,0] = self.stp
-        self.nu[self.stp,1] = nu
+        self.nu = np.append(self.nu, np.array([[self.stp, nu]]), axis=0)
 
         return -nu
 
