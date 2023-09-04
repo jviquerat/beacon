@@ -5,10 +5,12 @@
         "obs_norm": true,
         "obs_noise": 0.0
     },
-    "name_env": true,
-    "name_agent": true,
-    "name_tag": "",
-    "name_time": false,
+    "naming": {
+        "env": true,
+        "agent": true,
+        "tag": false,
+        "time": false
+    },
     "n_avg": 5,
     "n_cpu": 2,
     "n_stp_max": 200000,

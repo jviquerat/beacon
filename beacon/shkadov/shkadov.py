@@ -12,7 +12,7 @@ import numba             as nb
 from   matplotlib.patches import Rectangle
 
 ###############################################
-### Generic class
+### Shkadov environment
 class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 

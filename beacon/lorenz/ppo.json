@@ -1,6 +1,6 @@
 {
     "env": {
-        "name": "shkadov",
+        "name": "lorenz",
         "obs_clip": false,
         "obs_norm": true,
         "obs_noise": 0.0
@@ -11,12 +11,12 @@
         "tag": false,
         "time": false
     },
-    "n_avg": 5,
+    "n_avg": 3,
     "n_cpu": 1,
-    "n_stp_max": 200000,
+    "n_stp_max": 1000000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 3200,
+        "buff_size": 4000,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
@@ -26,18 +26,18 @@
     "agent": {
         "type": "ppo",
         "policy": {
-            "type": "normal",
+            "type": "categorical",
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [64],
+                    "arch": [64,64],
                     "actv": "tanh"
                 },
                 "heads": {
-                    "nb": 2,
-                    "arch": [[64],[64]],
-                    "actv": ["tanh","tanh"],
-                    "final": ["tanh","sigmoid"]
+                    "nb": 1,
+                    "arch": [[]],
+                    "actv": ["tanh"],
+                    "final": ["softmax"]
                 }
             },
             "optimizer": {
@@ -67,7 +67,7 @@
                 }
             },
             "optimizer": {
-                "type": "nadam",
+                "type": "adam",
                 "lr": 5.0e-3,
                 "grd_clip": 0.1
             },
@@ -78,7 +78,7 @@
         "retrn": {
             "type": "gae",
             "gamma": 0.99,
-            "gae_lambda": 0.99,
+            "gae_lambda": 0.90,
             "ret_norm": true
         },
         "termination": {
