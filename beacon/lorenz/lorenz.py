@@ -7,6 +7,7 @@ import gym
 import gym.spaces        as gsp
 import numpy             as np
 import matplotlib.pyplot as plt
+import matplotlib.cm     as cm
 import numba             as nb
 
 from   matplotlib.patches import Rectangle
@@ -21,12 +22,12 @@ class lorenz(gym.Env):
                  sigma=10.0, rho=28.0, beta=8.0/3.0):
 
         # Main parameters
-        self.dt          = 0.01   # timestep
-        self.dt_act      = 0.05   # action timestep
-        self.sigma       = sigma  # lorenz parameter
-        self.rho         = rho    # lorenz parameter
-        self.beta        = beta   # lorenz parameter
-        self.t_max       = 20.0   # total simulation time
+        self.dt         = 0.01   # timestep
+        self.dt_act     = 0.05   # action timestep
+        self.sigma      = sigma  # lorenz parameter
+        self.rho        = rho    # lorenz parameter
+        self.beta       = beta   # lorenz parameter
+        self.t_max      = 20.0   # total simulation time
 
         # Deduced parameters
         self.n_obs      = 6                           # total nb of observations
@@ -35,18 +36,12 @@ class lorenz(gym.Env):
         self.t_act      = self.t_max                  # action time
         self.n_act      = int(self.t_act/self.dt_act) # nb of action steps per episode
 
-        #self.gif_steps = 300
-
-        ### Path
-        self.path = "png"
-        os.makedirs(self.path, exist_ok=True)
-
         # Arrays
-        self.x  = np.zeros(3)                 # unknowns
-        self.xk = np.zeros(3)                 # lsrk storage
-        self.fx = np.zeros(3)                 # rhs
-        self.hx = np.zeros((self.ndt_max, 3)) # time storage
-        self.t  = np.linspace(0.0, self.t_max, num=self.ndt_max)
+        self.x  = np.zeros(3)                   # unknowns
+        self.xk = np.zeros(3)                   # lsrk storage
+        self.fx = np.zeros(3)                   # rhs
+        self.hx = np.zeros((self.ndt_max+1, 3)) # time storage
+        self.t  = np.linspace(0.0, self.t_max, num=self.ndt_max+1)
 
         # Initialize integrator
         self.integrator = lsrk4()
@@ -84,6 +79,9 @@ class lorenz(gym.Env):
         self.fx[:] = 0.0
         self.hx[:] = 0.0
 
+        # Copy first step
+        self.hx[0,:] = self.x[:]
+
         # Actions
         self.u  = 0
         self.up = 0
@@ -97,9 +95,6 @@ class lorenz(gym.Env):
 
     # Step
     def step(self, u=None):
-
-        # Copy first step
-        self.hx[0,:] = self.x[:]
 
         # Run solver
         self.solve(self.actions[u])
@@ -153,7 +148,7 @@ class lorenz(gym.Env):
             self.x[:] = self.xk[:]
 
             # Store unknowns
-            self.hx[self.stp*self.ndt_act+i,:] = self.x[:]
+            self.hx[self.stp*self.ndt_act+i+1,:] = self.x[:]
 
     # Retrieve observations
     def get_obs(self):
@@ -177,6 +172,13 @@ class lorenz(gym.Env):
     # Rendering
     def render(self, mode="human", show=False, dump=True):
 
+        # Open directories
+        if (self.stp_plot == 0):
+            self.path = "png"
+            os.makedirs(self.path, exist_ok=True)
+            os.makedirs(self.path+"/gif", exist_ok=True)
+
+        # Full plot at the end of the episode
         if (self.stp == self.n_act):
             plt.clf()
             plt.cla()
@@ -191,27 +193,35 @@ class lorenz(gym.Env):
             plt.savefig(filename, dpi=100)
             plt.close()
 
-        if (self.stp_plot == 0):
-            os.makedirs(self.path+"/gif", exist_ok=True)
-
+        # Plot multiple pngs to generate gif
         plt.clf()
         plt.cla()
         fig = plt.figure(tight_layout=True)
-        ax  = fig.add_subplot(projection='3d')
+        ax  = fig.add_subplot(4,1,(1,3),projection='3d')
         ax.set_axis_off()
         ax.set_xlim([-20.0, 20.0])
         ax.set_ylim([-20.0, 20.0])
         ax.set_zlim([  0.0, 40.0])
-        ax.plot(self.hx[:self.stp,0],
-                self.hx[:self.stp,1],
-                self.hx[:self.stp,2],
+        ax.plot(self.hx[:self.stp*self.ndt_act,0],
+                self.hx[:self.stp*self.ndt_act,1],
+                self.hx[:self.stp*self.ndt_act,2],
                 linewidth=1)
 
+        # Plot control
+        ax = fig.add_subplot(4,1,4)
+        x  = 0.52
+        y  = 0.52
+        color = 'r' if self.u > 0.0 else 'b'
+        ax.add_patch(Rectangle((x, y), 0.5*self.u, 1.0,
+                               color=color, fill=True, lw=2))
+
+        # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
         bbox = fig.bbox_inches.from_bounds(1, 1.25, 4.75, 3)
         plt.savefig(filename, dpi=100, bbox_inches=bbox)
         plt.close()
 
+        # Dump
         if dump: self.dump(self.path+"/lorenz.dat")
 
         self.stp_plot += 1
