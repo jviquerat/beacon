@@ -11,6 +11,7 @@ import matplotlib.cm     as cm
 import numba             as nb
 
 from   matplotlib.patches import Rectangle
+from   scipy.interpolate  import interp1d
 
 ###############################################
 ### Lorenz environment
@@ -22,12 +23,12 @@ class lorenz(gym.Env):
                  sigma=10.0, rho=28.0, beta=8.0/3.0):
 
         # Main parameters
-        self.dt         = 0.01   # timestep
+        self.dt         = 0.05   # timestep
         self.dt_act     = 0.05   # action timestep
         self.sigma      = sigma  # lorenz parameter
         self.rho        = rho    # lorenz parameter
         self.beta       = beta   # lorenz parameter
-        self.t_max      = 20.0   # total simulation time
+        self.t_max      = 25.0   # total simulation time
 
         # Deduced parameters
         self.n_obs      = 6                           # total nb of observations
@@ -37,11 +38,11 @@ class lorenz(gym.Env):
         self.n_act      = int(self.t_act/self.dt_act) # nb of action steps per episode
 
         # Arrays
-        self.x  = np.zeros(3)                   # unknowns
-        self.xk = np.zeros(3)                   # lsrk storage
-        self.fx = np.zeros(3)                   # rhs
-        self.hx = np.zeros((self.ndt_max+1, 3)) # time storage
-        self.t  = np.linspace(0.0, self.t_max, num=self.ndt_max+1)
+        self.x  = np.zeros(3)      # unknowns
+        self.xk = np.zeros(3)      # lsrk storage
+        self.fx = np.zeros(3)      # rhs
+        self.hx = np.empty((0, 3)) # time storage
+        self.ht = np.empty((0))    # time
 
         # Initialize integrator
         self.integrator = lsrk4()
@@ -51,7 +52,11 @@ class lorenz(gym.Env):
         self.actions = np.array([-1.0, 0.0, 1.0])
 
         # Define observation space
-        high = np.ones((self.n_obs))/40.0
+        high      = np.ones((self.n_obs))
+        high[0]  *= 10.0
+        high[1]  *= 20.0
+        high[2]  *= 40.0
+        high[3:] *= 100.0
         self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
                                          shape = (self.n_obs,),
@@ -70,6 +75,7 @@ class lorenz(gym.Env):
     def reset_fields(self):
 
         # Initial solution
+        self.t    = 0.0
         self.x[0] = 10.0
         self.x[1] = 10.0
         self.x[2] = 10.0
@@ -80,11 +86,13 @@ class lorenz(gym.Env):
         self.hx[:] = 0.0
 
         # Copy first step
-        self.hx[0,:] = self.x[:]
+        self.hx = np.append(self.hx, np.array([self.x]), axis=0)
+        self.ht = np.append(self.ht, np.array([self.t]), axis=0)
 
         # Actions
-        self.u  = 0
-        self.up = 0
+        # These are default discrete actions which correspond to no forcing
+        self.u  = 1
+        self.up = 1
 
         # Observations
         self.obs = np.zeros((2, 3))
@@ -97,7 +105,7 @@ class lorenz(gym.Env):
     def step(self, u=None):
 
         # Run solver
-        self.solve(self.actions[u])
+        self.solve(u)
 
         # Retrieve data
         obs = self.get_obs()
@@ -139,7 +147,7 @@ class lorenz(gym.Env):
                 self.fx[2] = self.xk[0]*self.xk[1] - self.beta*self.xk[2]
 
                 # Add forcing term
-                self.fx[1] += u
+                self.fx[1] += self.actions[u]
 
                 # Update
                 self.integrator.update(self.x, self.xk, self.fx, j, self.dt)
@@ -148,7 +156,9 @@ class lorenz(gym.Env):
             self.x[:] = self.xk[:]
 
             # Store unknowns
-            self.hx[self.stp*self.ndt_act+i+1,:] = self.x[:]
+            self.t += self.dt
+            self.hx = np.append(self.hx, np.array([self.x]), axis=0)
+            self.ht = np.append(self.ht, np.array([self.t]), axis=0)
 
     # Retrieve observations
     def get_obs(self):
@@ -184,7 +194,7 @@ class lorenz(gym.Env):
             plt.cla()
             fig, ax = plt.subplots(figsize=(8,2))
             fig.tight_layout()
-            plt.plot(self.t, self.hx[:,0])
+            plt.plot(self.ht[:], self.hx[:,0])
             ax.set_xlim([0.0, self.t_max])
             ax.set_ylim([-20.0, 20.0])
 
@@ -197,28 +207,48 @@ class lorenz(gym.Env):
         plt.clf()
         plt.cla()
         fig = plt.figure(tight_layout=True)
-        ax  = fig.add_subplot(4,1,(1,3),projection='3d')
+        ax  = fig.add_subplot(15, 1, (1,14), projection='3d')
         ax.set_axis_off()
+        fig.tight_layout()
         ax.set_xlim([-20.0, 20.0])
         ax.set_ylim([-20.0, 20.0])
         ax.set_zlim([  0.0, 40.0])
-        ax.plot(self.hx[:self.stp*self.ndt_act,0],
-                self.hx[:self.stp*self.ndt_act,1],
-                self.hx[:self.stp*self.ndt_act,2],
-                linewidth=1)
+
+        if (len(self.ht) > 2):
+            fx = interp1d(self.ht, self.hx[:,0], kind="quadratic")
+            fy = interp1d(self.ht, self.hx[:,1], kind="quadratic")
+            fz = interp1d(self.ht, self.hx[:,2], kind="quadratic")
+
+            n  = len(self.ht)
+            tt = np.linspace(self.ht[0], self.ht[-1], 5*n)
+            hhx = fx(tt)
+            hhy = fy(tt)
+            hhz = fz(tt)
+
+            ax.plot(hhx, hhy, hhz, linewidth=1)
+        else:
+            ax.plot(self.hx[:,0],
+                    self.hx[:,1],
+                    self.hx[:,2],
+                    linewidth=1)
 
         # Plot control
-        ax = fig.add_subplot(4,1,4)
-        x  = 0.52
-        y  = 0.52
+        ax = fig.add_subplot(15, 1, 15)
+        #ax.set_axis_off()
+        fig.tight_layout()
+        ax.set_xlim([-1.0, 1.0])
+        ax.set_ylim([ 0.0, 0.2])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.0
+        y = 0.05
         color = 'r' if self.u > 0.0 else 'b'
-        ax.add_patch(Rectangle((x, y), 0.5*self.u, 1.0,
+        ax.add_patch(Rectangle((x, y), 0.98*self.actions[self.u], 0.1,
                                color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
-        bbox = fig.bbox_inches.from_bounds(1, 1.25, 4.75, 3)
-        plt.savefig(filename, dpi=100, bbox_inches=bbox)
+        plt.savefig(filename, dpi=100, bbox_inches="tight")
         plt.close()
 
         # Dump
@@ -229,37 +259,13 @@ class lorenz(gym.Env):
     # Dump x, y, z
     def dump(self, filename):
 
-        array = self.t.copy()
+        array = self.ht.copy()
         array = np.vstack((array, self.hx[:,0]))
         array = np.vstack((array, self.hx[:,1]))
         array = np.vstack((array, self.hx[:,2]))
         array = np.transpose(array)
 
         np.savetxt(filename, array, fmt='%.5e')
-
-    # # Rendering with gif
-    # def render_gif(self, x):
-
-    #     os.makedirs(self.path+"/lorenz_gif", exist_ok=True)
-
-    #     stp = math.floor(self.n_steps/self.gif_steps)
-    #     for i in range(self.gif_steps):
-    #         plt.clf()
-    #         plt.cla()
-    #         fig = plt.figure(tight_layout=True)
-    #         ax  = fig.add_subplot(projection='3d')
-    #         ax.set_axis_off()
-    #         ax.set_xlim([-20.0, 20.0])
-    #         ax.set_ylim([-20.0, 20.0])
-    #         ax.set_zlim([  0.0, 40.0])
-    #         j = i*stp
-    #         ax.plot(self.hx[:j,0], self.hx[:j,1], self.hx[:j,2],
-    #                 linewidth=1)
-
-    #         filename = self.path+"/lorenz_gif/"+str(i)+".png"
-    #         bbox = fig.bbox_inches.from_bounds(1, 1.25, 4.75, 3)
-    #         plt.savefig(filename, dpi=100, bbox_inches=bbox)
-    #         plt.close()
 
     # Close environment
     def close(self):
