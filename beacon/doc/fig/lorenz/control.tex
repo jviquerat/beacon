@@ -16,11 +16,13 @@
 				
 		\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/lorenz/lorenz_no_control.dat};
 		\addplot[draw=green1, very thick, smooth] table[x index=0,y index=1] {fig/lorenz/lorenz_control.dat};
+		
+		\node[circle, fill=red, inner sep=0pt, minimum size=4pt] at (axis cs:3.45,18.5) {};
 			
 	\end{axis}
 \end{tikzpicture}
 %%%%%%%%%%%%
-\caption{\textbf{Controlled versus uncontrolled time evolution of the $x$ parameter.}} 
+\caption{\textbf{Controlled versus uncontrolled time evolution of the $x$ parameter.} The red dot corresponds to the typical control peak that precedes the locking of the system, also observed in \cite{beintema2020}.} 
 \label{fig:lorenz_control}
 \end{figure} 
 %%%%%%%%%%%%

@@ -31,7 +31,7 @@ where $\sigma$ is related to the Prandtl number, $\rho$ is a ratio of Rayleigh n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discretization}
 
-The ODE system (\ref{eq:lorenz}) is discretized in time with a five-stage, fourth-order low-storage Runge Kutta scheme from Carpenter \textit{et al.} \cite{carpenter1994}, using a constant time-step $\Delta t=0.05$.
+The ODE system (\ref{eq:lorenz}) is discretized in time with a five-stage, fourth-order low-storage Runge Kutta scheme from Carpenter \textit{et al.} \cite{carpenter1994}, using a constant time-step $\Delta t=0.05$. Similarly to \cite{beintema2020}, the numerical and action time-steps are taken equal.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,13 +56,13 @@ with $u$ a discrete action in $\llbracket -1, 0, 1 \rrbracket$. The action time-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
-The environment as described in the previous section is referred to as \codeinline{lorenz-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:lorenz_parameters}). In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 4000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 500k$.
+The environment as described in the previous section is referred to as \codeinline{lorenz-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:lorenz_parameters}). In this section, we provide some results related to its resolution using both a \ppo and a \dqn agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 10000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 2000k$.
 
-%The score curve obtained with the PPO algorithm is presented in \ref{fig:sloshing_score}, while the time evolutions of the controlled versus uncontrolled fluid level are shown in figure \ref{fig:sloshing_fields}. As can be observed, the agent manages to roughly cut the uncontrolled reward in half, by suppressing the back and forth wavefront using large actuations in the early stages of control, after what the control amplitude drops significantly.
+The score curves are presented in \ref{fig:lorenz_score}. As can be observed, although the learning is successful, it is particularly noisy compared to some other environments presented in this library. This can be attributed to the chaotic behavior of the attractor, which makes the credit assignment difficult for the agent. A plot of the time evolutions of the controlled versus uncontrolled $x$ parameter is shown in figure \ref{fig:lorenz_control}. As can be observed, the agent successfully locks the system in the $x<0$ quadrant, with the typical control peak also observed by Beintema \textit{et al.}, noted with a red dot in figure \ref{fig:lorenz_control}. For a better visualization, several 3D snapshots of the controlled system are proposed in figure \ref{fig:lorenz_fields}.
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-\begin{table}
+\begin{table}[h!]
     \footnotesize
     \caption{\textbf{Default parameters used for the \codeinline{lorenz-v0} environment.}}
     \label{table:lorenz_parameters}

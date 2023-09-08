@@ -37,6 +37,14 @@ The agent learns to disable the convection in a Rayleigh-Benard cell by locally 
 <br />
 <br />
 
+## `lorenz`
+
+<p align="center">
+  <img align="right" width="350" alt="" src="beacon/msc/lorenz.gif">
+</p>
+
+The agent learns to lock the Lorenz attractor in the `x<0` quadrant by acting on a forcing term in the ODE system (original approach was from Beintema et al. in <a href="https://www.tandfonline.com/doi/full/10.1080/14685248.2020.1797059">this paper</a>.) States are the `(x,y,z)` variables and their time derivatives. One episode represents 500 actions, and the training is made on 2000000 transitions.
+
 ## `sloshing`
 
 <p align="center">

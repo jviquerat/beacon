@@ -41,8 +41,6 @@ class lorenz(gym.Env):
         self.x  = np.zeros(3)      # unknowns
         self.xk = np.zeros(3)      # lsrk storage
         self.fx = np.zeros(3)      # rhs
-        self.hx = np.empty((0, 3)) # time storage
-        self.ht = np.empty((0))    # time
 
         # Initialize integrator
         self.integrator = lsrk4()
@@ -83,7 +81,8 @@ class lorenz(gym.Env):
         # Other fields
         self.xk[:] = 0.0
         self.fx[:] = 0.0
-        self.hx[:] = 0.0
+        self.hx    = np.empty((0, 3))
+        self.ht    = np.empty((0))
 
         # Copy first step
         self.hx = np.append(self.hx, np.array([self.x]), axis=0)
