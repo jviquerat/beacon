@@ -1,0 +1,85 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Lorenz}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Physics}
+
+We consider the Lorenz attractor equations, a simple nonlinear dynamical system representative of thermal convection in a two-dimensional cell \cite{saltzman1962}. The set of governing ordinary differential equations reads:
+
+\begin{equation}
+\label{eq:lorenz}
+\begin{split}
+	\dot{x} 	&= \sigma (y - x), \\
+	\dot{y}	&= x(\rho - z) - y, \\
+	\dot{z}	&= xy - \beta z,
+\end{split}
+\end{equation}
+ 
+where $\sigma$ is related to the Prandtl number, $\rho$ is a ratio of Rayleigh numbers, and $\beta$ is a geometric factor. Depending on the values of the triplet $(\sigma, \rho, \beta)$, the solutions to (\ref{eq:lorenz}) may exhibit chaotic behavior, meaning that arbitrarily close initial conditions can lead to significantly different trajectories \cite{lorenz1963}, one common such triplet being $(\sigma, \rho, \beta) = (10, 28, 8/3)$, that leads to the well-known butterfly shape presented in figure \ref{fig:lorenz}. The system has three possible equilibrium points, one in $(0,0,0)$ and one at the center of each "wing" of the butterfly shape, which characteristics depend on the values of $\sigma$, $\rho$ and $\beta$.
+
+\bigskip
+
+\input{fig/lorenz/lorenz}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discretization}
+
+The ODE system (\ref{eq:lorenz}) is discretized in time with a five-stage, fourth-order low-storage Runge Kutta scheme from Carpenter \textit{et al.} \cite{carpenter1994}, using a constant time-step $\Delta t=0.05$. Similarly to \cite{beintema2020}, the numerical and action time-steps are taken equal.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Environment}
+
+The proposed environment is re-implemented based on the original work of Beintema \textit{et al.} \cite{beintema2020}, where the goal is to maintain the system in the $x<0$ quadrant. The control (\ref{eq:lorenz}) is performed by adding an external forcing term on the $\dot{y}$ equation:
+
+\begin{equation}
+\label{eq:lorenz}
+\begin{split}
+	\dot{x} 	&= \sigma (y - x), \\
+	\dot{y}	&= x(\rho - z) - y + u, \\
+	\dot{z}	&= xy - \beta z,
+\end{split}
+\end{equation}
+
+with $u$ a discrete action in $\llbracket -1, 0, 1 \rrbracket$. The action time-step is set to $\Delta t_\text{act} = 0.05$ time units, and for simplicity no interpolation is performed between successive actions. A full episodes lasts $25$ time units, corresponding to $500$ actions. The observations are the variables $(x, y, z)$ and their time-derivatives $\dot{x}, \dot{y}, \dot{z}$, while the reward is set to $+1$ for each step with $x<0$, and $0$ otherwise. Each episode is started using the same initial condition $(x_0, y_0, z_0) = (10,10,10)$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+
+The environment as described in the previous section is referred to as \codeinline{lorenz-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:lorenz_parameters}). In this section, we provide some results related to its resolution using both a \ppo and a \dqn agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 10000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 2000k$.
+
+The score curves are presented in \ref{fig:lorenz_score}. As can be observed, although the learning is successful, it is particularly noisy compared to some other environments presented in this library. This can be attributed to the chaotic behavior of the attractor, which makes the credit assignment difficult for the agent. A plot of the time evolutions of the controlled versus uncontrolled $x$ parameter is shown in figure \ref{fig:lorenz_control}. As can be observed, the agent successfully locks the system in the $x<0$ quadrant, with the typical control peak also observed by Beintema \textit{et al.}, noted with a red dot in figure \ref{fig:lorenz_control}. For a better visualization, several 3D snapshots of the controlled system are proposed in figure \ref{fig:lorenz_fields}.
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}[h!]
+    \footnotesize
+    \caption{\textbf{Default parameters used for the \codeinline{lorenz-v0} environment.}}
+    \label{table:lorenz_parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        \codeinline{sigma}		& parameter		& $10$\\
+	\codeinline{rho}			& parameter		& $28$\\
+	\codeinline{beta}		& parameter		& $\frac{8}{3}$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%
+\input{fig/lorenz/score}
+%%
+\input{fig/lorenz/control}
+
+\input{fig/lorenz/fields}

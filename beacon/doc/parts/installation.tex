@@ -23,7 +23,7 @@ All the environments of the library follow the same pattern:
 \begin{enumerate}[itemsep=0mm]
 	\item The environment file is self-contained;
 	\item The environment can be run control-free using the \codeinline{run.py} file;
-	\item The initial state of the environment is stored in \codeinline{init_field.dat} and can be re-generated using the \codeinline{init.py} file;
+	\item The initial state of the environment is stored in \codeinline{init_field.dat} and can be re-generated using the \codeinline{init.py} file (except for the \codeinline{lorenz-v0} environment).
 \end{enumerate}
 
 %%%%%%%%%%%%
@@ -39,7 +39,7 @@ All the environments of the library follow the same pattern:
 	\codeinline{shkadov-v0}	& $5$		& moderate			& continuous		& continuous	\\
 	\codeinline{sloshing-v0}	& $1$		& low				& episodic			& continuous	\\
 	\codeinline{karman-v0}	& $1$		& high				& --				& -- 			\\
-	\codeinline{lorenz-v0}	& $1$		& low				& --				& -- 			\\
+	\codeinline{lorenz-v0}	& $1$		& low				& continuous		& discrete		\\
 	\codeinline{silo-v0}		& --			& moderate			& --				& -- 			\\
 	\codeinline{rayleigh-v0}	& $10$		& high				& continuous		& continuous 	\\
         \bottomrule
@@ -53,7 +53,7 @@ All the environments of the library follow the same pattern:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Default parameters}
 
-All the benchmarks of the library come with baseline score curves obtained with the \ppo algorithm, which default parameters are provided in table \ref{table:default_ppo_parameters} (environment-specific parameters are provided in the dedicated sections of each chapter).
+All the benchmarks of the library come with baseline score curves obtained with the \ppo algorithm, which default parameters are provided in table \ref{table:default_ppo_parameters} (environment-specific parameters are provided in the dedicated sections of each chapter). Results obtained with other algorithms may be included.
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
