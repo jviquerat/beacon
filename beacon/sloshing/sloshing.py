@@ -253,28 +253,42 @@ class sloshing(gym.Env):
         return rwd
 
     # Render environment
-    def render(self, mode="human", show=True, dump=True):
+    def render(self, mode="human", show=False, dump=True):
 
-        ### Initialize plot
-        if (self.stp_plot == 0):
-            plt.figure(figsize=(5.0,2.5))
-
-        ax  = plt.gca()
-        fig = plt.gcf()
-        ax.set_xlim([0.0,self.L])
-        ax.set_ylim([0.0,2.0])
-        plt.plot(self.x, self.h[1:self.nx+1])
-        ax.add_patch(Rectangle((0.5*self.L, 1.5),
-                               0.2*self.u[0], 0.1,
-                               facecolor='red', fill=True, lw=1))
-        fig.tight_layout()
-        plt.grid()
-        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
-        fig.savefig(filename)
-        if show: plt.pause(0.01)
+        # Plot field
         plt.clf()
+        plt.cla()
+        fig = plt.figure(figsize=(7,3))
+        ax  = fig.add_subplot(20, 1, (1,17))
+        ax.set_xlim([0.0,self.L])
+        ax.set_ylim([0.25,1.75])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
+        plt.plot(self.x, self.h[1:self.nx+1])
+
+        # Plot control
+        ax = fig.add_subplot(20, 1, (19,20))
+        ax.set_xlim([-1.0, 1.0])
+        ax.set_ylim([ 0.0, 0.2])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.0
+        y = 0.05
+        color = 'r' if self.u[0] > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*self.u[0], 0.1,
+                               color=color, fill=True, lw=2))
+
+        # Save figure
+        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
+        fig.savefig(filename, dpi=100, bbox_inches="tight")
+        if show: plt.pause(0.01)
+        plt.close()
+
+        # Dump
         if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
                            self.action_path+"/jet_"+str(self.stp_plot)+".dat")
+
         self.stp_plot += 1
 
     # Dump (h,q)
