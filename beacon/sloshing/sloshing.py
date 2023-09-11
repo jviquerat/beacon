@@ -25,7 +25,7 @@ class sloshing(gym.Env):
         self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 2.0              # warmup time
-        self.t_act      = 8.0              # action time after warmup
+        self.t_act      = 10.0             # action time after warmup
         self.g          = g                # gravity
         self.n_obs      = int(self.nx/2)   # nb of obs pts
         self.amp        = amp              # amplitude scaling
@@ -45,8 +45,14 @@ class sloshing(gym.Env):
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
 
         ### Path
-        self.path = "png"
-        os.makedirs(self.path, exist_ok=True)
+        self.path        = "png"
+        self.height_path = self.path+"/height"
+        self.field_path  = self.path+"/field"
+        self.action_path = self.path+"/action"
+        os.makedirs(self.path,        exist_ok=True)
+        os.makedirs(self.height_path, exist_ok=True)
+        os.makedirs(self.field_path,  exist_ok=True)
+        os.makedirs(self.action_path, exist_ok=True)
 
         ### Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
@@ -247,27 +253,42 @@ class sloshing(gym.Env):
         return rwd
 
     # Render environment
-    def render(self, mode="human", show=True, dump=True):
+    def render(self, mode="human", show=False, dump=True):
 
-        ### Initialize plot
-        if (self.stp_plot == 0):
-            plt.figure(figsize=(5.0,2.5))
-
-        ax  = plt.gca()
-        fig = plt.gcf()
-        ax.set_xlim([0.0,self.L])
-        ax.set_ylim([0.0,2.0])
-        plt.plot(self.x, self.h[1:self.nx+1])
-        ax.add_patch(Rectangle((0.5*self.L, 1.5),
-                               0.2*self.u[0], 0.1,
-                               facecolor='red', fill=True, lw=1))
-        fig.tight_layout()
-        plt.grid()
-        fig.savefig(self.path+'/'+str(self.stp_plot)+'.png')
-        if show: plt.pause(0.01)
+        # Plot field
         plt.clf()
-        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-                           self.path+"/jet_"+str(self.stp_plot)+".dat")
+        plt.cla()
+        fig = plt.figure(figsize=(7,3))
+        ax  = fig.add_subplot(20, 1, (1,17))
+        ax.set_xlim([0.0,self.L])
+        ax.set_ylim([0.25,1.75])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
+        plt.plot(self.x, self.h[1:self.nx+1])
+
+        # Plot control
+        ax = fig.add_subplot(20, 1, (19,20))
+        ax.set_xlim([-1.0, 1.0])
+        ax.set_ylim([ 0.0, 0.2])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.0
+        y = 0.05
+        color = 'r' if self.u[0] > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*self.u[0], 0.1,
+                               color=color, fill=True, lw=2))
+
+        # Save figure
+        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
+        fig.savefig(filename, dpi=100, bbox_inches="tight")
+        if show: plt.pause(0.01)
+        plt.close()
+
+        # Dump
+        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
+                           self.action_path+"/jet_"+str(self.stp_plot)+".dat")
+
         self.stp_plot += 1
 
     # Dump (h,q)

@@ -233,7 +233,6 @@ class lorenz(gym.Env):
 
         # Plot control
         ax = fig.add_subplot(15, 1, 15)
-        #ax.set_axis_off()
         fig.tight_layout()
         ax.set_xlim([-1.0, 1.0])
         ax.set_ylim([ 0.0, 0.2])
