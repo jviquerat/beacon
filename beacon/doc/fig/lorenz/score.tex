@@ -16,7 +16,7 @@
 				every tick label/.append style={font=\scriptsize},
 				grid=major, xlabel=transitions, ylabel=score]
 				
-		\legend{no control, \ppo}
+		\legend{no control, \ppo, \dqn}
 		
 		\addplot[thick, opacity=0.7, dash pattern=on 2pt]	coordinates {(0,207) (2000000,207)};
 		
@@ -24,11 +24,16 @@
 		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/lorenz/ppo.dat}; 
 		\addplot [fill=blue3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
 		\addplot[draw=blue1, thick, smooth] 			table[x index=0,y index=5] {fig/lorenz/ppo.dat}; 
+		
+		\addplot [upper, forget plot] 				table[x index=0,y index=7] {fig/lorenz/dqn.dat};
+		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/lorenz/dqn.dat}; 
+		\addplot [fill=green3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
+		\addplot[draw=green1, thick, smooth] 			table[x index=0,y index=5] {fig/lorenz/dqn.dat}; 
 			
 	\end{axis}
 \end{tikzpicture}
 %%%%%%%%%%%%
-\caption{\textbf{Score curves using the \textsc{ppo} algorithm to solve the \codeinline{lorenz-v0} environment.} The dashed line indicates the reward obtained for the uncontrolled environement.} 
+\caption{\textbf{Score curves of \ppo and \dqn when solving the \codeinline{lorenz-v0} environment.} The dashed line indicates the reward obtained for the uncontrolled environement.} 
 \label{fig:lorenz_score}
 \end{figure} 
 %%%%%%%%%%%%
