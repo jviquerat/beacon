@@ -25,7 +25,7 @@ class sloshing(gym.Env):
         self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 2.0              # warmup time
-        self.t_act      = 8.0              # action time after warmup
+        self.t_act      = 10.0             # action time after warmup
         self.g          = g                # gravity
         self.n_obs      = int(self.nx/2)   # nb of obs pts
         self.amp        = amp              # amplitude scaling
@@ -45,8 +45,14 @@ class sloshing(gym.Env):
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
 
         ### Path
-        self.path = "png"
-        os.makedirs(self.path, exist_ok=True)
+        self.path        = "png"
+        self.height_path = self.path+"/height"
+        self.field_path  = self.path+"/field"
+        self.action_path = self.path+"/action"
+        os.makedirs(self.path,        exist_ok=True)
+        os.makedirs(self.height_path, exist_ok=True)
+        os.makedirs(self.field_path,  exist_ok=True)
+        os.makedirs(self.action_path, exist_ok=True)
 
         ### Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
@@ -263,11 +269,12 @@ class sloshing(gym.Env):
                                facecolor='red', fill=True, lw=1))
         fig.tight_layout()
         plt.grid()
-        fig.savefig(self.path+'/'+str(self.stp_plot)+'.png')
+        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
+        fig.savefig(filename)
         if show: plt.pause(0.01)
         plt.clf()
-        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-                           self.path+"/jet_"+str(self.stp_plot)+".dat")
+        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
+                           self.action_path+"/jet_"+str(self.stp_plot)+".dat")
         self.stp_plot += 1
 
     # Dump (h,q)
