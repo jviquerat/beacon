@@ -102,6 +102,7 @@ class shkadov(gym.Env):
         # Define observation space
         self.q_min = 0.0
         self.q_max = 5.0
+        self.h_max = 5.0
 
         low  = np.ones((self.n_obs*self.n_jets))*self.q_min
         high = np.ones((self.n_obs*self.n_jets))*self.q_max
