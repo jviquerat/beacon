@@ -10,33 +10,38 @@
 
 \begin{subfigure}[t]{\textwidth}
 	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-		\def\x{150}
-		\def\w{2}
-		\def\s{10}
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t100.png}}
+    	\caption{$t=100$, start of control}
+	\label{fig:shkadov_fields_100}
+\end{subfigure}
 
-		\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.87);
-		\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1-0.35);
-		\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1+0.29);
-		\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1-0.29);
-		\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1-0.74);
-		\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1-0.88);
-		\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1-0.57);
-		\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.62);
-		\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1+0.47);
-		\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.47);
-		
-		\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_200.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
-    	\caption{$t=200$, start of control}
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t120.png}}
+    	\caption{$t=120$}
+	\label{fig:shkadov_fields_120}
+\end{subfigure}
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t150.png}}
+    	\caption{$t=150$}
+	\label{fig:shkadov_fields_150}
+\end{subfigure}
+
+\medskip
+
+%%%%%%%%%%%%
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t200.png}}
+    	\caption{$t=200$}
 	\label{fig:shkadov_fields_200}
 \end{subfigure}
 
@@ -45,32 +50,7 @@
 %%%%%%%%%%%%
 \begin{subfigure}[t]{\textwidth}
 	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-			\def\x{150}
-			\def\w{2}
-			\def\s{10}
-		
-			\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.22);
-			\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1-0.13);
-			\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.17);
-			\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1+0.077);
-			\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.039);
-			\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1+0.045);
-			\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1-0.033);
-			\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.095);
-			\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1-0.17);
-			\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.12);
-		
-			\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_300.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t300.png}}
     	\caption{$t=300$}
 	\label{fig:shkadov_fields_300}
 \end{subfigure}
@@ -80,142 +60,12 @@
 %%%%%%%%%%%%
 \begin{subfigure}[t]{\textwidth}
 	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-			\def\x{150}
-			\def\w{2}
-			\def\s{10}
-		
-			\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.12);
-			\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1+0.027);
-			\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.22);
-			\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1+0.015);
-			\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.065);
-			\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1-0.027);
-			\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1+0.0049);
-			\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.0070);
-			\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1-0.12);
-			\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.0091);
-		
-			\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_400.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
+	\fbox{\includegraphics[width=.5\textwidth]{fig/shkadov/t400.png}}
     	\caption{$t=400$}
-	\label{fig:shkadov_fields_300}
-\end{subfigure}
-
-\medskip
-
-%%%%%%%%%%%%
-\begin{subfigure}[t]{\textwidth}
-	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-			\def\x{150}
-			\def\w{2}
-			\def\s{10}
-		
-			\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.098);
-			\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1+0.095);
-			\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.18);
-			\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1-0.011);
-			\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.083);
-			\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1-0.026);
-			\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1+0.010);
-			\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.025);
-			\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1-0.12);
-			\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.032);
-		
-			\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_500.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
-    	\caption{$t=500$}
-	\label{fig:shkadov_fields_500}
-\end{subfigure}
-
-\medskip
-
-%%%%%%%%%%%%
-\begin{subfigure}[t]{\textwidth}
-	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-			\def\x{150}
-			\def\w{2}
-			\def\s{10}
-		
-			\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.16);
-			\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1+0.042);
-			\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.15);
-			\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1+0.031);
-			\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.042);
-			\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1-0.058);
-			\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1-0.028);
-			\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.058);
-			\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1-0.095);
-			\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.014);
-		
-			\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_600.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
-    	\caption{$t=600$}
-	\label{fig:shkadov_fields_600}
-\end{subfigure}
-
-\medskip
-
-%%%%%%%%%%%%
-\begin{subfigure}[t]{\textwidth}
-	\centering
-	\begin{tikzpicture}[	scale=0.7, trim axis left, trim axis right, font=\scriptsize]
-		\begin{axis}[	xmin=0, xmax=270, ymin=0, ymax=2, scale=1.0,
-					xtick={0,50,100,150,200,250,300},
-					width=\textwidth, height=.15\textwidth, scale only axis=true,
-					legend cell align=left, legend pos=north east,
-					grid=major, ylabel=$h$]
-				
-			\def\x{150}
-			\def\w{2}
-			\def\s{10}
-		
-			\draw[fill=green2, draw=gray2] 			(\x+0*\s-\w,1) rectangle (\x+0*\s+\w,1+0.21);
-			\draw[fill=green2, draw=gray2] 			(\x+1*\s-\w,1) rectangle (\x+1*\s+\w,1+0.021);
-			\draw[fill=green2, draw=gray2] 			(\x+2*\s-\w,1) rectangle (\x+2*\s+\w,1-0.15);
-			\draw[fill=green2, draw=gray2] 			(\x+3*\s-\w,1) rectangle (\x+3*\s+\w,1+0.048);
-			\draw[fill=green2, draw=gray2] 			(\x+4*\s-\w,1) rectangle (\x+4*\s+\w,1+0.044);
-			\draw[fill=green2, draw=gray2] 			(\x+5*\s-\w,1) rectangle (\x+5*\s+\w,1-0.071);
-			\draw[fill=green2, draw=gray2] 			(\x+6*\s-\w,1) rectangle (\x+6*\s+\w,1-0.038);
-			\draw[fill=green2, draw=gray2] 			(\x+7*\s-\w,1) rectangle (\x+7*\s+\w,1+0.034);
-			\draw[fill=green2, draw=gray2] 			(\x+8*\s-\w,1) rectangle (\x+8*\s+\w,1-0.093);
-			\draw[fill=green2, draw=gray2] 			(\x+9*\s-\w,1) rectangle (\x+9*\s+\w,1-0.046);
-		
-			\addplot[draw=gray1, very thick, smooth] 	table[x index=0,y index=1] {fig/shkadov/field_700.dat};
-			
-		\end{axis}
-	\end{tikzpicture}
-    	\caption{$t=700$}
-	\label{fig:shkadov_fields_700}
+	\label{fig:shkadov_fields_400}
 \end{subfigure}
 %%%%%%%%%%%%
-\caption{\textbf{Evolution of the flow under control of the agent, using 10 jets.} The jets strengths are represented with green rectangles.}
+\caption{\textbf{Evolution of the flow under control of the agent, using 5 jets.} The jets strengths are represented in the bottom rectangle (red means positive amplitude, blue means negative amplitude).}
 \label{fig:shkadov_fields}
 \end{figure} 
 %%%%%%%%%%%%

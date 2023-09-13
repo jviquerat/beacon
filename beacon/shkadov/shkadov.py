@@ -18,7 +18,7 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=10, jet_pos=150.0, jet_space=10.0, delta=0.1):
+                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1):
 
         # Main parameters
         self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
@@ -67,8 +67,14 @@ class shkadov(gym.Env):
         self.obs_end    = self.jet_pos                   # end of obs zone in lattice units
 
         ### Path
-        self.path = "png"
-        os.makedirs(self.path, exist_ok=True)
+        self.path        = "png"
+        self.height_path = self.path+"/height"
+        self.field_path  = self.path+"/field"
+        self.action_path = self.path+"/action"
+        os.makedirs(self.path,        exist_ok=True)
+        os.makedirs(self.height_path, exist_ok=True)
+        os.makedirs(self.field_path,  exist_ok=True)
+        os.makedirs(self.action_path, exist_ok=True)
 
         ### Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
@@ -268,28 +274,45 @@ class shkadov(gym.Env):
     # Render environment
     def render(self, mode="human", show=False, dump=True):
 
-        ### Initialize plot
-        if (self.stp_plot == 0):
-            plt.figure(figsize=(10,2))
-
-        ax  = plt.gca()
-        fig = plt.gcf()
+        # Plot field
+        plt.clf()
+        plt.cla()
+        fig = plt.figure(figsize=(10,3))
+        ax  = fig.add_subplot(20, 1, (1,15))
         ax.set_xlim([0.0,self.L])
         ax.set_ylim([0.0,2.0])
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
         plt.plot(self.x,self.h)
+
+        # Plot control
+        ax = fig.add_subplot(20, 1, (17,20))
+        ax.set_xlim([ 0.0, self.L])
+        ax.set_ylim([-1.0, 1.0])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.plot(np.zeros_like(self.x), color='k', lw=1, linestyle='dashed')
+
         for i in range(self.n_jets):
-            s = self.jet_pos + i*self.jet_space - self.jet_hw
-            ax.add_patch(Rectangle((s*self.dx, 1.0),
-                                   (2*self.jet_hw+1)*self.dx, self.u[i],
-                                   facecolor='red', fill=True, lw=1))
-        fig.tight_layout()
-        plt.grid()
-        fig.savefig(self.path+'/'+str(self.stp_plot)+'.png',
-                    bbox_inches='tight')
+            x = (self.jet_pos + i*self.jet_space - self.jet_hw)*self.dx
+            y = 0.0
+            s = (self.jet_hw+1)*self.dx
+            color = 'r' if self.u[i] > 0.0 else 'b'
+            ax.add_patch(Rectangle((x,y), s, self.u[i],
+                                   color=color, fill=True, lw=1))
+
+        # Save figure
+        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
+        fig.savefig(filename, bbox_inches='tight')
         if show: plt.pause(0.0001)
-        plt.clf()
-        if dump: self.dump(self.path+"/field_"+str(self.stp_plot)+".dat",
-                           self.path+"/jet_"+str(self.stp_plot)+".dat")
+        plt.close()
+
+        # Dump
+        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
+                           self.action_path+"/jet_"+str(self.stp_plot)+".dat")
+
         self.stp_plot += 1
 
     # Dump (h,q)
