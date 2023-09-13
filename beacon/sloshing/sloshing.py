@@ -264,6 +264,7 @@ class sloshing(gym.Env):
         ax.set_ylim([0.25,1.75])
         ax.set_xticks([])
         ax.set_yticks([])
+
         plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
         plt.plot(self.x, self.h[1:self.nx+1])
 
