@@ -94,7 +94,7 @@ For simplicity, no interpolation is performed between actions, neither spatially
 
 \input{fig/rayleigh/sketch_env}
 
-The observations provided to the agent are the temperatures and velocities collected on a grid of $n_p \times n_p$ probes evenly spaced in the computational domain (see figure \ref{fig:rayleigh_sketch_env}), along with the observations of the previous $n_h = 3$ time-steps. The resulting set of observations is flattened in a vector of size $3 \times (n_h+1) \times n_p^2$, and we select $n_p = 4$.
+The observations provided to the agent are the temperatures and their derivatives collected on a grid of $n_p \times n_p$ probes evenly spaced in the computational domain (see figure \ref{fig:rayleigh_sketch_env}). The resulting set of observations is flattened in a vector of size $2 \times (n_h+1)$.
 
 The reward at each time-step is simply set as the negative instantaneous Nusselt number, such that increasing the reward corresponds to a decrease of the temperature convection:
 
