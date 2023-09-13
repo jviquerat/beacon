@@ -100,19 +100,13 @@ class shkadov(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        self.h_min = 0.0
-        self.h_max = 5.0
+        self.q_min = 0.0
+        self.q_max = 5.0
 
-        low    = np.array([])
-        high   = np.array([])
-        low_h  = np.ones((self.n_obs))*self.h_min
-        high_h = np.ones((self.n_obs))*self.h_max
+        low  = np.ones((self.n_obs*self.n_jets))*self.q_min
+        high = np.ones((self.n_obs*self.n_jets))*self.q_max
 
-        for i in range(self.n_jets):
-            low  = np.append(low, low_h)
-            high = np.append(high, high_h)
-
-        self.observation_space = gsp.Box(low   =-low,
+        self.observation_space = gsp.Box(low   = low,
                                          high  = high,
                                          shape = (self.n_obs*self.n_jets,),
                                          dtype = np.float32)
