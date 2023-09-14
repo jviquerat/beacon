@@ -270,8 +270,6 @@ class shkadov(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         # Plot field
-        plt.clf()
-        plt.cla()
         fig = plt.figure(figsize=(10,3))
         ax  = fig.add_subplot(20, 1, (1,15))
         ax.set_xlim([0.0,self.L])
