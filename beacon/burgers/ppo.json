@@ -1,6 +1,6 @@
 {
     "env": {
-        "name": "lorenz",
+        "name": "burgers",
         "obs_clip": false,
         "obs_norm": true,
         "obs_noise": 0.0
@@ -11,12 +11,12 @@
         "tag": false,
         "time": false
     },
-    "n_avg": 3,
+    "n_avg": 1,
     "n_cpu": 1,
-    "n_stp_max": 2000000,
+    "n_stp_max": 200000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 10000,
+        "buff_size": 1000,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
@@ -26,18 +26,18 @@
     "agent": {
         "type": "ppo",
         "policy": {
-            "type": "categorical",
+            "type": "normal",
             "network": {
                 "type": "fc",
                 "trunk": {
-                    "arch": [64,64],
+                    "arch": [64],
                     "actv": "tanh"
                 },
                 "heads": {
-                    "nb": 1,
-                    "arch": [[]],
-                    "actv": ["tanh"],
-                    "final": ["softmax"]
+                    "nb": 2,
+                    "arch": [[64],[64]],
+                    "actv": ["tanh","tanh"],
+                    "final": ["tanh","sigmoid"]
                 }
             },
             "optimizer": {
@@ -48,7 +48,7 @@
             "loss": {
                 "type": "surrogate",
                 "pol_clip": 0.2,
-                "ent_coef": 0.005
+                "ent_coef": 0.01
             }
         },
         "value": {

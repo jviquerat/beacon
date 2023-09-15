@@ -11,7 +11,6 @@ import matplotlib.cm     as cm
 import numba             as nb
 
 from   matplotlib.patches import Rectangle
-from   scipy.interpolate  import interp1d
 
 ###############################################
 ### Burgers environment
@@ -24,23 +23,26 @@ class burgers(gym.Env):
 
         # Main parameters
         self.L          = 1.0    # domain length
-        self.nx         = 200    # nb of discretization pts
+        self.nx         = 500    # nb of discretization pts
         self.t_max      = 5.0    # total simulation time
-        self.dt_act     = 0.05   # action timestep
-        self.n_obs      = 50     # total nb of observations
+        self.dt_act     = 0.025  # action timestep
         self.n_sgts     = n_sgts # nb of action segments
-        self.n_obs_pts  = 20     # nb of observation pts
-        self.nu         = nu     # viscosity
+        self.n_obs_pts  = 50     # nb of observation pts
+        self.nu         = 0.001  # viscosity
+        self.scale      = 0.2    # action scaling
+        self.x0         = 0.5    # center of initial bump
+        self.sigma      = 0.1    # variance of initial bump
+        self.c          = 0.3    # matching velocity
 
         # Deduced parameters
         self.dx         = float(self.L/self.nx)       # spatial step
-        self.dt         = 0.2*self.dx                 # timestep
+        self.dt         = 0.1*self.dx                 # timestep
         self.ndt_max    = int(self.t_max/self.dt)     # nb of numerical timesteps
         self.ndt_act    = int(self.dt_act/self.dt)    # nb of numerical timesteps per action
         self.t_act      = self.t_max                  # action time
         self.n_act      = int(self.t_act/self.dt_act) # nb of action steps per episode
         self.nx_sgts    = self.nx//self.n_sgts        # nb of pts in each segment
-        self.nx_obs     = self.nx//self.n_obs_pts        # nb of pts between each observation pt in x direction
+        self.nx_obs     = self.nx//self.n_obs_pts     # nb of pts between each observation pt in x direction
 
         # Arrays
         self.x   = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
@@ -53,8 +55,8 @@ class burgers(gym.Env):
         self.uex = np.zeros((self.nx))
 
         # Define action space
-        self.action_space = gsp.Box(low   =-1.0,
-                                    high  = 1.0,
+        self.action_space = gsp.Box(low   =-self.scale,
+                                    high  = self.scale,
                                     shape = (self.n_sgts,),
                                     dtype = np.float32)
 
@@ -79,9 +81,9 @@ class burgers(gym.Env):
 
         # Initial solution
         self.t = 0.0
-        window(self.u,   self.x, 0.0, 1.0, 0.2, 0.4, self.L)
-        window(self.up,  self.x, 0.0, 1.0, 0.2, 0.4, self.L)
-        window(self.upp, self.x, 0.0, 1.0, 0.2, 0.4, self.L)
+        window(self.u,   self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        window(self.up,  self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        window(self.upp, self.x, 0.0, self.c, self.x0, self.sigma, self.L)
 
         # Other fields
         self.du[:]  = 0.0
@@ -144,7 +146,14 @@ class burgers(gym.Env):
             derxx(self.u, self.ddu, self.nx, self.dx)
 
             # Build rhs
-            self.rhs[1:-1] = self.u[1:-1]*self.du[1:-1] - self.nu*self.ddu[1:-1]
+            rhs(self.u, self.du, self.ddu, self.nu, self.rhs)
+
+            # Add control
+            x = 0.0
+            for k in range(self.n_sgts):
+                s = k*self.nx_sgts
+                e = (k+1)*self.nx_sgts
+                self.rhs[s:e] += self.a[k]
 
             # Update
             dert(self.u, self.up, self.upp, self.rhs, self.nx, self.dt)
@@ -165,7 +174,10 @@ class burgers(gym.Env):
     # Compute reward
     def get_rwd(self):
 
-        rwd = np.max(self.u)
+        window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
+        rwd =-np.dot(self.u[:] - self.uex[:], self.u[:] - self.uex[:])*self.dx
+
+        #rwd = 1.0e-5*np.sum(self.ddu[:]**2)*self.dx
 
         return rwd
 
@@ -185,28 +197,25 @@ class burgers(gym.Env):
         ax.set_ylim([-0.1,1.5])
         ax.set_xticks([])
         ax.set_yticks([])
+        window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
         plt.plot(self.x, self.u)
+        plt.plot(self.x, self.uex)
 
         # Plot control
         ax = fig.add_subplot(20, 1, (19,20))
         ax.set_xlim([ 0.0, self.L])
-        ax.set_ylim([-1.0, 1.0])
+        ax.set_ylim([-self.scale, self.scale])
         ax.set_xticks([])
         ax.set_yticks([])
         plt.plot(np.zeros_like(self.x), color='k', lw=1, linestyle='dashed')
 
         for i in range(self.n_sgts):
-            x = (0.5*self.nx_obs + i*self.nx_obs)*self.dx
+            x = (0.5*self.nx_sgts + i*self.nx_sgts)*self.dx
             y = 0.0
-            s = (0.2*self.nx_obs)*self.dx
+            s = (0.2*self.nx_sgts)*self.dx
             color = 'r' if self.a[i] > 0.0 else 'b'
-            ax.add_patch(Rectangle((x,y), s, self.a[i],
+            ax.add_patch(Rectangle((x,y), s, 0.98*self.a[i],
                                    color=color, fill=True, lw=1))
-        # x = 0.0
-        # y = 0.05
-        # color = 'r' if self.u > 0.0 else 'b'
-        # ax.add_patch(Rectangle((x, y), 0.98*self.actions[self.u], 0.1,
-        #                        color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
@@ -234,14 +243,17 @@ class burgers(gym.Env):
     def close(self):
         pass
 
+###############################################
 # Window signal
-def window(u, x, t, c, x0, x1, L):
+def window(u, x, t, c, x0, sg, L):
 
-    u[:] = 0.0
     for i in range(len(x)):
-        if ((x[i]-c*t)%L >= x0 and (x[i]-c*t)%L <= x1): u[i] = 1.0
+        xx = x[i] - x0 - c*t
+        while (xx + x0 < 0.0): xx += L
+        u[i] = np.exp(-(xx/sg)**2)
 
-# spatial derivative
+# 1st derivative tvd scheme
+@nb.njit(cache=True)
 def derx(u, du, nx, dx):
 
     fp        = np.zeros((nx))
@@ -250,18 +262,29 @@ def derx(u, du, nx, dx):
     r         = np.zeros((nx))
 
     r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-    phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0)) # vanleer
+    #phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
+    #phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
+    phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
 
     fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
     fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
     du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
 
-# spatial derivative
+# 2nd derivative, 2nd order
+@nb.njit(cache=True)
 def derxx(u, ddu, nx, dx):
 
     ddu[1:nx-1] = (u[2:nx] + u[0:nx-2] - 2.0*u[1:nx-1])/(dx*dx)
 
 # time derivative
+@nb.njit(cache=True)
 def dert(u, up, upp, rhs, nx, dt):
 
     u[1:nx-1] = (4.0*up[1:nx-1] - upp[1:nx-1] - 2.0*dt*rhs[1:nx-1])/3.0
+
+# time derivative
+@nb.njit(cache=True)
+def rhs(u, du, ddu, nu, r):
+
+    r[1:-1] = u[1:-1]*du[1:-1] - nu*ddu[1:-1]
+    #r[1:-1] = 1.0*du[1:-1] #+ nu*ddu[1:-1]
