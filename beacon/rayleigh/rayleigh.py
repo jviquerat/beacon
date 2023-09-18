@@ -209,10 +209,10 @@ class rayleigh(gym.Env):
             self.u[1:,0]    =-self.u[1:,1]
             self.v[1:-1,1]  = 0.0
 
-            for i in range(self.n_sgts):
-                s = 1 + i*self.nx_sgts
-                e = 1 + (i+1)*self.nx_sgts
-                self.T[s:e,0]  = 2.0*(self.Th + self.a[i]) - self.T[s:e,1]
+            for j in range(self.n_sgts):
+                s = 1 + j*self.nx_sgts
+                e = 1 + (j+1)*self.nx_sgts
+                self.T[s:e,0]  = 2.0*(self.Th + self.a[j]) - self.T[s:e,1]
 
             #########################
             # Predictor step
