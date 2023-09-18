@@ -19,14 +19,14 @@ class burgers(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 n_sgts=10, nu=0.002):
+                 n_sgts=10, nu=0.0):
 
         # Main parameters
         self.L          = 1.0    # domain length
-        self.nx         = 100    # nb of discretization pts
-        self.dx         = 0.01
+        self.nx         = 500    # nb of discretization pts
+        self.dx         = float(self.L/self.nx)       # spatial step
         self.t_max      = 6.0    # total simulation time
-        self.dt         = 0.005
+        self.dt         = 0.001
         self.dt_act     = 0.05   # action timestep
         self.n_sgts     = n_sgts # nb of action segments
         self.n_obs_pts  = 20     # nb of observation pts
@@ -34,7 +34,7 @@ class burgers(gym.Env):
         self.scale      = 1.0    # action scaling
         self.x0         = 0.5    # center of initial bump
         self.sigma      = 0.05    # variance of initial bump
-        self.c          = 0.1    # matching velocity
+        self.c          = 1.0    # matching velocity
 
         # Deduced parameters
         self.nop        = 5
@@ -86,9 +86,9 @@ class burgers(gym.Env):
 
         # Initial solution
         self.t = 0.0
-        window(self.u,   self.x, 0.0, self.c, self.x0, self.sigma, self.L)
-        window(self.up,  self.x, 0.0, self.c, self.x0, self.sigma, self.L)
-        window(self.upp, self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        #window(self.u,   self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        #window(self.up,  self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        #window(self.upp, self.x, 0.0, self.c, self.x0, self.sigma, self.L)
 
         # Other fields
         self.du[:]  = 0.0
@@ -143,18 +143,19 @@ class burgers(gym.Env):
             self.up[:]  = self.u[:]
 
             # Boundary conditions
-            self.u[-1] = self.u[1]
-            self.u[0]  = self.u[-2]
+            self.u[0]         = boundary(self.t, self.c, self.x0, self.sigma)
+            self.u[self.nx-1] = self.u[self.nx-2]
+            #self.u[0]  = self.u[-2]
 
             #self.u[-1] = 0.0
             #self.u[0]  = 0.0
 
             # Compute spatial derivative
             derx(self.u,  self.du,  self.nx, self.dx)
-            derxx(self.u, self.ddu, self.nx, self.dx)
+            #derxx(self.u, self.ddu, self.nx, self.dx)
 
             # Build rhs
-            rhs(self.u, self.du, self.ddu, self.nu, self.rhs)
+            rhs(self.u, self.du, self.ddu, self.nu, self.rhs, self.nx)
 
             # Add control
             for k in range(self.n_sgts):
@@ -209,9 +210,9 @@ class burgers(gym.Env):
         ax.set_ylim([-0.1,1.5])
         ax.set_xticks([])
         ax.set_yticks([])
-        window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
+        #window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
         plt.plot(self.x, self.u)
-        plt.plot(self.x, self.uex)
+        #plt.plot(self.x, self.uex)
 
         # Plot control
         ax = fig.add_subplot(20, 1, (19,20))
@@ -264,23 +265,32 @@ def window(u, x, t, c, x0, sg, L):
         while (xx + x0 < 0.0): xx += L
         u[i] = 0.5*np.exp(-(xx/(2.0*sg))**2)
 
+# Window signal
+def boundary(t, c, x0, sg):
+
+    return math.exp(-((t-0.5)/0.15)**2)
+    #return math.exp(-((t-x0)/0.15)**2)
+
 # 1st derivative tvd scheme
 @nb.njit(cache=True)
 def derx(u, du, nx, dx):
 
-    fp        = np.zeros((nx))
-    fm        = np.zeros((nx))
-    phi       = np.zeros((nx))
-    r         = np.zeros((nx))
+    du[1:nx-1] = (u[1:nx-1] - u[0:nx-2])/dx
 
-    r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-    #phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
-    #phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
-    phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
+    # fp        = np.zeros((nx))
+    # fm        = np.zeros((nx))
+    # phi       = np.zeros((nx))
+    # r         = np.zeros((nx))
 
-    fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
-    fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
-    du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
+    # phi[:] = 0.0
+    # #r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
+    # #phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
+    # #phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
+    # #phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
+
+    # fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
+    # fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
+    # du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
 
 # 2nd derivative, 2nd order
 @nb.njit(cache=True)
@@ -296,7 +306,8 @@ def dert(u, up, upp, rhs, nx, dt):
 
 # time derivative
 @nb.njit(cache=True)
-def rhs(u, du, ddu, nu, r):
+def rhs(u, du, ddu, nu, r, nx):
 
-    r[1:-1] = u[1:-1]*du[1:-1] - nu*ddu[1:-1]
-    #r[1:-1] = 1.0*du[1:-1] #+ nu*ddu[1:-1]
+    #r[1:nx-1] = u[1:nx-1]*du[1:nx-1] - nu*ddu[1:nx-1]
+
+    r[1:nx-1] = (1.0-0.5*u[1:nx-1])*du[1:nx-1] - nu*ddu[1:nx-1]
