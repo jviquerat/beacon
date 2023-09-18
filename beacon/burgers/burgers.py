@@ -19,24 +19,28 @@ class burgers(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 n_sgts=10, nu=0.001):
+                 n_sgts=10, nu=0.002):
 
         # Main parameters
         self.L          = 1.0    # domain length
-        self.nx         = 500    # nb of discretization pts
-        self.t_max      = 5.0    # total simulation time
-        self.dt_act     = 0.025  # action timestep
+        self.nx         = 100    # nb of discretization pts
+        self.dx         = 0.01
+        self.t_max      = 6.0    # total simulation time
+        self.dt         = 0.005
+        self.dt_act     = 0.05   # action timestep
         self.n_sgts     = n_sgts # nb of action segments
-        self.n_obs_pts  = 50     # nb of observation pts
-        self.nu         = 0.001  # viscosity
-        self.scale      = 0.2    # action scaling
+        self.n_obs_pts  = 20     # nb of observation pts
+        self.nu         = nu     # viscosity
+        self.scale      = 1.0    # action scaling
         self.x0         = 0.5    # center of initial bump
-        self.sigma      = 0.1    # variance of initial bump
-        self.c          = 0.3    # matching velocity
+        self.sigma      = 0.05    # variance of initial bump
+        self.c          = 0.1    # matching velocity
 
         # Deduced parameters
-        self.dx         = float(self.L/self.nx)       # spatial step
-        self.dt         = 0.1*self.dx                 # timestep
+        self.nop        = 5
+        self.n_obs_tot  = self.n_obs_pts + 2*self.nop          # total nb of obs
+        #self.dx         = float(self.L/self.nx)       # spatial step
+        #self.dt         = 0.5*self.dx                 # timestep
         self.ndt_max    = int(self.t_max/self.dt)     # nb of numerical timesteps
         self.ndt_act    = int(self.dt_act/self.dt)    # nb of numerical timesteps per action
         self.t_act      = self.t_max                  # action time
@@ -61,10 +65,11 @@ class burgers(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        high = np.ones((self.n_obs_pts))
-        self.observation_space = gsp.Box(low   =-high,
+        low =  np.zeros((self.n_obs_tot))
+        high = np.ones((self.n_obs_tot))
+        self.observation_space = gsp.Box(low   = low,
                                          high  = high,
-                                         shape = (self.n_obs_pts,),
+                                         shape = (self.n_obs_tot,),
                                          dtype = np.float32)
 
     # Reset environment
@@ -141,6 +146,9 @@ class burgers(gym.Env):
             self.u[-1] = self.u[1]
             self.u[0]  = self.u[-2]
 
+            #self.u[-1] = 0.0
+            #self.u[0]  = 0.0
+
             # Compute spatial derivative
             derx(self.u,  self.du,  self.nx, self.dx)
             derxx(self.u, self.ddu, self.nx, self.dx)
@@ -149,7 +157,6 @@ class burgers(gym.Env):
             rhs(self.u, self.du, self.ddu, self.nu, self.rhs)
 
             # Add control
-            x = 0.0
             for k in range(self.n_sgts):
                 s = k*self.nx_sgts
                 e = (k+1)*self.nx_sgts
@@ -163,11 +170,16 @@ class burgers(gym.Env):
     def get_obs(self):
 
         # Fill new observations
-        obs = np.zeros(self.n_obs_pts)
-        x   = self.nx_obs//2
+        obs = np.zeros((1,self.n_obs_tot))
+        j   = self.nx_obs//2
         for i in range(self.n_obs_pts):
-            obs[i] = self.u[i]
-            x += self.nx_obs
+            obs[0,i+2] = self.u[j+i*self.nx_obs]
+
+        obs[0, :self.nop] = self.u[-self.nop:]
+        obs[0,-self.nop:] = self.u[ :self.nop]
+            #obs[1,i] = self.rhs[j+i*self.nx_obs]
+
+        obs = np.reshape(obs, [-1])
 
         return obs
 
@@ -175,7 +187,7 @@ class burgers(gym.Env):
     def get_rwd(self):
 
         window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
-        rwd =-np.dot(self.u[:] - self.uex[:], self.u[:] - self.uex[:])*self.dx
+        rwd =-np.sum(np.absolute(self.u[:] - self.uex[:]))*self.dx
 
         #rwd = 1.0e-5*np.sum(self.ddu[:]**2)*self.dx
 
@@ -250,7 +262,7 @@ def window(u, x, t, c, x0, sg, L):
     for i in range(len(x)):
         xx = x[i] - x0 - c*t
         while (xx + x0 < 0.0): xx += L
-        u[i] = np.exp(-(xx/sg)**2)
+        u[i] = 0.5*np.exp(-(xx/(2.0*sg))**2)
 
 # 1st derivative tvd scheme
 @nb.njit(cache=True)
