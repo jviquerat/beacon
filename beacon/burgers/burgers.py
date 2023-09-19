@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm     as cm
 import numba             as nb
 
-from   matplotlib.patches import Rectangle
+from   matplotlib.patches import Rectangle, Circle
 
 ###############################################
 ### Burgers environment
@@ -19,34 +19,28 @@ class burgers(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 n_sgts=10, nu=0.0):
+                 u_target=0.5, scale=10.0, sigma=0.1, ctrl_pos=0.3):
 
         # Main parameters
-        self.L          = 1.0    # domain length
-        self.nx         = 500    # nb of discretization pts
-        self.dx         = float(self.L/self.nx)       # spatial step
-        self.t_max      = 6.0    # total simulation time
-        self.dt         = 0.001
-        self.dt_act     = 0.05   # action timestep
-        self.n_sgts     = n_sgts # nb of action segments
-        self.n_obs_pts  = 20     # nb of observation pts
-        self.nu         = nu     # viscosity
-        self.scale      = 1.0    # action scaling
-        self.x0         = 0.5    # center of initial bump
-        self.sigma      = 0.05    # variance of initial bump
-        self.c          = 1.0    # matching velocity
+        self.L          = 1.0      # domain length
+        self.nx         = 500      # nb of discretization pts
+        self.t_max      = 10.0     # total simulation time
+        self.dt_act     = 0.05     # action timestep
+        self.n_obs_pts  = 20       # nb of observation pts
+        self.scale      = scale    # action scaling
+        self.sigma      = sigma    # variance of noise
+        self.u_target   = u_target # target value
+        self.ctrl_xpos  = ctrl_pos # position of control point
 
         # Deduced parameters
-        self.nop        = 5
-        self.n_obs_tot  = self.n_obs_pts + 2*self.nop          # total nb of obs
-        #self.dx         = float(self.L/self.nx)       # spatial step
-        #self.dt         = 0.5*self.dx                 # timestep
-        self.ndt_max    = int(self.t_max/self.dt)     # nb of numerical timesteps
-        self.ndt_act    = int(self.dt_act/self.dt)    # nb of numerical timesteps per action
-        self.t_act      = self.t_max                  # action time
-        self.n_act      = int(self.t_act/self.dt_act) # nb of action steps per episode
-        self.nx_sgts    = self.nx//self.n_sgts        # nb of pts in each segment
-        self.nx_obs     = self.nx//self.n_obs_pts     # nb of pts between each observation pt in x direction
+        self.dx         = float(self.L/self.nx)         # spatial step
+        self.ctrl_pos   = int(self.ctrl_xpos/self.dx)   # position of control point
+        self.dt         = 0.2*self.dx                  # timestep
+        self.ndt_max    = int(self.t_max/self.dt)       # nb of numerical timesteps
+        self.ndt_act    = int(self.dt_act/self.dt)      # nb of numerical timesteps per action
+        self.t_act      = self.t_max                    # action time
+        self.n_act      = int(self.t_act/self.dt_act)   # nb of action steps per episode
+        self.nx_obs     = self.ctrl_pos//self.n_obs_pts # nb of pts between each observation pt
 
         # Arrays
         self.x   = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
@@ -54,22 +48,21 @@ class burgers(gym.Env):
         self.up  = np.zeros((self.nx))
         self.upp = np.zeros((self.nx))
         self.du  = np.zeros((self.nx))
-        self.ddu = np.zeros((self.nx))
         self.rhs = np.zeros((self.nx))
         self.uex = np.zeros((self.nx))
 
         # Define action space
         self.action_space = gsp.Box(low   =-self.scale,
                                     high  = self.scale,
-                                    shape = (self.n_sgts,),
+                                    shape = (1,),
                                     dtype = np.float32)
 
         # Define observation space
-        low =  np.zeros((self.n_obs_tot))
-        high = np.ones((self.n_obs_tot))
+        low =  np.zeros((self.n_obs_pts))
+        high = np.ones((self.n_obs_pts))
         self.observation_space = gsp.Box(low   = low,
                                          high  = high,
-                                         shape = (self.n_obs_tot,),
+                                         shape = (self.n_obs_pts,),
                                          dtype = np.float32)
 
     # Reset environment
@@ -85,20 +78,18 @@ class burgers(gym.Env):
     def reset_fields(self):
 
         # Initial solution
-        self.t = 0.0
-        #window(self.u,   self.x, 0.0, self.c, self.x0, self.sigma, self.L)
-        #window(self.up,  self.x, 0.0, self.c, self.x0, self.sigma, self.L)
-        #window(self.upp, self.x, 0.0, self.c, self.x0, self.sigma, self.L)
+        self.t      = 0.0
+        self.u[:]   = self.u_target
+        self.up[:]  = self.u_target
+        self.upp[:] = self.u_target
 
         # Other fields
         self.du[:]  = 0.0
-        self.ddu[:] = 0.0
         self.rhs[:] = 0.0
         self.uex[:] = 0.0
 
         # Actions
-        self.a  = [0.0]*self.n_sgts
-        self.ap = [0.0]*self.n_sgts
+        self.a  = [0.0]
 
         # Running indices
         self.stp      = 0
@@ -132,8 +123,9 @@ class burgers(gym.Env):
         if (a is None): a = self.a.copy()
 
         # Save actions
-        self.ap = self.a
-        self.a  = a
+        self.a[:] = a[:]
+
+        noise = np.random.uniform(-self.sigma, self.sigma, 1)
 
         # Run solver
         for i in range(self.ndt_act):
@@ -143,25 +135,17 @@ class burgers(gym.Env):
             self.up[:]  = self.u[:]
 
             # Boundary conditions
-            self.u[0]         = boundary(self.t, self.c, self.x0, self.sigma)
+            self.u[0]         = self.u_target + noise
             self.u[self.nx-1] = self.u[self.nx-2]
-            #self.u[0]  = self.u[-2]
-
-            #self.u[-1] = 0.0
-            #self.u[0]  = 0.0
 
             # Compute spatial derivative
             derx(self.u,  self.du,  self.nx, self.dx)
-            #derxx(self.u, self.ddu, self.nx, self.dx)
 
             # Build rhs
-            rhs(self.u, self.du, self.ddu, self.nu, self.rhs, self.nx)
+            rhs(self.u, self.du, self.rhs, self.nx)
 
             # Add control
-            for k in range(self.n_sgts):
-                s = k*self.nx_sgts
-                e = (k+1)*self.nx_sgts
-                self.rhs[s:e] += self.a[k]
+            self.rhs[self.ctrl_pos] += self.a[0]
 
             # Update
             dert(self.u, self.up, self.upp, self.rhs, self.nx, self.dt)
@@ -171,26 +155,15 @@ class burgers(gym.Env):
     def get_obs(self):
 
         # Fill new observations
-        obs = np.zeros((1,self.n_obs_tot))
-        j   = self.nx_obs//2
-        for i in range(self.n_obs_pts):
-            obs[0,i+2] = self.u[j+i*self.nx_obs]
-
-        obs[0, :self.nop] = self.u[-self.nop:]
-        obs[0,-self.nop:] = self.u[ :self.nop]
-            #obs[1,i] = self.rhs[j+i*self.nx_obs]
-
-        obs = np.reshape(obs, [-1])
+        obs    = np.zeros((self.n_obs_pts))
+        obs[:] = self.u[self.ctrl_pos-self.n_obs_pts:self.ctrl_pos]
 
         return obs
 
     # Compute reward
     def get_rwd(self):
 
-        window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
-        rwd =-np.sum(np.absolute(self.u[:] - self.uex[:]))*self.dx
-
-        #rwd = 1.0e-5*np.sum(self.ddu[:]**2)*self.dx
+        rwd = -np.sum(np.abs(self.u[self.ctrl_pos:] - self.u_target))*self.dx
 
         return rwd
 
@@ -207,28 +180,25 @@ class burgers(gym.Env):
         fig = plt.figure(figsize=(7,3))
         ax  = fig.add_subplot(20, 1, (1,17))
         ax.set_xlim([0.0,self.L])
-        ax.set_ylim([-0.1,1.5])
+        ax.set_ylim([0.3,0.7])
         ax.set_xticks([])
         ax.set_yticks([])
-        #window(self.uex, self.x, self.t, self.c, self.x0, self.sigma, self.L)
+        plt.axvline(x=self.ctrl_xpos, color='k', lw=1)
+        plt.plot(np.ones_like(self.x)*self.u_target,
+                 color='k', lw=1, linestyle='dashed')
         plt.plot(self.x, self.u)
-        #plt.plot(self.x, self.uex)
 
         # Plot control
         ax = fig.add_subplot(20, 1, (19,20))
-        ax.set_xlim([ 0.0, self.L])
-        ax.set_ylim([-self.scale, self.scale])
+        ax.set_xlim([-self.scale, self.scale])
+        ax.set_ylim([ 0.0, 0.2])
         ax.set_xticks([])
         ax.set_yticks([])
-        plt.plot(np.zeros_like(self.x), color='k', lw=1, linestyle='dashed')
-
-        for i in range(self.n_sgts):
-            x = (0.5*self.nx_sgts + i*self.nx_sgts)*self.dx
-            y = 0.0
-            s = (0.2*self.nx_sgts)*self.dx
-            color = 'r' if self.a[i] > 0.0 else 'b'
-            ax.add_patch(Rectangle((x,y), s, 0.98*self.a[i],
-                                   color=color, fill=True, lw=1))
+        x = 0.0
+        y = 0.05
+        color = 'r' if self.a[0] > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*self.a[0], 0.1,
+                               color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
@@ -257,46 +227,25 @@ class burgers(gym.Env):
         pass
 
 ###############################################
-# Window signal
-def window(u, x, t, c, x0, sg, L):
-
-    for i in range(len(x)):
-        xx = x[i] - x0 - c*t
-        while (xx + x0 < 0.0): xx += L
-        u[i] = 0.5*np.exp(-(xx/(2.0*sg))**2)
-
-# Window signal
-def boundary(t, c, x0, sg):
-
-    return math.exp(-((t-0.5)/0.15)**2)
-    #return math.exp(-((t-x0)/0.15)**2)
-
 # 1st derivative tvd scheme
 @nb.njit(cache=True)
 def derx(u, du, nx, dx):
 
-    du[1:nx-1] = (u[1:nx-1] - u[0:nx-2])/dx
+    #du[1:nx-1] = (u[1:nx-1] - u[0:nx-2])/dx
 
-    # fp        = np.zeros((nx))
-    # fm        = np.zeros((nx))
-    # phi       = np.zeros((nx))
-    # r         = np.zeros((nx))
+    fp        = np.zeros((nx))
+    fm        = np.zeros((nx))
+    phi       = np.zeros((nx))
+    r         = np.zeros((nx))
 
-    # phi[:] = 0.0
-    # #r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-    # #phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
-    # #phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
-    # #phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
+    #r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
+    phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
+    #phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
+    #phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
 
-    # fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
-    # fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
-    # du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
-
-# 2nd derivative, 2nd order
-@nb.njit(cache=True)
-def derxx(u, ddu, nx, dx):
-
-    ddu[1:nx-1] = (u[2:nx] + u[0:nx-2] - 2.0*u[1:nx-1])/(dx*dx)
+    fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
+    fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
+    du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
 
 # time derivative
 @nb.njit(cache=True)
@@ -306,8 +255,8 @@ def dert(u, up, upp, rhs, nx, dt):
 
 # time derivative
 @nb.njit(cache=True)
-def rhs(u, du, ddu, nu, r, nx):
+def rhs(u, du, r, nx):
 
-    #r[1:nx-1] = u[1:nx-1]*du[1:nx-1] - nu*ddu[1:nx-1]
+    r[1:nx-1] = u[1:nx-1]*du[1:nx-1]
 
-    r[1:nx-1] = (1.0-0.5*u[1:nx-1])*du[1:nx-1] - nu*ddu[1:nx-1]
+    #r[1:nx-1] = (1.0-u[1:nx-1])*du[1:nx-1]
