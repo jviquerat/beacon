@@ -9,27 +9,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Physics}
 
-The inviscid Burgers equation was first introduced by Bateman to describe the behavior of a one-dimensional incompressible fluid flows \cite{bateman1915}:
+The inviscid Burgers equation was first introduced by Bateman in 1915, and models the behavior of a one-dimensional inviscid incompressible fluid flow \cite{bateman1915}, before being studied by Burgers in 1948 \cite{burgers1948}:
 
 \begin{equation}
 \label{eq:burgers}
 	\dpart{u}{t} + u \dpart{u}{x} = 0.
 \end{equation}
 
-We consider the resolution of the previous EDO on a domain of length $L$, along with the following initial and boundary conditions:
+We consider the resolution of the Burgers equation on a domain of length $L$, along with the following initial and boundary conditions:
 
 \begin{equation}
 \label{eq:burgers_bc}
 \begin{split}
 	u(x,0)	&= u_\text{target}, \\
 	u(0,t) 	&= u_\text{target} + \mathcal{U} ( -\sigma, \sigma), \\
-	\dpart{u}{x} (L,t) &= 0.
+	\dpart{u}{x} (L,t) &= 0,
 \end{split}
 \end{equation}
 
-The convection of the random inlet signal leads to a noisy solution in the domain, as is depicted in figure \ref{fig:burgers_free}.
- 
-\bigskip
+where $\sigma$ is the noise level introduced at the inlet, and $u_\text{target}$ is a constant value. The convection of the random inlet signal leads to a noisy solution in the domain, as is depicted in figure \ref{fig:burgers_free}. The initial perturbations steepen while propagating downstream to eventually form shocks.
 
 \input{fig/burgers/free}
 
@@ -38,52 +36,48 @@ The convection of the random inlet signal leads to a noisy solution in the domai
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discretization}
 
-The Burgers equation (\ref{eq:burgers}) is discretized in time with a finite volume approach. The convective term is discretized using a TVD scheme with a minmod flux limiter, while the time marching is performed using a second-order finite-difference scheme.
+The Burgers equation (\ref{eq:burgers}) is discretized in time with a finite volume approach. The convective term is discretized using a TVD scheme with a Van Leer flux limiter, while the time marching is performed using a second-order finite-difference scheme.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The goal of the environment is to control a pointwise forcing source term $a(t)$ on the right-hand side of (\ref{eq:burgers}), in order to damp the noise transported from the inlet. The controller is positioned at $x_f = 0.3$, while the length of the domain is set to $L=1$. The variance of the noise is set to $\sigma = 0.1$, and the amplitude of the control is bounded to $\left| a \right| \leq 10$.
+The goal of the environment is to control a pointwise forcing source term $a(t)$ on the right-hand side of (\ref{eq:burgers}), in order to damp the noise transported from the inlet. The forcing is applied at $x_p = 0.3$, while the length of the domain is set to $L=1$. The actions provided to the environment, which are expected to be in $\left[-1, 1\right]$, are then scale by an \textit{ad-hoc} non-dimensional amplitude factor $A=10$. The field is initially set equal to $u_\text{target} = 0.5$, and the variance of the inlet noise is chosen equal to $\sigma = 0.1$. The spatial discretization step is set to $\Delta x = \num{2e-3}$, while the numerical time-step is equal to $\Delta t = \num{4e-3}$ time units. The action duration is set to $\Delta t_\text{act} = 0.05$ time units, for a total episode duration equal to $10$ time units, corresponding to $200$ actions. The observations provided to the agent are the $n_\text{obs} = 20$ values of $u$ upstream of the actuator. Finally, the reward is computed as:
 
-%\begin{equation}
-%\label{eq:lorenz}
-%\begin{split}
-%	\dot{x} 	&= \sigma (y - x), \\
-%	\dot{y}	&= x(\rho - z) - y + u, \\
-%	\dot{z}	&= xy - \beta z,
-%\end{split}
-%\end{equation}
-%
-%with $u$ a discrete action in $\llbracket -1, 0, 1 \rrbracket$. The action time-step is set to $\Delta t_\text{act} = 0.05$ time units, and for simplicity no interpolation is performed between successive actions. A full episodes lasts $25$ time units, corresponding to $500$ actions. The observations are the variables $(x, y, z)$ and their time-derivatives $\dot{x}, \dot{y}, \dot{z}$, while the reward is set to $+1$ for each step with $x<0$, and $0$ otherwise. Each episode is started using the same initial condition $(x_0, y_0, z_0) = (10,10,10)$.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\section{Results}
-%
-%The environment as described in the previous section is referred to as \codeinline{lorenz-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:lorenz_parameters}). In this section, we provide some results related to its resolution using both a \ppo and a \dqn agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 10000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 2000k$.
-%
-%The score curves are presented in \ref{fig:lorenz_score}. As can be observed, although the learning is successful, it is particularly noisy compared to some other environments presented in this library. This can be attributed to the chaotic behavior of the attractor, which makes the credit assignment difficult for the agent. A plot of the time evolutions of the controlled versus uncontrolled $x$ parameter is shown in figure \ref{fig:lorenz_control}. As can be observed, the agent successfully locks the system in the $x<0$ quadrant, with the typical control peak also observed by Beintema \textit{et al.}, noted with a red dot in figure \ref{fig:lorenz_control}. For a better visualization, several 3D snapshots of the controlled system are proposed in figure \ref{fig:lorenz_fields}.
-%
-%%%%%%%%%%%%%
-%%%%%%%%%%%%%
-%\begin{table}[h!]
-%    \footnotesize
-%    \caption{\textbf{Default parameters used for the \codeinline{lorenz-v0} environment.}}
-%    \label{table:lorenz_parameters}
-%    \centering
-%    \begin{tabular}{rll}
-%        \toprule
-%        \codeinline{sigma}		& parameter		& $10$\\
-%	\codeinline{rho}			& parameter		& $28$\\
-%	\codeinline{beta}		& parameter		& $\frac{8}{3}$\\
-%        \bottomrule
-%    \end{tabular}
-%\end{table}
-%%%%%%%%%%%%%
-%%%%%%%%%%%%%
+\begin{equation}
+\label{eq:burgers_reward}
+	r(t) = - \Delta x \norm{u(x,t) - u_\text{target}}_2 \text{ with } x \in \left[ x_p, L \right].
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+
+The environment as described in the previous section is referred to as \codeinline{burgers-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:burgers_parameters}). In this section, we provide some results related to its resolution using a \ppo agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 4000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 500k$.
+
+The score curve is shown in figure \ref{fig:burgers_score}, while a plot of the time evolutions of the controlled environment is shown in figure \ref{fig:burgers_control}. As can be observed, the agent successfully damps the transported inlet noise following a kind of opposition control strategy.
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+\begin{table}[h!]
+    \footnotesize
+    \caption{\textbf{Default parameters used for the \codeinline{burgers-v0} environment.}}
+    \label{table:burgers_parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        	\codeinline{L}			& domain length		& $1$\\
+        \codeinline{u_target}		& target value			& $0.5$\\
+	\codeinline{sigma}		& inlet noise level		& $0.1$\\
+	\codeinline{amp}		& control amplitude		& $10$\\
+	\codeinline{ctrl_pos}		& control position		& $0.3$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%%
+%%%%%%%%%%%%
 %%
 %\input{fig/lorenz/score}
 %%%

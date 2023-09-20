@@ -11,9 +11,9 @@
         "tag": false,
         "time": false
     },
-    "n_avg": 1,
+    "n_avg": 3,
     "n_cpu": 1,
-    "n_stp_max": 600000,
+    "n_stp_max": 500000,
     "trainer": {
         "style": "buffer",
         "buff_size": 4000,
