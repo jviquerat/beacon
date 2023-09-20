@@ -49,7 +49,6 @@ class burgers(gym.Env):
         self.upp = np.zeros((self.nx))
         self.du  = np.zeros((self.nx))
         self.rhs = np.zeros((self.nx))
-        self.uex = np.zeros((self.nx))
 
         # Define action space
         self.action_space = gsp.Box(low   =-1.0,
@@ -59,7 +58,7 @@ class burgers(gym.Env):
 
         # Define observation space
         low  = np.zeros((self.n_obs_pts))
-        high = np.ones((self.n_obs_pts))
+        high = np.ones( (self.n_obs_pts))
         self.observation_space = gsp.Box(low   = low,
                                          high  = high,
                                          shape = (self.n_obs_pts,),
@@ -86,7 +85,6 @@ class burgers(gym.Env):
         # Other fields
         self.du[:]  = 0.0
         self.rhs[:] = 0.0
-        self.uex[:] = 0.0
 
         # Actions
         self.a = [0.0]
