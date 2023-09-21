@@ -64,7 +64,21 @@ The agent learns to lock the Lorenz attractor in the `x<0` quadrant by acting on
 <br />
 <br />
 <br />
-<br /> 
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+
+## `burgers`
+
+<p align="center">
+  <img align="right" width="350" alt="" src="beacon/msc/burgers.gif">
+</p>
+
+The agent controls a forcing term corresponding to an actuator located in the middle of the 1D domain. The goal is to suppress the noise generated at the inlet. States are the velocities sampled upstream of the actuator. One episode represents 200 actions, and the training is made on 500000 transitions.
+
 <br />
 <br />
 <br />
