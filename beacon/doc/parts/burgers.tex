@@ -43,7 +43,7 @@ The Burgers equation (\ref{eq:burgers}) is discretized in time with a finite vol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The goal of the environment is to control a pointwise forcing source term $a(t)$ on the right-hand side of (\ref{eq:burgers}), in order to damp the noise transported from the inlet. The forcing is applied at $x_p = 0.3$, while the length of the domain is set to $L=1$. The actions provided to the environment, which are expected to be in $\left[-1, 1\right]$, are then scale by an \textit{ad-hoc} non-dimensional amplitude factor $A=10$. The field is initially set equal to $u_\text{target} = 0.5$, and the variance of the inlet noise is chosen equal to $\sigma = 0.1$. The spatial discretization step is set to $\Delta x = \num{2e-3}$, while the numerical time-step is equal to $\Delta t = \num{4e-3}$ time units. The action duration is set to $\Delta t_\text{act} = 0.05$ time units, for a total episode duration equal to $10$ time units, corresponding to $200$ actions. The observations provided to the agent are the $n_\text{obs} = 20$ values of $u$ upstream of the actuator. Finally, the reward is computed as:
+The goal of the environment is to control a pointwise forcing source term $a(t)$ on the right-hand side of (\ref{eq:burgers}), in order to damp the noise transported from the inlet. The forcing is applied at $x_p = 1$, while the length of the domain is set to $L=2$. The actions provided to the environment, which are expected to be in $\left[-1, 1\right]$, are then scale by an \textit{ad-hoc} non-dimensional amplitude factor $A=10$. The field is initially set equal to $u_\text{target} = 0.5$, and the variance of the inlet noise is chosen equal to $\sigma = 0.1$. The spatial discretization step is set to $\Delta x = \num{4e-3}$, while the numerical time-step is equal to $\Delta t = \num{8e43}$ time units. The action duration is set to $\Delta t_\text{act} = 0.05$ time units, for a total episode duration equal to $10$ time units, corresponding to $200$ actions. The observations provided to the agent are the $n_\text{obs} = 5$ values of $u$ upstream of the actuator. Finally, the reward is computed as:
 
 \begin{equation}
 \label{eq:burgers_reward}
@@ -57,7 +57,7 @@ The goal of the environment is to control a pointwise forcing source term $a(t)$
 
 The environment as described in the previous section is referred to as \codeinline{burgers-v0}, in the fashion of the \textsc{gym} environments (the default parameters of the environment are provided in table \ref{table:burgers_parameters}). In this section, we provide some results related to its resolution using a \ppo agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}). For the training, we set $n_\text{rollout} = 4000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 500k$.
 
-The score curve is shown in figure \ref{fig:burgers_score}, while a plot of the time evolutions of the controlled environment is shown in figure \ref{fig:burgers_control}. As can be observed, the agent successfully damps the transported inlet noise following a kind of opposition control strategy.
+The score curve is shown in figure \ref{fig:burgers_score}, while snapshots of the evolution of the controlled environment are shown in figure \ref{fig:burgers_fields}. As can be observed, the agent successfully damps the transported inlet noise following an opposition control strategy.
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
@@ -78,9 +78,7 @@ The score curve is shown in figure \ref{fig:burgers_score}, while a plot of the 
 \end{table}
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-%%
-%\input{fig/lorenz/score}
-%%%
-%\input{fig/lorenz/control}
-%
-%\input{fig/lorenz/fields}
+
+\input{fig/burgers/score}
+
+\input{fig/burgers/fields}

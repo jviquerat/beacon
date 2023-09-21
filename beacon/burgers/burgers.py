@@ -234,9 +234,7 @@ def derx(u, du, nx, dx):
     r         = np.zeros((nx))
 
     r[1:nx-1]   = (u[1:nx-1] - u[0:nx-2])/(u[2:nx] - u[1:nx-1] + 1.0e-8)
-    #phi[1:nx-1] = np.maximum(0.0, np.minimum(r[1:nx-1], 1.0))
     phi[1:nx-1] = (r[1:nx-1] + np.absolute(r[1:nx-1]))/(1.0 + r[1:nx-1])
-    #phi[1:nx-1] = np.maximum(np.maximum(0.0, np.minimum(2.0*r[1:nx-1], 1.0)), np.minimum(r[1:nx-1],2.0))
 
     fp[1:nx-1] = u[1:nx-1] + 0.5*phi[1:nx-1]*(u[2:nx]   - u[1:nx-1]) # f_m+1/2
     fm[1:nx-1] = u[0:nx-2] + 0.5*phi[0:nx-2]*(u[1:nx-1] - u[0:nx-2]) # f_m-1/2
