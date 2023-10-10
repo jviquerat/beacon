@@ -18,7 +18,7 @@ class mixing(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0,
-                 L=1.0, H=1.0, re=100.0, pe=1000.0, C0=2.0):
+                 L=1.0, H=1.0, re=100.0, pe=10000.0, C0=2.0):
 
         # Main parameters
         self.L           = L                # length of the domain
@@ -31,13 +31,12 @@ class mixing(gym.Env):
         self.side        = 0.5              # side size of initial concentration patch
         self.nu          = 0.01             # dynamic viscosity
         self.u_max       = re*self.nu/L     # max velocity
-        self.dt          = 0.001           # timestep
-        self.dt_act      = 0.2              # action timestep
+        self.dt          = 0.002           # timestep
+        self.dt_act      = 0.2              # action timestep
         self.t_act       = 20.0             # action time after warmup
         self.nx_obs_pts  = 4*int(self.L)    # nb of obs pts in x direction
         self.ny_obs_pts  = 4*int(self.H)    # nb of obs pts in y direction
         self.n_obs_steps = 4                # nb of observations steps
-        #self.init_file   = "init_field.dat" # initialization file
 
         # Deduced parameters
         self.dx         = float(self.L/self.nx)           # x spatial step
@@ -251,7 +250,7 @@ class mixing(gym.Env):
     def get_rwd(self):
 
         ref_c = (self.side*self.side)/(self.L*self.H)*self.C0
-        r     =-np.sum(np.square(np.reshape(self.C, (-1)) - ref_c))
+        r     =-np.mean(np.square(np.reshape(self.C, (-1)) - ref_c))
 
         return r
 
