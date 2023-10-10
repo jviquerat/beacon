@@ -23,17 +23,17 @@ class mixing(gym.Env):
         # Main parameters
         self.L           = L                # length of the domain
         self.H           = H                # height of the domain
-        self.nx          = 100*int(self.L)   # nb of pts in x direction
-        self.ny          = 100*int(self.H)   # nb of pts in y direction
+        self.nx          = 100*int(self.L)  # nb of pts in x direction
+        self.ny          = 100*int(self.H)  # nb of pts in y direction
         self.re          = re               # reynolds number
         self.pe          = pe               # peclet number
         self.C0          = C0               # initial concentration in patch
         self.side        = 0.5              # side size of initial concentration patch
         self.nu          = 0.01             # dynamic viscosity
         self.u_max       = re*self.nu/L     # max velocity
-        self.dt          = 0.002           # timestep
-        self.dt_act      = 0.2              # action timestep
-        self.t_act       = 20.0             # action time after warmup
+        self.dt          = 0.002            # timestep
+        self.dt_act      = 0.5              # action timestep
+        self.t_act       = 40.0             # action time after warmup
         self.nx_obs_pts  = 4*int(self.L)    # nb of obs pts in x direction
         self.ny_obs_pts  = 4*int(self.H)    # nb of obs pts in y direction
         self.n_obs_steps = 4                # nb of observations steps
@@ -48,14 +48,12 @@ class mixing(gym.Env):
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
         ### Path
-        self.path         = "png"
+        self.path               = "png"
         self.concentration_path = self.path+"/concentration"
         self.field_path         = self.path+"/field"
-        self.action_path        = self.path+"/action"
         os.makedirs(self.path,               exist_ok=True)
         os.makedirs(self.concentration_path, exist_ok=True)
         os.makedirs(self.field_path,         exist_ok=True)
-        os.makedirs(self.action_path,        exist_ok=True)
 
         ### Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
@@ -67,10 +65,12 @@ class mixing(gym.Env):
         self.phi     = np.zeros((self.nx+2, self.ny+2)) # projection field
 
         # Define action space
-        self.action_space = gsp.Box(low   =-self.u_max,
-                                    high  = self.u_max,
-                                    shape = (2,),
-                                    dtype = np.float32)
+        self.action_space = gsp.Discrete(2)
+        self.actions = np.array([-self.u_max, self.u_max])
+        # self.action_space = gsp.Box(low   =-self.u_max,
+        #                             high  = self.u_max,
+        #                             shape = (2,),
+        #                             dtype = np.float32)
 
         # Define observation space
         high = np.ones(self.n_obs_tot)*self.u_max
@@ -110,8 +110,8 @@ class mixing(gym.Env):
         self.phi[:,:] = 0.0
 
         # Actions
-        self.a  = [0.0]*2
-        self.ap = [0.0]*2
+        self.a  = 1
+        self.ap = 1
 
         # Observations
         self.obs = np.zeros((self.n_obs_steps, 3,
@@ -149,15 +149,16 @@ class mixing(gym.Env):
 
         if (a is None): a = self.a.copy()
 
-        # # Zero-mean the actions
-        # a[:] = a[:] - np.mean(a)
-        # m    = max(1.0, np.amax(np.abs(a)/self.C))
-        # for i in range(self.n_sgts):
-        #     a[i] = a[i]/m
-
         # Save actions
-        self.ap[:] = self.a[:]
-        self.a[:]  = a[:]
+        self.ap = self.a
+        self.a  = a
+
+        if (a == 0):
+            v_lat = 0.0
+            u_top = self.u_max
+        if (a == 1):
+            v_lat = self.u_max
+            u_top = 0.0
 
         # Run solver
         for i in range(self.ndt_act):
@@ -168,21 +169,21 @@ class mixing(gym.Env):
 
             # Left wall
             self.u[1,1:-1]  = 0.0
-            self.v[0,2:-1]  =-self.v[1,2:-1]
+            self.v[0,2:-1]  =-2.0*v_lat - self.v[1,2:-1]
             self.C[0,1:-1]  = self.C[1,1:-1]
 
             # Right wall
             self.u[-1,1:-1] = 0.0
-            self.v[-1,2:-1] =-self.v[-2,2:-1]
+            self.v[-1,2:-1] = 2.0*v_lat - self.v[-2,2:-1]
             self.C[-1,1:-1] = self.C[-2,1:-1]
 
             # Top wall
-            self.u[1:,-1]   = 2.0*a[0] - self.u[1:,-2]
+            self.u[1:,-1]   = 2.0*u_top - self.u[1:,-2]
             self.v[1:-1,-1] = 0.0
             self.C[1:-1,-1] = self.C[1:-1,-2]
 
             # Bottom wall
-            self.u[1:,0]    = 2.0*a[1] - self.u[1:,1]
+            self.u[1:,0]    =-2.0*u_top - self.u[1:,1]
             self.v[1:-1,1]  = 0.0
             self.C[1:-1,0]  = self.C[1:-1,1]
 
@@ -258,37 +259,34 @@ class mixing(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         # Set field
-        margin = 0.2
-        rny    = self.ny+int(margin*self.ny)
-        pC     = np.zeros((self.nx, rny))
-        pC[0:self.nx,rny-self.ny:rny] = self.C[1:-1,1:-1]
+        pC      = np.zeros((self.nx, self.ny))
+        pC[:,:] = self.C[1:-1,1:-1]
 
         # Rotate field
         pC = np.rot90(pC)
 
         # Plot temperature
-        fig = plt.figure(figsize=(5,5))
-        ax  = plt.gca()
-        plt.axis('off')
-        plt.imshow(pC,
-                   cmap = 'RdBu_r',
-                   vmin = 0.0,
-                   vmax = self.C0,
-                   extent=[0.0, self.L, -margin*self.H, self.H])
+        fig = plt.figure(figsize=(5,5.5))
+        ax  = fig.add_subplot(30, 1, (1,28))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.imshow(pC,
+                  cmap = 'RdBu_r',
+                  vmin = 0.0,
+                  vmax = self.C0,
+                  extent=[0.0, self.L, 0.0, self.H])
 
         # Plot control
-        scale = self.L#/self.n_sgts
-        ax.add_patch(Rectangle((0.0,-0.99*margin), 0.998*self.L, margin*self.H,
-                               color='k', fill=False, lw=0.5))
-        ax.add_patch(Rectangle((0.0,-0.51*margin), 0.998*self.L, 0.001,
-                               color='k', fill=False, lw=0.3))
-#        for i in range(self.n_sgts):
-#            x = (0.5 + i)*scale - 0.5*self.dx
-#            y = -0.5*margin
-#            color = 'r' if self.a[i] > 0.0 else 'b'
-#            ax.add_patch(Rectangle((x, y),
-#                                   0.25*scale, 0.5*margin*self.a[i],
-#                                   color=color, fill=True, lw=1))
+        ax = fig.add_subplot(30, 1, (29,30))
+        ax.set_xlim([-self.u_max, self.u_max])
+        ax.set_ylim([ 0.0, 0.1])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.0
+        y = 0.02
+        color = 'r' if self.a > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*self.actions[self.a], 0.06,
+                               color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.concentration_path+"/"+str(self.stp_plot)+".png"
@@ -297,13 +295,12 @@ class mixing(gym.Env):
 
         # Show and dump
         if show: plt.pause(0.0001)
-        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
-                           self.action_path+"/a_"+str(self.stp_plot)+".dat")
+        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat")
 
         self.stp_plot += 1
 
     # Dump fields
-    def dump(self, field_name, act_name):
+    def dump(self, field_name):
 
         array = self.u.copy()
         array = np.vstack((array, self.v))
@@ -311,8 +308,6 @@ class mixing(gym.Env):
         array = np.vstack((array, self.C))
 
         np.savetxt(field_name,   array,   fmt='%.5e')
-        np.savetxt(act_name,     self.a,  fmt='%.5e')
-        #np.savetxt(nusselt_name, self.nu, fmt='%.5e')
 
     # Closing
     def close(self):
