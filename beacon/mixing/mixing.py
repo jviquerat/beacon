@@ -99,7 +99,6 @@ class mixing(gym.Env):
 
         # Actions
         self.a  = 1
-        self.ap = 1
 
         # Observations
         self.obs = np.zeros((self.n_obs_steps, 3,
@@ -138,8 +137,7 @@ class mixing(gym.Env):
         if (a is None): a = self.a.copy()
 
         # Save actions
-        self.ap = self.a
-        self.a  = a
+        self.a = a
 
         if (a == 0):
             v_lat = 0.0
