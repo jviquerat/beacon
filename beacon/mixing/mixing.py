@@ -18,7 +18,7 @@ class mixing(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0,
-                 L=1.0, H=1.0, re=100.0, pe=10000.0, C0=2.0):
+                 L=1.0, H=1.0, re=100.0, pe=10000.0, side=0.5, C0=2.0):
 
         # Main parameters
         self.L           = L                # length of the domain
@@ -28,7 +28,7 @@ class mixing(gym.Env):
         self.re          = re               # reynolds number
         self.pe          = pe               # peclet number
         self.C0          = C0               # initial concentration in patch
-        self.side        = 0.5              # side size of initial concentration patch
+        self.side        = side             # side size of initial concentration patch
         self.nu          = 0.01             # dynamic viscosity
         self.u_max       = re*self.nu/L     # max velocity
         self.dt          = 0.002            # timestep
@@ -47,15 +47,7 @@ class mixing(gym.Env):
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
-        ### Path
-        self.path               = "png"
-        self.concentration_path = self.path+"/concentration"
-        self.field_path         = self.path+"/field"
-        os.makedirs(self.path,               exist_ok=True)
-        os.makedirs(self.concentration_path, exist_ok=True)
-        os.makedirs(self.field_path,         exist_ok=True)
-
-        ### Declare arrays
+        # Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
         self.v       = np.zeros((self.nx+2, self.ny+2)) # v field
         self.p       = np.zeros((self.nx+2, self.ny+2)) # p field
@@ -66,11 +58,7 @@ class mixing(gym.Env):
 
         # Define action space
         self.action_space = gsp.Discrete(2)
-        self.actions = np.array([-self.u_max, self.u_max])
-        # self.action_space = gsp.Box(low   =-self.u_max,
-        #                             high  = self.u_max,
-        #                             shape = (2,),
-        #                             dtype = np.float32)
+        self.actions      = np.array([-self.u_max, self.u_max])
 
         # Define observation space
         high = np.ones(self.n_obs_tot)*self.u_max
@@ -251,12 +239,21 @@ class mixing(gym.Env):
     def get_rwd(self):
 
         ref_c = (self.side*self.side)/(self.L*self.H)*self.C0
-        r     =-np.mean(np.square(np.reshape(self.C, (-1)) - ref_c))
+        r     =-np.mean(np.absolute(np.reshape(self.C, (-1)) - ref_c))
 
         return r
 
     # Render environment
     def render(self, mode="human", show=False, dump=True):
+
+        # Open directories
+        if (self.stp_plot == 0):
+            self.path               = "render"
+            self.concentration_path = self.path+"/concentration"
+            self.field_path         = self.path+"/field"
+            os.makedirs(self.path,               exist_ok=True)
+            os.makedirs(self.concentration_path, exist_ok=True)
+            os.makedirs(self.field_path,         exist_ok=True)
 
         # Set field
         pC      = np.zeros((self.nx, self.ny))

@@ -20,7 +20,6 @@ plt_freq = 1    # plotting frequency
 show     = False # set to True to show while running
 
 for i in range(n):
-    #act = np.random.uniform(-1.0, 1.0, 2).tolist()
     act = np.random.randint(0, 2)
     obs, rwd, done, trunc, _ = s.step(act)
     sum_rwd += rwd
