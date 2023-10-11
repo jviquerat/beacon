@@ -19,7 +19,7 @@ class lorenz(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True,
+    def __init__(self, cpu=0,
                  sigma=10.0, rho=28.0, beta=8.0/3.0):
 
         # Main parameters
