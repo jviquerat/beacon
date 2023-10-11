@@ -124,8 +124,7 @@ class rayleigh(gym.Env):
         self.phi[:,:] = 0.0
 
         # Actions
-        self.a  = [0.0]*self.n_sgts
-        self.ap = [0.0]*self.n_sgts
+        self.a = [0.0]*self.n_sgts
 
         # Observations
         self.obs = np.zeros((self.n_obs_steps, 3,
@@ -180,8 +179,7 @@ class rayleigh(gym.Env):
             a[i] = a[i]/m
 
         # Save actions
-        self.ap[:] = self.a[:]
-        self.a[:]  = a[:]
+        self.a[:] = a[:]
 
         # Run solver
         for i in range(self.ndt_act):

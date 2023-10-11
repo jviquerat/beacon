@@ -89,9 +89,7 @@ class lorenz(gym.Env):
         self.ht = np.append(self.ht, np.array([self.t]), axis=0)
 
         # Actions
-        # These are default discrete actions which correspond to no forcing
-        self.u  = 1
-        self.up = 1
+        self.u = 1
 
         # Observations
         self.obs = np.zeros((2, 3))
@@ -128,8 +126,7 @@ class lorenz(gym.Env):
         if (u is None): u = self.u.copy()
 
         # Save actions
-        self.up = self.u
-        self.u  = u
+        self.u = u.copy()
 
         # Run solver
         for i in range(self.ndt_act):
