@@ -54,7 +54,7 @@ class rayleigh(gym.Env):
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
-        ### Declare arrays
+        # Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
         self.v       = np.zeros((self.nx+2, self.ny+2)) # v field
         self.p       = np.zeros((self.nx+2, self.ny+2)) # p field
