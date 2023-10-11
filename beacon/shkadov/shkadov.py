@@ -66,7 +66,7 @@ class shkadov(gym.Env):
         self.obs_start  = self.jet_pos - self.l_obs      # start of obs zone in lattice units
         self.obs_end    = self.jet_pos                   # end of obs zone in lattice units
 
-        ### Declare arrays
+        # Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
         self.h       = np.zeros((self.nx)) # current h
         self.q       = np.zeros((self.nx)) # current q

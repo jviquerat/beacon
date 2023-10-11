@@ -44,7 +44,7 @@ class sloshing(gym.Env):
         self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
 
-        ### Declare arrays
+        # Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
         self.h       = np.zeros((self.nx+2)) # current h
         self.q       = np.zeros((self.nx+2)) # current q
