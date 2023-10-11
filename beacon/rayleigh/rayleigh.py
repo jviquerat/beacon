@@ -291,36 +291,39 @@ class rayleigh(gym.Env):
     def render(self, mode="human", show=False, dump=True):
 
         # Set field
-        margin = 0.2
-        rny    = self.ny+int(margin*self.ny)
-        pT     = np.zeros((self.nx, rny))
-        pT[0:self.nx,rny-self.ny:rny] = self.T[1:-1,1:-1]
+        pT      = np.zeros((self.nx, self.ny))
+        pT[:,:] = self.T[1:-1,1:-1]
 
         # Rotate field
         pT = np.rot90(pT)
 
         # Plot temperature
-        fig = plt.figure(figsize=(5,5))
-        ax  = plt.gca()
-        plt.axis('off')
-        plt.imshow(pT,
-                   cmap = 'RdBu_r',
-                   vmin = self.Tc,
-                   vmax = self.Th,
-                   extent=[0.0, self.L, -margin*self.H, self.H])
+        fig = plt.figure(figsize=(5,6))
+        ax  = fig.add_subplot(30, 1, (1,29))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.imshow(pT,
+                  cmap = 'RdBu_r',
+                  vmin = self.Tc,
+                  vmax = self.Th,
+                  extent=[0.0, self.L, 0.0, self.H])
 
         # Plot control
-        scale = self.L/self.n_sgts
-        ax.add_patch(Rectangle((0.0,-0.99*margin), 0.998*self.L, margin*self.H,
-                               color='k', fill=False, lw=0.5))
-        ax.add_patch(Rectangle((0.0,-0.51*margin), 0.998*self.L, 0.001,
+        ax = fig.add_subplot(30, 1, (27,30))
+        ax.set_xlim([0.0, self.n_sgts])
+        ax.set_ylim([-self.C, self.C])
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        ax.add_patch(Rectangle((0.0,0.0), self.n_sgts, 0.001,
                                color='k', fill=False, lw=0.3))
+        w = 0.12
         for i in range(self.n_sgts):
-            x = (0.5 + i)*scale - 0.5*self.dx
-            y = -0.5*margin
+            x = 0.5 + i - w
+            y = 0.0
             color = 'r' if self.a[i] > 0.0 else 'b'
             ax.add_patch(Rectangle((x, y),
-                                   0.25*scale, 0.5*margin*self.a[i],
+                                   2.0*w, 0.98*self.a[i]*self.C,
                                    color=color, fill=True, lw=1))
 
         # Save figure
