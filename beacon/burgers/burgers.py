@@ -18,7 +18,7 @@ class burgers(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True,
+    def __init__(self, cpu=0,
                  u_target=0.5, amp=10.0, sigma=0.1, ctrl_pos=1.0, L=2.0):
 
         # Main parameters
