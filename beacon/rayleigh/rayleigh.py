@@ -54,16 +54,6 @@ class rayleigh(gym.Env):
         self.nx_obs     = self.nx//self.nx_obs_pts        # nb of pts between each observation pt in x direction
         self.ny_obs     = self.ny//self.ny_obs_pts        # nb of pts between each observation pt
 
-        ### Path
-        self.path             = "png"
-        self.temperature_path = self.path+"/temperature"
-        self.field_path       = self.path+"/field"
-        self.action_path      = self.path+"/action"
-        os.makedirs(self.path,             exist_ok=True)
-        os.makedirs(self.temperature_path, exist_ok=True)
-        os.makedirs(self.field_path,       exist_ok=True)
-        os.makedirs(self.action_path,      exist_ok=True)
-
         ### Declare arrays
         self.u       = np.zeros((self.nx+2, self.ny+2)) # u field
         self.v       = np.zeros((self.nx+2, self.ny+2)) # v field
@@ -287,6 +277,17 @@ class rayleigh(gym.Env):
 
     # Render environment
     def render(self, mode="human", show=False, dump=True):
+
+        # Open directories
+        if (self.stp_plot == 0):
+            self.path             = "render"
+            self.temperature_path = self.path+"/temperature"
+            self.field_path       = self.path+"/field"
+            self.action_path      = self.path+"/action"
+            os.makedirs(self.path,             exist_ok=True)
+            os.makedirs(self.temperature_path, exist_ok=True)
+            os.makedirs(self.field_path,       exist_ok=True)
+            os.makedirs(self.action_path,      exist_ok=True)
 
         # Set field
         pT      = np.zeros((self.nx, self.ny))

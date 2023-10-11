@@ -44,16 +44,6 @@ class sloshing(gym.Env):
         self.n_warmup   = int(self.t_warmup/self.dt_act) # nb of action steps for warmup
         self.n_interp   = int(self.u_interp/self.dt)     # nb of interpolation steps for action
 
-        ### Path
-        self.path        = "png"
-        self.height_path = self.path+"/height"
-        self.field_path  = self.path+"/field"
-        self.action_path = self.path+"/action"
-        os.makedirs(self.path,        exist_ok=True)
-        os.makedirs(self.height_path, exist_ok=True)
-        os.makedirs(self.field_path,  exist_ok=True)
-        os.makedirs(self.action_path, exist_ok=True)
-
         ### Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
         self.h       = np.zeros((self.nx+2)) # current h
@@ -254,6 +244,17 @@ class sloshing(gym.Env):
 
     # Render environment
     def render(self, mode="human", show=False, dump=True):
+
+        # Open directories
+        if (self.stp_plot == 0):
+            self.path        = "render"
+            self.height_path = self.path+"/height"
+            self.field_path  = self.path+"/field"
+            self.action_path = self.path+"/action"
+            os.makedirs(self.path,        exist_ok=True)
+            os.makedirs(self.height_path, exist_ok=True)
+            os.makedirs(self.field_path,  exist_ok=True)
+            os.makedirs(self.action_path, exist_ok=True)
 
         # Plot field
         plt.clf()

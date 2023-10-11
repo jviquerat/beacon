@@ -170,7 +170,7 @@ class burgers(gym.Env):
 
         # Open directories
         if (self.stp_plot == 0):
-            self.path = "png"
+            self.path = "render"
             os.makedirs(self.path,           exist_ok=True)
             os.makedirs(self.path+"/gif",    exist_ok=True)
             os.makedirs(self.path+"/fields", exist_ok=True)

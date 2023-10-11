@@ -66,16 +66,6 @@ class shkadov(gym.Env):
         self.obs_start  = self.jet_pos - self.l_obs      # start of obs zone in lattice units
         self.obs_end    = self.jet_pos                   # end of obs zone in lattice units
 
-        ### Path
-        self.path        = "png"
-        self.height_path = self.path+"/height"
-        self.field_path  = self.path+"/field"
-        self.action_path = self.path+"/action"
-        os.makedirs(self.path,        exist_ok=True)
-        os.makedirs(self.height_path, exist_ok=True)
-        os.makedirs(self.field_path,  exist_ok=True)
-        os.makedirs(self.action_path, exist_ok=True)
-
         ### Declare arrays
         self.x       = np.linspace(0, self.nx, num=self.nx, endpoint=False)*self.dx
         self.h       = np.zeros((self.nx)) # current h
@@ -268,6 +258,17 @@ class shkadov(gym.Env):
 
     # Render environment
     def render(self, mode="human", show=False, dump=True):
+
+        # Open directories
+        if (self.stp_plot == 0):
+            self.path        = "render"
+            self.height_path = self.path+"/height"
+            self.field_path  = self.path+"/field"
+            self.action_path = self.path+"/action"
+            os.makedirs(self.path,        exist_ok=True)
+            os.makedirs(self.height_path, exist_ok=True)
+            os.makedirs(self.field_path,  exist_ok=True)
+            os.makedirs(self.action_path, exist_ok=True)
 
         # Plot field
         fig = plt.figure(figsize=(10,3))
