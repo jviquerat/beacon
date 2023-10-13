@@ -57,7 +57,7 @@ class mixing(gym.Env):
         self.phi     = np.zeros((self.nx+2, self.ny+2)) # projection field
 
         # Define action space
-        self.action_space = gsp.Discrete(2)
+        self.action_space = gsp.Discrete(4)
         self.actions      = np.array([-self.u_max, self.u_max])
 
         # Define observation space
@@ -98,7 +98,7 @@ class mixing(gym.Env):
         self.phi[:,:] = 0.0
 
         # Actions
-        self.a  = 1
+        self.a = 1
 
         # Observations
         self.obs = np.zeros((self.n_obs_steps, 3,
@@ -139,12 +139,23 @@ class mixing(gym.Env):
         # Save actions
         self.a = a
 
+        u_t  = 0.0
+        u_b  = 0.0
+        v_l  = 0.0
+        v_r  = 0.0
+
         if (a == 0):
-            v_lat = 0.0
-            u_top = self.u_max
+            u_b = self.u_max
+            u_t =-self.u_max
         if (a == 1):
-            v_lat = self.u_max
-            u_top = 0.0
+            u_b =-self.u_max
+            u_t = self.u_max
+        if (a == 2):
+            v_r = self.u_max
+            v_l =-self.u_max
+        if (a == 3):
+            v_r =-self.u_max
+            v_l = self.u_max
 
         # Run solver
         for i in range(self.ndt_act):
@@ -155,21 +166,21 @@ class mixing(gym.Env):
 
             # Left wall
             self.u[1,1:-1]  = 0.0
-            self.v[0,2:-1]  =-2.0*v_lat - self.v[1,2:-1]
+            self.v[0,2:-1]  = 2.0*v_l - self.v[1,2:-1]
             self.C[0,1:-1]  = self.C[1,1:-1]
 
             # Right wall
             self.u[-1,1:-1] = 0.0
-            self.v[-1,2:-1] = 2.0*v_lat - self.v[-2,2:-1]
+            self.v[-1,2:-1] = 2.0*v_r - self.v[-2,2:-1]
             self.C[-1,1:-1] = self.C[-2,1:-1]
 
             # Top wall
-            self.u[1:,-1]   = 2.0*u_top - self.u[1:,-2]
+            self.u[1:,-1]   = 2.0*u_t - self.u[1:,-2]
             self.v[1:-1,-1] = 0.0
             self.C[1:-1,-1] = self.C[1:-1,-2]
 
             # Bottom wall
-            self.u[1:,0]    =-2.0*u_top - self.u[1:,1]
+            self.u[1:,0]    = 2.0*u_b - self.u[1:,1]
             self.v[1:-1,1]  = 0.0
             self.C[1:-1,0]  = self.C[1:-1,1]
 
@@ -226,7 +237,7 @@ class mixing(gym.Env):
                 self.obs[-1,0,i,j] = self.C[x,y]
                 self.obs[-1,1,i,j] = self.u[x,y]
                 self.obs[-1,2,i,j] = self.v[x,y]
-                y               += self.ny_obs
+                y                 += self.ny_obs
             x += self.nx_obs
 
         obs = np.reshape(self.obs, [-1])
@@ -249,9 +260,11 @@ class mixing(gym.Env):
             self.path               = "render"
             self.concentration_path = self.path+"/concentration"
             self.field_path         = self.path+"/field"
+            self.action_path        = self.path+"/action"
             os.makedirs(self.path,               exist_ok=True)
             os.makedirs(self.concentration_path, exist_ok=True)
             os.makedirs(self.field_path,         exist_ok=True)
+            os.makedirs(self.action_path,        exist_ok=True)
 
         # Set field
         pC      = np.zeros((self.nx, self.ny))
@@ -280,8 +293,8 @@ class mixing(gym.Env):
         x = 0.0
         y = 0.02
         color = 'r' if self.a > 0.0 else 'b'
-        ax.add_patch(Rectangle((x,y), 0.98*self.actions[self.a], 0.06,
-                               color=color, fill=True, lw=2))
+        #ax.add_patch(Rectangle((x,y), 0.98*self.actions[self.a], 0.06,
+        #                       color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.concentration_path+"/"+str(self.stp_plot)+".png"
@@ -290,19 +303,24 @@ class mixing(gym.Env):
 
         # Show and dump
         if show: plt.pause(0.0001)
-        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat")
+        if dump: self.dump(self.field_path+"/"+str(self.stp_plot)+".dat",
+                           self.action_path+"/action.dat")
 
         self.stp_plot += 1
 
     # Dump fields
-    def dump(self, field_name):
+    def dump(self, field_name, action_name):
 
         array = self.u.copy()
         array = np.vstack((array, self.v))
         array = np.vstack((array, self.p))
         array = np.vstack((array, self.C))
 
-        np.savetxt(field_name,   array,   fmt='%.5e')
+        np.savetxt(field_name, array, fmt='%.5e')
+
+        f = open(action_name, "a")
+        f.write(str(self.a)+"\n")
+        f.close()
 
     # Closing
     def close(self):

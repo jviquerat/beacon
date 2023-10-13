@@ -9,7 +9,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Physics}
 
-We consider the resolution of the 2D Navier-Stokes equations coupled to a passive scalar convection-diffusion equation in a cavity of length $L$ and height $H$ with moving boundary conditions on all sides. %Under certain circonstances, this setup is known to lead to the Rayleigh-B\'enard convection cell, which is illustrated in figure \ref{fig:rayleigh_convection}. The resulting system is driven by the following set of equations:
+We consider the resolution of the 2D Navier-Stokes equations coupled to a passive scalar convection-diffusion equation in a cavity of length $L$ and height $H$ with moving boundary conditions on all sides. The resulting system is driven by the following set of equations:
 
 \begin{equation}
 \label{eq:mixing}
@@ -20,70 +20,48 @@ We consider the resolution of the 2D Navier-Stokes equations coupled to a passiv
 \end{split}
 \end{equation}
 
-where $\V{u}$ and $p$ are respectively the non-dimensional velocity and pressure of the fluid, and $c$ is the concentration of a passive . The adimensional temperature $\theta$ is described in terms of the hot and cold reference temperatures, respectively denoted as $T_H$ and $T_C$: 
-%
-%\begin{equation*}
-%	\theta = \frac{T - \hat{T}}{\Delta T}, \text{with } \hat{T} = \frac{T_H + T_C}{2} \text{ and } \Delta T = T_H - T_C.
-%\end{equation*}
-%
-%The dynamics of the system (\ref{eq:rayleigh}) are controlled by two adimensional numbers. First, the Prandtl number $\pr$, which represents the ratio of the momentum diffusivity over the thermal diffusivity: 
-%
-%\begin{equation*}
-%	\pr = \frac{\nu}{\kappa},
-%\end{equation*}
-%
-%where $\nu$ is the kinematic viscosity and $\kappa$ the thermal diffusivity. Second, the Rayleigh number $\ra$, which compares the characteristic time scales for transport due to diffusion and convection:
-%
-%\begin{equation*}
-%	\ra = \frac{g \alpha \Delta T H^3}{\kappa \nu},
-%\end{equation*}
-%
-%with $g$ the magnitude of the acceleration of the gravity and $\alpha$ the thermal expansion coefficient. We also define the instantaneous Nusselt number, $\nus$, as the adimensionalized heat flux averaged over the hot wall:
-%
-%\begin{equation}
-%\label{eq:nusselt}
-%	\nus (t) = - \int_{0}^{L} \partial_y \theta (x',y=0,t) dx'.
-%\end{equation}
-%
-%The system (\ref{eq:rayleigh}) is completed by the following initial and boundary conditions:
-%
-%\begin{equation}
-%\label{eq:rayleigh_bc}
-%\begin{split}
-%	\V{u}(x,y,0)	= 0 &\text{ and } \theta(x,y,0)	= 0, \\
-%	\V{u}(x=0,y,t)	= 0 &\text{ and } \V{u}(x=L,y,t) = 0, \\
-%	\V{u}(x,y=0,t)	= 0 &\text{ and } \V{u}(x,y=H,t) = 0, \\
-%	\theta(x,y=0,t) 	= \theta_H &\text{ and } \theta(x,y=H,t) = \theta_C, \\
-%	\partial_x \theta(x=0,y,t) = 0 &\text{ and } \partial_x \theta(x=L,y,t) = 0,
-%\end{split}
-%\end{equation}
-%
-%In essence, the boundary conditions (\ref{eq:rayleigh_bc}) correspond to (i) a no-slip boundary conditions for the fluid on all boundaries, (ii) imposed hot and cold temperatures respectively on the bottom and top plate, and (iii) adiabatic boundary conditions on the lateral sides of the domain. Here, we choose $\theta_H = \frac{1}{2}$ and $\theta_C = -\frac{1}{2}$. A sketch of the configuration is presented in figure \ref{fig:rayleigh_sketch}.
-%
-%\input{fig/rayleigh/sketch}
-%
-%Above a critical value $\ra_c$, natural convection is triggered in the cell, increasing the heat exchange between the bottom and top regions of the cell, thus leading to $\nus > 1$. Illustrations of the temperature and velocity fields are proposed in figure \ref{fig:rayleigh_convection}.
-%
-%\input{fig/rayleigh/convection}
-%%
-%%The situation is summed up in figure \ref{fig:sloshing_tank}. When excited laterally, the surface of the fluid sloshes back and forth in the tank generating complex patterns at the fluid surface, as shown in figure \ref{fig:sloshing_examples}. When the excitation stops, a relaxation phase is observed, usually leaving a single wavefront travelling back and forth in the tank until it dissipates entirely. Due to its simplicity, the model (\ref{eq:stvenant}) does not allow wave breaking nor the formation of drops on the sides of the domain.
-%%
-%%\input{fig/sloshing/tank}
-%%
-%%\input{fig/sloshing/sloshing_free}
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\section{Discretization}
+where $\V{u}$ and $p$ are respectively the non-dimensional velocity and pressure of the fluid, and $c$ is the concentration of a passive species. The dynamics of the system (\ref{eq:mixing}) are controlled by two adimensional numbers. First, the Reynolds number $\re$, which represents the ratio between inertial and viscous forces:
+
+\begin{equation*}
+	\re = \frac{U L}{\nu},
+\end{equation*}
+
+where $U$ and $L$ are respectively the reference velocity and length values, and $\nu$ is the kinematic viscosity of the fluid. Second, the P\'eclet number $\pe$, which represents the ratio between the advective and diffusive transport rates:
+
+\begin{equation*}
+	\pe = \frac{U L}{D},
+\end{equation*}
+
+where $D$ is the diffusion coefficient of the considered species. In essence, a system with a high $\pe$ value presents a negligible diffusion, and scalar quantities move primarily due to fluid convection. The system (\ref{eq:mixing}) is completed by the following initial and boundary conditions:
+
+\begin{equation}
+\label{eq:mixing_bc}
+\begin{split}
+	\V{u}(x,y,0)	= 0 &\text{ and } c(x,y,0)	= c_0 \mathbb{1}_{\substack{ {x_\text{min} \leq x \leq x_\text{max}}\\ {y_\text{min} \leq y \leq y_\text{max}} }} \\
+	\V{u}(x=0,y,t)	= (0, v_l) &\text{ and } \V{u}(x=L,y,t) = (0, v_r), \\
+	\V{u}(x,y=0,t)	= (u_b, 0) &\text{ and } \V{u}(x,y=H,t) = (u_t, 0), \\
+	\partial_y c(x,y=0,t) 	= 0 &\text{ and } \partial_y c(x,y=H,t) = 0, \\
+	\partial_x c(x=0,y,t) = 0 &\text{ and } \partial_x c(x=L,y,t) = 0,
+\end{split}
+\end{equation}
+
+where $\mathbb{1}$ is the indicator function, and $v_l$, $v_r$, $u_b$ and $u_t$ are user-defined values. In essence, the boundary conditions (\ref{eq:mixing_bc}) correspond to a multiple lid-driven cavity, where tangential velocity can be imposed independently on all sides, with an initial patch of concentration in the center of the domain.  Snapshots of the evolution of the system in time with $(v_l, v_r, u_b, u_t) = (0, 0, 1.0, -1.0)$ are presented in figure \ref{fig:mixing_example}.
+
+\input{fig/mixing/example}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discretization}
 %
 %The system (\ref{eq:rayleigh}) is discretized using a structured finite volume incremental projection scheme with centered fluxes, in the fashion of \cite{boivin2000}. For simplicity, the scheme is solved in a fully explicit way, except for the resolution of the Poisson equation for pressure. As is standard, a staggered grid is used for the finite volume scheme: the horizontal velocity is located on the west face of the cells, the vertical velocity is on the south face of the cells, while the pressure and temperature are located at the center of the cells. The computation of the instantaneous Nusselt number (\ref{eq:nusselt}) is performed by computing the first-order finite difference of the temperature between the center of the first cell at the bottom of the mesh and the reference temperature $T_H$. Doing so, we obtain $\nus = 2.16$  for $\ra = \num{1e4}$ once the permanent regime is reached, which is close to the reference values found in the literature \cite{ouertatani2008}.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\section{Environment}
-%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Environment}
+
+In the following, we set $H=1$, $L=1$, $(x_\text{min}, x_\text{max}, y_\text{min}, y_\text{max}) = (0.25, 0.75, 0.25, 0.75)$ and $c_0 = 2$ 
 %The proposed environment is re-implemented based on the original work of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$ in order to avoid too high computational load. Similarly to \cite{beintema2020}, the control is performed by letting the DRL agent adjust the temperature of $n_s=10$ individual segments at the bottom of the cavity (see figure \ref{fig:rayleigh_sketch_env}). To do so, the actions proposed by the agent are continuous temperature fluctuations $\left\{ \hat{\theta}_i \right\}_{i \in \llbracket 0, n_s-1 \rrbracket}$ in the range $\left[-C, +C\right]$, with $C=0.75$. To enforce $\left< \theta(y=0,x,t) \right> = \theta_H$ and $\theta(y=0,x,t) \in \left[ \theta_H - C, \theta_H + C\right]$, the provided $\hat{\theta}_i$ are normalized as \cite{beintema2020}:
 %
 %\begin{equation}
