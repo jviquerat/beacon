@@ -18,7 +18,7 @@ class mixing(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0,
-                 L=1.0, H=1.0, re=100.0, pe=10000.0, side=0.5, C0=2.0):
+                 L=1.0, H=1.0, re=100.0, pe=10000.0, side=0.5, C0=1.0):
 
         # Main parameters
         self.L           = L                # length of the domain
