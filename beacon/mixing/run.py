@@ -22,8 +22,8 @@ show     = False # set to True to show while running
 s.render(show=show)
 
 for i in range(n):
-    act = np.random.randint(0, 2)
-    obs, rwd, done, trunc, _ = s.step(0)
+    act = np.random.randint(0, 4)
+    obs, rwd, done, trunc, _ = s.step(act)
     sum_rwd += rwd
     end="\r"
     if (i==n-1): end="\n"

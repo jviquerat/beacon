@@ -4,10 +4,11 @@ import time
 import math
 import random
 import gym
-import gym.spaces        as gsp
-import numpy             as np
-import matplotlib.pyplot as plt
-import numba             as nb
+import gym.spaces          as gsp
+import numpy               as np
+import matplotlib.pyplot   as plt
+import matplotlib.gridspec as grd
+import numba               as nb
 
 from   matplotlib.patches import Rectangle
 
@@ -139,23 +140,8 @@ class mixing(gym.Env):
         # Save actions
         self.a = a
 
-        u_t  = 0.0
-        u_b  = 0.0
-        v_l  = 0.0
-        v_r  = 0.0
-
-        if (a == 0):
-            u_b = self.u_max
-            u_t =-self.u_max
-        if (a == 1):
-            u_b =-self.u_max
-            u_t = self.u_max
-        if (a == 2):
-            v_r = self.u_max
-            v_l =-self.u_max
-        if (a == 3):
-            v_r =-self.u_max
-            v_l = self.u_max
+        # Retrieve actual control
+        u_t, u_b, v_l, v_r = self.get_control(a)
 
         # Run solver
         for i in range(self.ndt_act):
@@ -222,6 +208,29 @@ class mixing(gym.Env):
             transport(self.u, self.v, self.C,
                       self.nx, self.ny, self.dx, self.dy, self.dt, self.pe)
 
+    # Get control
+    def get_control(self, a):
+
+        u_t  = 0.0
+        u_b  = 0.0
+        v_l  = 0.0
+        v_r  = 0.0
+
+        if (a == 0):
+            u_b = self.u_max
+            u_t =-self.u_max
+        if (a == 1):
+            u_b =-self.u_max
+            u_t = self.u_max
+        if (a == 2):
+            v_r = self.u_max
+            v_l =-self.u_max
+        if (a == 3):
+            v_r =-self.u_max
+            v_l = self.u_max
+
+        return u_t, u_b, v_l, v_r
+
     # Retrieve observations
     def get_obs(self):
 
@@ -274,8 +283,9 @@ class mixing(gym.Env):
         pC = np.rot90(pC)
 
         # Plot temperature
-        fig = plt.figure(figsize=(5,5.5))
-        ax  = fig.add_subplot(30, 1, (1,28))
+        fig = plt.figure(figsize=(5.5,5.5))
+        gs  = fig.add_gridspec(15, 15)
+        ax  = fig.add_subplot(gs[1:-1,1:-1])
         ax.set_xticks([])
         ax.set_yticks([])
         ax.imshow(pC,
@@ -284,17 +294,52 @@ class mixing(gym.Env):
                   vmax = self.C0,
                   extent=[0.0, self.L, 0.0, self.H])
 
-        # Plot control
-        ax = fig.add_subplot(30, 1, (29,30))
+        # Retrieve actual control
+        u_t, u_b, v_l, v_r = self.get_control(self.a)
+
+        # Plot top control
+        ax = fig.add_subplot(gs[0,1:-1])
         ax.set_xlim([-self.u_max, self.u_max])
         ax.set_ylim([ 0.0, 0.1])
         ax.set_xticks([])
         ax.set_yticks([])
         x = 0.0
         y = 0.02
-        color = 'r' if self.a > 0.0 else 'b'
-        #ax.add_patch(Rectangle((x,y), 0.98*self.actions[self.a], 0.06,
-        #                       color=color, fill=True, lw=2))
+        color = 'r' if u_t > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*u_t, 0.06, color=color, fill=True, lw=2))
+
+        # Plot bottom control
+        ax = fig.add_subplot(gs[-1,1:-1])
+        ax.set_xlim([-self.u_max, self.u_max])
+        ax.set_ylim([ 0.0, 0.1])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.0
+        y = 0.02
+        color = 'r' if u_b > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.98*u_b, 0.06, color=color, fill=True, lw=2))
+
+        # Plot left control
+        ax = fig.add_subplot(gs[1:-1,0])
+        ax.set_ylim([-self.u_max, self.u_max])
+        ax.set_xlim([ 0.0, 0.1])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.02
+        y = 0.0
+        color = 'r' if v_l > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.06, 0.98*v_l,  color=color, fill=True, lw=2))
+
+        # Plot right control
+        ax = fig.add_subplot(gs[1:-1,-1])
+        ax.set_ylim([-self.u_max, self.u_max])
+        ax.set_xlim([ 0.0, 0.1])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        x = 0.02
+        y = 0.0
+        color = 'r' if v_r > 0.0 else 'b'
+        ax.add_patch(Rectangle((x,y), 0.06, 0.98*v_r,  color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.concentration_path+"/"+str(self.stp_plot)+".png"
