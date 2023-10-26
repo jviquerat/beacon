@@ -16,7 +16,7 @@
     "n_stp_max": 500000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 2000,
+        "buff_size": 4000,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
