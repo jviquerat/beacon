@@ -34,7 +34,7 @@ class mixing(gym.Env):
         self.u_max       = re*self.nu/L     # max velocity
         self.dt          = 0.002            # timestep
         self.dt_act      = 0.5              # action timestep
-        self.t_act       = 40.0             # action time after warmup
+        self.t_act       = 50.0             # action time after warmup
         self.nx_obs_pts  = 4*int(self.L)    # nb of obs pts in x direction
         self.ny_obs_pts  = 4*int(self.H)    # nb of obs pts in y direction
         self.n_obs_steps = 4                # nb of observations steps
@@ -228,6 +228,8 @@ class mixing(gym.Env):
         if (a == 3):
             v_r =-self.u_max
             v_l = self.u_max
+        # if (a == 4):
+            # all zero
 
         return u_t, u_b, v_l, v_r
 
