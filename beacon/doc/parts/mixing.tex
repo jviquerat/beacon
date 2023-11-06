@@ -88,7 +88,7 @@ Finally, each episode starts with a null velocity field and an initial square pa
 
 The environment as described in the previous section is referred to as \codeinline{mixing-v0}, and its default parameters are provided in table \ref{table:mixing_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}), with the specificity that the entropy bonus parameter is reduced to $\beta = 0.001$. For the training, we set $n_\text{rollout} = 1000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 600k$.
 
-%The score curve obtained with the PPO algorithm is presented in \ref{fig:rayleigh_score}, while the time evolution of the Nusselt for the controlled versus uncontrolled cases are shown in figure \ref{fig:rayleigh_nusselt}. As can be observed, the agent manages to devise a set of transition actions toward a stationary state with $\nus (t) = 1$. The results of figure \ref{fig:rayleigh_nusselt} are in line with those of \cite{beintema2020}. In figure \ref{fig:rayleigh_fields}, we present the evolution of the temperature field during the first steps of the environment under the control of the agent using the default parameters.
+The score curve obtained with the PPO algorithm is presented in \ref{fig:mixing_score}, along with the score obtained with constant control $a=0$, which leads to a score of approximately $-17.47$. For comparison, the score with no mixing at all (\ie pure diffusion) leads to a score of $-28.78$. In figure \ref{fig:mixing_fields}, we present the evolution of the concentration field of the environment under the control of the agent using the default parameters.
 
 %%%%%%%%%%%
 %%%%%%%%%%%
@@ -112,7 +112,5 @@ The environment as described in the previous section is referred to as \codeinli
 %%%%%%%%%%%
 
 \input{fig/mixing/score}
-%
-%\input{fig/rayleigh/nusselt}
-%
-%\input{fig/rayleigh/fields}
+
+\input{fig/mixing/fields}
