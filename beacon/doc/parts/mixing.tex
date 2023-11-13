@@ -1,0 +1,116 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Mixing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Physics}
+
+We consider the resolution of the 2D Navier-Stokes equations coupled to a passive scalar convection-diffusion equation in a cavity of length $L$ and height $H$ with moving boundary conditions on all sides. The resulting system is driven by the following set of equations:
+
+\begin{equation}
+\label{eq:mixing}
+\begin{split}
+	\nabla \cdot \V{u} 						&= 0, \\
+	\partial_t \V{u} + (\V{u} \cdot \nabla) \, \V{u} 	&= -\nabla p + \frac{1}{\re} \nabla^2 \V{u}, \\
+	\partial_t c + (\V{u} \cdot \nabla) \, c 			&= \frac{1}{\pe} \nabla^2 c,
+\end{split}
+\end{equation}
+
+where $\V{u}$ and $p$ are respectively the non-dimensional velocity and pressure of the fluid, and $c$ is the concentration of a passive species. The dynamics of the system (\ref{eq:mixing}) are controlled by two adimensional numbers. First, the Reynolds number $\re$, which represents the ratio between inertial and viscous forces:
+
+\begin{equation*}
+	\re = \frac{U L}{\nu},
+\end{equation*}
+
+where $U$ and $L$ are respectively the reference velocity and length values, and $\nu$ is the kinematic viscosity of the fluid. Second, the P\'eclet number $\pe$, which represents the ratio between the advective and diffusive transport rates:
+
+\begin{equation*}
+	\pe = \frac{U L}{D},
+\end{equation*}
+
+where $D$ is the diffusion coefficient of the considered species. In essence, a system with a high $\pe$ value presents a negligible diffusion, and scalar quantities move primarily due to fluid convection. The system (\ref{eq:mixing}) is completed by the following initial and boundary conditions:
+
+\begin{equation}
+\label{eq:mixing_bc}
+\begin{split}
+	\V{u}(x,y,0)	= 0 &\text{ and } c(x,y,0)	= c_0 \mathbb{1}_{\substack{ {x_\text{min} \leq x \leq x_\text{max}}\\ {y_\text{min} \leq y \leq y_\text{max}} }} \\
+	\V{u}(x=0,y,t)	= (0, v_l) &\text{ and } \V{u}(x=L,y,t) = (0, v_r), \\
+	\V{u}(x,y=0,t)	= (u_b, 0) &\text{ and } \V{u}(x,y=H,t) = (u_t, 0), \\
+	\partial_y c(x,y=0,t) 	= 0 &\text{ and } \partial_y c(x,y=H,t) = 0, \\
+	\partial_x c(x=0,y,t) = 0 &\text{ and } \partial_x c(x=L,y,t) = 0,
+\end{split}
+\end{equation}
+
+where $\mathbb{1}$ is the indicator function, and $v_l$, $v_r$, $u_b$ and $u_t$ are user-defined values. In essence, the boundary conditions (\ref{eq:mixing_bc}) correspond to a multiple lid-driven cavity, where tangential velocity can be imposed independently on all sides, with an initial patch of concentration in the center of the domain.  Snapshots of the evolution of the system in time with $(v_l, v_r, u_b, u_t) = (0, 0, 1.0, -1.0)$ are presented in figure \ref{fig:mixing_example}.
+
+\input{fig/mixing/example}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discretization}
+
+The system (\ref{eq:mixing}) is discretized using a structured finite volume incremental projection scheme with centered fluxes. For simplicity, the scheme is solved in a fully explicit way, except for the resolution of the Poisson equation for pressure. As is standard, a staggered grid is used for the finite volume scheme: the horizontal velocity is located on the west face of the cells, the vertical velocity is on the south face of the cells, while the pressure and temperature are located at the center of the cells.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Environment}
+
+In the following, we set $H=1$, $L=1$, $\Delta X = x_\text{max} - x_\text{min} = 0.5$, $\Delta Y = y_\text{max} - y_\text{min} = 0.5$, and $c_0 = 1$. The control is performed by letting the agent adjust the tangential velocities at the boundaries of the domain. We use a discrete action space of dimension $4$, with the following actions:
+
+\begin{equation}
+\label{eq:mixing_actions}
+\begin{split}
+	a = 0 &\iff (v_l, v_r, u_b, u_t) = (0, 0, u_\text{max}, -u_\text{max}) \\
+	a = 1 &\iff (v_l, v_r, u_b, u_t) = (0, 0, -u_\text{max}, u_\text{max}) \\
+	a = 2 &\iff (v_l, v_r, u_b, u_t) = (-u_\text{max}, u_\text{max}, 0, 0) \\
+	a = 3 &\iff (v_l, v_r, u_b, u_t) = (u_\text{max}, -u_\text{max}, 0, 0),
+\end{split}
+\end{equation}
+
+where $u_\text{max} = \frac{\re \nu}{L}$. The non-dimensional numbers are chosen as $\re = 100$ and $\pe = \num{1e4}$, which corresponds to a low diffusion species. For simplicity, no temporal interpolation is performed between actions. The spatial discretization step is set as $\Delta x = 0.01$, while the numerical time step is $\Delta t = 0.002$. The action time-step $\Delta t_\text{act}$ is equal to $0.5$ time units, with the total episode length being fixed to $50$ time units, corresponding to $100$ actions. The observations provided to the agent are the temperatures and their derivatives collected on a grid of $n_p \times n_p$ probes evenly spaced in the computational domain. The resulting set of observations is flattened in a vector of size $2 \times (n_h+1)$. The reward at each time-step is simply set as the average absolute distance of the concentration field to a target uniform value: 
+
+\begin{equation}
+	r(t) = - \lVert c - c_t \rVert_1 \text{ with } c_t = \frac{\Delta X \Delta Y}{L H} c_0.
+\end{equation}
+
+Finally, each episode starts with a null velocity field and an initial square patch of concentration $c_0$ as shown in figure \ref{fig:mixing_example_0}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+
+The environment as described in the previous section is referred to as \codeinline{mixing-v0}, and its default parameters are provided in table \ref{table:mixing_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}), with the specificity that the entropy bonus parameter is reduced to $\beta = 0.001$. For the training, we set $n_\text{rollout} = 1000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 600k$.
+
+The score curve obtained with the PPO algorithm is presented in figure \ref{fig:mixing_score}, along with the score obtained with constant control $a=0$, which leads to a score of approximately $-17.47$. For comparison, the score with no mixing at all (\ie pure diffusion) leads to a score of $-28.78$. In figure \ref{fig:mixing_fields}, we present the evolution of the concentration field of the environment under the control of the agent using the default parameters.
+
+%%%%%%%%%%%
+%%%%%%%%%%%
+\begin{table}
+    \footnotesize
+    \caption{\textbf{Default parameters used for the \codeinline{mixing-v0} environment.}}
+    \label{table:mixing_parameters}
+    \centering
+    \begin{tabular}{rll}
+        \toprule
+        \codeinline{L}			& length of the domain					& $1$\\
+	\codeinline{H}			& height of the domain					& $1$\\
+	\codeinline{re}			& Reynolds number						& $\num{1e2}$\\
+	\codeinline{pe}			& P\'eclet number						& $\num{1e4}$\\
+	\codeinline{side}		& initial side length of concentration patch		& $0.5$\\
+	\codeinline{c0}			& initial concentration					& $1$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+%%%%%%%%%%%
+%%%%%%%%%%%
+
+\input{fig/mixing/score}
+
+\input{fig/mixing/fields}

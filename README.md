@@ -45,6 +45,27 @@ The agent learns to disable the convection in a Rayleigh-Benard cell by locally 
 <br />
 <br />
 
+## `mixing`
+
+<p align="center">
+  <img align="right" width="350" alt="" src="beacon/msc/mixing.gif">
+</p>
+
+The agent learns to optimize the mixing of a passive scalar quantity in a cavity by selecting the lid velocities. States are the scalar concentration and velocities collected at probe points in the domain. One episode represents 100 actions, and the training is made on 100000 transitions.
+
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+
 ## `lorenz`
 
 <p align="center">

@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Rayleigh-B\'enard}
+\chapter{Rayleigh}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,20 +58,14 @@ The system (\ref{eq:rayleigh}) is completed by the following initial and boundar
 \end{split}
 \end{equation}
 
-In essence, the boundary conditions (\ref{eq:rayleigh_bc}) correspond to (i) a no-slip boundary conditions for the fluid on all boundaries, (ii) imposed hot and cold temperatures respectively on the bottom and top plate, and (iii) adiabatic boundary conditions on the lateral sides of the domain. Here, we choose $\theta_H = \frac{1}{2}$ and $\theta_C = -\frac{1}{2}$. A sketch of the configuration is presented in figure \ref{fig:rayleigh_sketch}.
+In essence, the boundary conditions (\ref{eq:rayleigh_bc}) correspond to (i) a no-slip boundary conditions for the fluid on all boundaries, (ii) imposed hot and cold temperatures respectively on the bottom and top plate, and (iii) adiabatic boundary conditions on the lateral sides of the domain. A sketch of the configuration is presented in figure \ref{fig:rayleigh_sketch}.
 
 \input{fig/rayleigh/sketch}
 
 Above a critical value $\ra_c$, natural convection is triggered in the cell, increasing the heat exchange between the bottom and top regions of the cell, thus leading to $\nus > 1$. Illustrations of the temperature and velocity fields are proposed in figure \ref{fig:rayleigh_convection}.
 
 \input{fig/rayleigh/convection}
-%
-%The situation is summed up in figure \ref{fig:sloshing_tank}. When excited laterally, the surface of the fluid sloshes back and forth in the tank generating complex patterns at the fluid surface, as shown in figure \ref{fig:sloshing_examples}. When the excitation stops, a relaxation phase is observed, usually leaving a single wavefront travelling back and forth in the tank until it dissipates entirely. Due to its simplicity, the model (\ref{eq:stvenant}) does not allow wave breaking nor the formation of drops on the sides of the domain.
-%
-%\input{fig/sloshing/tank}
-%
-%\input{fig/sloshing/sloshing_free}
-%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +78,7 @@ The system (\ref{eq:rayleigh}) is discretized using a structured finite volume i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Environment}
 
-The proposed environment is re-implemented based on the original work of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$ in order to avoid too high computational load. Similarly to \cite{beintema2020}, the control is performed by letting the DRL agent adjust the temperature of $n_s=10$ individual segments at the bottom of the cavity (see figure \ref{fig:rayleigh_sketch_env}). To do so, the actions proposed by the agent are continuous temperature fluctuations $\left\{ \hat{\theta}_i \right\}_{i \in \llbracket 0, n_s-1 \rrbracket}$ in the range $\left[-C, +C\right]$, with $C=0.75$. To enforce $\left< \theta(y=0,x,t) \right> = \theta_H$ and $\theta(y=0,x,t) \in \left[ \theta_H - C, \theta_H + C\right]$, the provided $\hat{\theta}_i$ are normalized as \cite{beintema2020}:
+The proposed environment is re-implemented based on the original work of Beintema \textit{et al.} \cite{beintema2020}. In the following, we set $\pr=0.71$, which corresponds to the parameter for air, and $\ra = \num{1e4}$ in order to avoid too high computational load. Similarly to \cite{beintema2020}, the control is performed by letting the DRL agent adjust the temperature of $n_s=10$ individual segments at the bottom of the cavity (see figure \ref{fig:rayleigh_sketch_env}). To do so, the actions proposed by the agent are continuous temperature fluctuations $\left\{ \hat{\theta}_i \right\}_{i \in \llbracket 0, n_s-1 \rrbracket}$ in the range $\left[-C, +C\right]$, with $C=0.75$, $\theta_H = \frac{1}{2}$ and $\theta_C = -\frac{1}{2}$. To enforce $\left< \theta(y=0,x,t) \right> = \theta_H$ and $\theta(y=0,x,t) \in \left[ \theta_H - C, \theta_H + C\right]$, the provided $\hat{\theta}_i$ are normalized as \cite{beintema2020}:
 
 \begin{equation}
 	\theta_i = \frac{\hat{\theta}_i - \left< \hat{\theta} \right>}{\max \left( 1, \max_j \left( \frac{\hat{\theta}_j - \left< \hat{\theta} \right>}{C} \right) \right)}.
@@ -111,7 +105,7 @@ Finally, each episode starts with the loading of a fully developed initial state
 
 The environment as described in the previous section is referred to as \codeinline{rayleigh-v0}, and its default parameters are provided in table \ref{table:rayleigh_parameters}. In this section, we provide some results related to its resolution using a \textsc{ppo} agent (see the general hyperparameters in table \ref{table:default_ppo_parameters}), with the specificity that the entropy bonus parameter is reduced to $\beta = 0.001$. For the training, we set $n_\text{rollout} = 1000$, $n_\text{batch} = 2$, $n_\text{epoch} = 32$ and $n_\text{max} = 600k$.
 
-The score curve obtained with the PPO algorithm is presented in \ref{fig:rayleigh_score}, while the time evolution of the Nusselt for the controlled versus uncontrolled cases are shown in figure \ref{fig:rayleigh_nusselt}. As can be observed, the agent manages to devise a set of transition actions toward a stationary state with $\nus (t) = 1$. The results of figure \ref{fig:rayleigh_nusselt} are in line with those of \cite{beintema2020}. In figure \ref{fig:rayleigh_fields}, we present the evolution of the temperature field during the first steps of the environment under the control of the agent using the default parameters.
+The score curve obtained with the \textsc{ppo} algorithm is presented in \ref{fig:rayleigh_score}, while the time evolution of the Nusselt for the controlled versus uncontrolled cases are shown in figure \ref{fig:rayleigh_nusselt}. As can be observed, the agent manages to devise a set of transition actions toward a stationary state with $\nus (t) = 1$. The results of figure \ref{fig:rayleigh_nusselt} are in line with those of \cite{beintema2020}. In figure \ref{fig:rayleigh_fields}, we present the evolution of the temperature field during the first steps of the environment under the control of the agent using the default parameters.
 
 %%%%%%%%%%%
 %%%%%%%%%%%
