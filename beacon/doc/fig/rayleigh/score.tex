@@ -16,7 +16,7 @@
 				every tick label/.append style={font=\scriptsize},
 				grid=major, xlabel=transitions, ylabel=score]
 				
-		\legend{no control, \ppo}
+		\legend{no control, \ppo, \ddpg}
 		
 		\addplot[thick, opacity=0.7, dash pattern=on 2pt]	coordinates {(0,-216) (600000,-216)};
 		
@@ -24,11 +24,16 @@
 		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/rayleigh/ppo.dat}; 
 		\addplot [fill=blue3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
 		\addplot[draw=blue1, thick, smooth] 			table[x index=0,y index=5] {fig/rayleigh/ppo.dat}; 
+		
+		\addplot [upper, forget plot] 				table[x index=0,y index=7] {fig/rayleigh/ddpg.dat};
+		\addplot [lower, forget plot] 				table[x index=0,y index=6] {fig/rayleigh/ddpg.dat}; 
+		\addplot [fill=green3, opacity=0.5, forget plot] 	fill between[of=upper and lower];
+		\addplot[draw=green1, thick, smooth] 		table[x index=0,y index=5] {fig/rayleigh/ddpg.dat}; 
 			
 	\end{axis}
 \end{tikzpicture}
 %%%%%%%%%%%%
-\caption{\textbf{Score curves using the \textsc{ppo} algorithm to solve the \codeinline{rayleigh-v0} environment.} The dashed line indicates the reward obtained for the uncontrolled environement.} 
+\caption{\textbf{Score curves for the \codeinline{rayleigh-v0} environment} solved with \ppo and \ddpg. The dashed line indicates the reward obtained for the uncontrolled environement.} 
 \label{fig:rayleigh_score}
 \end{figure} 
 %%%%%%%%%%%%
