@@ -285,6 +285,8 @@ class mixing(gym.Env):
         pC = np.rot90(pC)
 
         # Plot temperature
+        plt.clf()
+        plt.cla()
         fig = plt.figure(figsize=(5.5,5.5))
         gs  = fig.add_gridspec(15, 15)
         ax  = fig.add_subplot(gs[1:-1,1:-1])
@@ -347,6 +349,7 @@ class mixing(gym.Env):
         filename = self.concentration_path+"/"+str(self.stp_plot)+".png"
         fig.tight_layout()
         plt.savefig(filename, dpi=100, bbox_inches='tight')
+        plt.close()
 
         # Show and dump
         if show: plt.pause(0.0001)

@@ -297,6 +297,8 @@ class rayleigh(gym.Env):
         pT = np.rot90(pT)
 
         # Plot temperature
+        plt.clf()
+        plt.cla()
         fig = plt.figure(figsize=(5,6))
         ax  = fig.add_subplot(30, 1, (1,29))
         ax.set_xticks([])
@@ -329,6 +331,7 @@ class rayleigh(gym.Env):
         filename = self.temperature_path+"/"+str(self.stp_plot)+".png"
         fig.tight_layout()
         plt.savefig(filename, dpi=100, bbox_inches='tight')
+        plt.close()
 
         # Show and dump
         if show: plt.pause(0.0001)
