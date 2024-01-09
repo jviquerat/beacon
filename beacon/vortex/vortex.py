@@ -31,6 +31,7 @@ class vortex(gym.Env):
         self.alpha_re   = 0.03492
         self.alpha_cx   = 0.01472
         self.beta       = 1.0
+
         self.re         = re
         self.re_crit    = 46.6
         self.ire        = 1.0/self.re_crit - 1.0/self.re
@@ -43,9 +44,9 @@ class vortex(gym.Env):
         self.weight     = 2.0
         self.beta_m     = self.beta/(self.omega_f*self.mass)
 
-        self.dt         = 0.5   # timestep
-        self.dt_act     = 25.0   # action timestep
-        self.t_max      = 5000.0 # total simulation time
+        self.dt         = 0.01   # timestep
+        self.dt_act     = 0.25   # action timestep
+        self.t_max      = 1000.0 # total simulation time
 
         # Deduced parameters
         self.n_obs      = 8                           # total nb of observations
@@ -90,10 +91,16 @@ class vortex(gym.Env):
 
         # Initial solution
         self.t    = 0.0
-        self.x[0] = 0.01
-        self.x[1] = 0.01
-        self.x[2] = 0.01
-        self.x[3] = 0.01
+
+        # self.x[0] = 1.0e-7
+        # self.x[1] = 3.0e-6
+        # self.x[2] = 5.0e-8
+        # self.x[3] = 5.0e-5
+
+        self.x[0] = 0.1
+        self.x[1] = 0.1
+        self.x[2] = 0.1
+        self.x[3] = 0.1
 
         # Initial physical y value for reward computation
         self.y   = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
@@ -151,8 +158,11 @@ class vortex(gym.Env):
         kmod   = self.u[0]
         kphase = self.u[1]
 
-        #kmod   = 0.0408
-        #kphase = -0.164
+        kmod   = 0.0408
+        kphase = -0.164
+
+        #kmod = 0.0
+        #kphase = 0.0
 
         # Run solver
         for i in range(self.ndt_act):
@@ -164,13 +174,13 @@ class vortex(gym.Env):
             for j in range(self.integrator.steps()):
 
                 # Compute rhs
-                self.fx[0] = self.ire*(self.lmbda_re*self.x[0] - self.lmbda_cx*self.xk[1]) - (self.mu_re*self.x[0] - self.mu_cx*self.x[1])*(self.x[0]**2 + self.x[1]**2) + (self.alpha_re*self.x[2] - self.alpha_cx*self.x[3])
+                self.fx[0] = self.ire*(self.lmbda_re*self.xk[0] - self.lmbda_cx*self.xk[1]) - (self.mu_re*self.xk[0] - self.mu_cx*self.xk[1])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[2] - self.alpha_cx*self.xk[3])
 
-                self.fx[1] = self.ire*(self.lmbda_re*self.x[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.x[1] + self.mu_cx*self.x[0])*(self.x[0]**2 + self.x[1]**2) + (self.alpha_re*self.x[3] + self.alpha_cx*self.x[2])
+                self.fx[1] = self.ire*(self.lmbda_re*self.xk[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.xk[1] + self.mu_cx*self.xk[0])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[3] + self.alpha_cx*self.xk[2])
 
-                self.fx[2] =-self.omega_f*self.gamma*self.x[2] - self.domega*self.x[3] + self.beta_m*self.x[0] + self.x[0]*kmod*math.cos(kphase) - self.x[1]*kmod*math.sin(kphase)
+                self.fx[2] =-self.omega_f*self.gamma*self.xk[2] - self.domega*self.xk[3] + self.beta_m*self.xk[0] + self.xk[0]*kmod*math.cos(kphase) - self.xk[1]*kmod*math.sin(kphase)
 
-                self.fx[3] = -self.omega_f*self.gamma*self.x[3] + self.domega*self.x[2] + self.beta_m*self.x[1] + self.x[0]*kmod*math.sin(kphase) + self.x[1]*kmod*math.cos(kphase)
+                self.fx[3] = -self.omega_f*self.gamma*self.xk[3] + self.domega*self.xk[2] + self.beta_m*self.xk[1] + self.xk[0]*kmod*math.sin(kphase) + self.xk[1]*kmod*math.cos(kphase)
 
                 # Update
                 self.integrator.update(self.x, self.xk, self.fx, j, self.dt)
