@@ -20,7 +20,7 @@ class vortex(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0,
-                 re=100.0):
+                 re=50.0):
 
         # Main parameters
 
@@ -32,25 +32,32 @@ class vortex(gym.Env):
         self.alpha_cx   = 0.01472
         self.beta       = 1.0
         self.re         = re
-        self.re_star    = 46.6
-        self.omega_s    = ?
-        self.omega_star = 0.74
+        self.re_crit    = 46.6
+        self.ire        = 1.0/self.re_crit - 1.0/self.re
+        self.omega_s    = 1.1
+        self.omega_f    = 0.74
+        self.domega     = self.omega_s - self.omega_f
 
-        self.dt         = 0.05   # timestep
-        self.dt_act     = 0.05   # action timestep
-        self.t_max      = 25.0   # total simulation time
+        self.gamma      = 0.023
+        self.mass       = 10.0
+        self.weight     = 2.0
+        self.beta_m     = self.beta/(self.omega_f*self.mass)
+
+        self.dt         = 0.5   # timestep
+        self.dt_act     = 25.0   # action timestep
+        self.t_max      = 5000.0 # total simulation time
 
         # Deduced parameters
-        self.n_obs      = 4                           # total nb of observations
+        self.n_obs      = 8                           # total nb of observations
         self.ndt_max    = int(self.t_max/self.dt)     # nb of numerical timesteps
         self.ndt_act    = int(self.dt_act/self.dt)    # nb of numerical timesteps per action
         self.t_act      = self.t_max                  # action time
         self.n_act      = int(self.t_act/self.dt_act) # nb of action steps per episode
 
         # Arrays
-        self.x  = np.zeros(4)      # unknowns
-        self.xk = np.zeros(4)      # lsrk storage
-        self.fx = np.zeros(4)      # rhs
+        self.x  = np.zeros(4) # unknowns (ar, ai, yr, yi)
+        self.xk = np.zeros(4) # lsrk storage
+        self.fx = np.zeros(4) # rhs
 
         # Initialize integrator
         self.integrator = lsrk4()
@@ -58,7 +65,7 @@ class vortex(gym.Env):
         # Define action space
         self.action_space = gsp.Box(low   =-1.0,
                                     high  = 1.0,
-                                    shape = (1,),
+                                    shape = (2,),
                                     dtype = np.float32)
 
         # Define observation space
@@ -83,12 +90,19 @@ class vortex(gym.Env):
 
         # Initial solution
         self.t    = 0.0
-        self.x[:] = 0.0
+        self.x[0] = 0.01
+        self.x[1] = 0.01
+        self.x[2] = 0.01
+        self.x[3] = 0.01
+
+        # Initial physical y value for reward computation
+        self.y   = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
+                        self.x[3]*math.sin(self.omega_f*self.t))
 
         # Other fields
         self.xk[:] = 0.0
         self.fx[:] = 0.0
-        self.hx    = np.empty((0, 3))
+        self.hx    = np.empty((0, 4))
         self.ht    = np.empty((0))
 
         # Copy first step
@@ -99,7 +113,7 @@ class vortex(gym.Env):
         self.u = np.zeros(2)
 
         # Observations
-        self.obs = np.zeros((2, 3))
+        self.obs = np.zeros((2, 4))
 
         # Running indices
         self.stp      = 0
@@ -134,6 +148,11 @@ class vortex(gym.Env):
 
         # Save actions
         self.u = u.copy()
+        kmod   = self.u[0]
+        kphase = self.u[1]
+
+        #kmod   = 0.0408
+        #kphase = -0.164
 
         # Run solver
         for i in range(self.ndt_act):
@@ -144,13 +163,14 @@ class vortex(gym.Env):
             # Loop on integration steps
             for j in range(self.integrator.steps()):
 
-                # Compute rhs without forcing term
-                self.fx[0] = self.sigma*(self.xk[1] - self.xk[0])
-                self.fx[1] = self.xk[0]*(self.rho - self.xk[2]) - self.xk[1]
-                self.fx[2] = self.xk[0]*self.xk[1] - self.beta*self.xk[2]
+                # Compute rhs
+                self.fx[0] = self.ire*(self.lmbda_re*self.x[0] - self.lmbda_cx*self.xk[1]) - (self.mu_re*self.x[0] - self.mu_cx*self.x[1])*(self.x[0]**2 + self.x[1]**2) + (self.alpha_re*self.x[2] - self.alpha_cx*self.x[3])
 
-                # Add forcing term
-                self.fx[1] += self.actions[u]
+                self.fx[1] = self.ire*(self.lmbda_re*self.x[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.x[1] + self.mu_cx*self.x[0])*(self.x[0]**2 + self.x[1]**2) + (self.alpha_re*self.x[3] + self.alpha_cx*self.x[2])
+
+                self.fx[2] =-self.omega_f*self.gamma*self.x[2] - self.domega*self.x[3] + self.beta_m*self.x[0] + self.x[0]*kmod*math.cos(kphase) - self.x[1]*kmod*math.sin(kphase)
+
+                self.fx[3] = -self.omega_f*self.gamma*self.x[3] + self.domega*self.x[2] + self.beta_m*self.x[1] + self.x[0]*kmod*math.sin(kphase) + self.x[1]*kmod*math.cos(kphase)
 
                 # Update
                 self.integrator.update(self.x, self.xk, self.fx, j, self.dt)
@@ -177,8 +197,10 @@ class vortex(gym.Env):
     # Compute reward
     def get_rwd(self):
 
-        if (self.x[0] < 0.0): rwd = 1.0
-        else: rwd = 0.0
+        self.yp = self.y
+        self.y  = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
+                       self.x[3]*math.sin(self.omega_f*self.t))
+        rwd = 2.0*self.omega_s*self.gamma*((self.y - self.yp)/self.dt)**2
 
         return rwd
 
@@ -210,30 +232,29 @@ class vortex(gym.Env):
         plt.clf()
         plt.cla()
         fig = plt.figure(tight_layout=True)
-        ax  = fig.add_subplot(15, 1, (1,14), projection='3d')
+        ax  = fig.add_subplot(15, 1, (1,14))#, projection='3d')
         ax.set_axis_off()
         fig.tight_layout()
-        ax.set_xlim([-20.0, 20.0])
-        ax.set_ylim([-20.0, 20.0])
-        ax.set_zlim([  0.0, 40.0])
+        #ax.set_xlim([-1.0, 1.0])
+        #ax.set_ylim([-1.0, 1.0])
+        #ax.set_zlim([  0.0, 40.0])
 
-        if (len(self.ht) > 2):
-            fx = interp1d(self.ht, self.hx[:,0], kind="quadratic")
-            fy = interp1d(self.ht, self.hx[:,1], kind="quadratic")
-            fz = interp1d(self.ht, self.hx[:,2], kind="quadratic")
+        #if (len(self.ht) > 2):
+        #    fx = interp1d(self.ht, self.hx[:,0], kind="quadratic")
+        #    fy = interp1d(self.ht, self.hx[:,1], kind="quadratic")
+            #fz = interp1d(self.ht, self.hx[:,2], kind="quadratic")
 
-            n  = len(self.ht)
-            tt = np.linspace(self.ht[0], self.ht[-1], 5*n)
-            hhx = fx(tt)
-            hhy = fy(tt)
-            hhz = fz(tt)
+        #    n  = len(self.ht)
+        #    tt = np.linspace(self.ht[0], self.ht[-1], 5*n)
+        #    hhx = fx(tt)
+        #    hhy = fy(tt)
+            #hhz = fz(tt)
 
-            ax.plot(hhx, hhy, hhz, linewidth=1)
-        else:
-            ax.plot(self.hx[:,0],
-                    self.hx[:,1],
-                    self.hx[:,2],
-                    linewidth=1)
+        #    ax.plot(hhx, hhy, linewidth=1)
+        #else:
+        ax.plot(self.hx[:,0],
+                self.hx[:,1],
+                linewidth=1)
 
         # Plot control
         ax = fig.add_subplot(15, 1, 15)
@@ -244,9 +265,9 @@ class vortex(gym.Env):
         ax.set_yticks([])
         x = 0.0
         y = 0.05
-        color = 'r' if self.u > 0.0 else 'b'
-        ax.add_patch(Rectangle((x, y), 0.98*self.actions[self.u], 0.1,
-                               color=color, fill=True, lw=2))
+        #color = 'r' if self.u > 0.0 else 'b'
+        #ax.add_patch(Rectangle((x, y), 0.98*self.actions[self.u], 0.1,
+        #                       color=color, fill=True, lw=2))
 
         # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
@@ -254,7 +275,7 @@ class vortex(gym.Env):
         plt.close()
 
         # Dump
-        if dump: self.dump(self.path+"/lorenz.dat")
+        if dump: self.dump(self.path+"/vortex.dat")
 
         self.stp_plot += 1
 
@@ -265,6 +286,7 @@ class vortex(gym.Env):
         array = np.vstack((array, self.hx[:,0]))
         array = np.vstack((array, self.hx[:,1]))
         array = np.vstack((array, self.hx[:,2]))
+        array = np.vstack((array, self.hx[:,3]))
         array = np.transpose(array)
 
         np.savetxt(filename, array, fmt='%.5e')
