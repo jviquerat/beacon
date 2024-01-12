@@ -41,12 +41,12 @@ class vortex(gym.Env):
 
         self.gamma      = 0.023
         self.mass       = 10.0
-        self.weight     = 2.0
+        self.weight     = 0.0
         self.beta_m     = self.beta/(self.omega_f*self.mass)
 
-        self.dt         = 0.01   # timestep
-        self.dt_act     = 0.25   # action timestep
-        self.t_max      = 1000.0 # total simulation time
+        self.dt         = 0.1   # timestep
+        self.dt_act     = 0.5   # action timestep
+        self.t_max      = 300.0 # total simulation time
 
         # Deduced parameters
         self.n_obs      = 8                           # total nb of observations
@@ -64,6 +64,10 @@ class vortex(gym.Env):
         self.integrator = lsrk4()
 
         # Define action space
+        self.mod_min   = 0.0
+        self.mod_max   = 0.4
+        self.phase_min =-math.pi
+        self.phase_max = math.pi
         self.action_space = gsp.Box(low   =-1.0,
                                     high  = 1.0,
                                     shape = (2,),
@@ -72,8 +76,8 @@ class vortex(gym.Env):
         # Define observation space
         low  = np.zeros((self.n_obs))
         high = np.ones( (self.n_obs))
-        self.observation_space = gsp.Box(low   = low,
-                                         high  = high,
+        self.observation_space = gsp.Box(low   =-1.0,
+                                         high  = 1.0,
                                          shape = (self.n_obs,),
                                          dtype = np.float32)
 
@@ -91,16 +95,10 @@ class vortex(gym.Env):
 
         # Initial solution
         self.t    = 0.0
-
-        # self.x[0] = 1.0e-7
-        # self.x[1] = 3.0e-6
-        # self.x[2] = 5.0e-8
-        # self.x[3] = 5.0e-5
-
-        self.x[0] = 0.1
-        self.x[1] = 0.1
-        self.x[2] = 0.1
-        self.x[3] = 0.1
+        self.x[0] =-0.00385
+        self.x[1] =-0.00378
+        self.x[2] = 0.00118
+        self.x[3] =-0.00131
 
         # Initial physical y value for reward computation
         self.y   = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
@@ -111,13 +109,15 @@ class vortex(gym.Env):
         self.fx[:] = 0.0
         self.hx    = np.empty((0, 4))
         self.ht    = np.empty((0))
+        self.ha    = np.empty((0, 2))
+
+        # Actions
+        self.u = np.zeros(2)
 
         # Copy first step
         self.hx = np.append(self.hx, np.array([self.x]), axis=0)
         self.ht = np.append(self.ht, np.array([self.t]), axis=0)
-
-        # Actions
-        self.u = np.zeros(2)
+        self.ha = np.append(self.ha, np.array([self.u]), axis=0)
 
         # Observations
         self.obs = np.zeros((2, 4))
@@ -155,14 +155,8 @@ class vortex(gym.Env):
 
         # Save actions
         self.u = u.copy()
-        kmod   = self.u[0]
-        kphase = self.u[1]
-
-        kmod   = 0.0408
-        kphase = -0.164
-
-        #kmod = 0.0
-        #kphase = 0.0
+        self.kmod   = self.mod_min   + 0.5*(self.u[0]+1.0)*(self.mod_max - self.mod_min)
+        self.kphase = self.phase_min + 0.5*(self.u[1]+1.0)*(self.phase_max - self.phase_min)
 
         # Run solver
         for i in range(self.ndt_act):
@@ -178,9 +172,9 @@ class vortex(gym.Env):
 
                 self.fx[1] = self.ire*(self.lmbda_re*self.xk[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.xk[1] + self.mu_cx*self.xk[0])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[3] + self.alpha_cx*self.xk[2])
 
-                self.fx[2] =-self.omega_f*self.gamma*self.xk[2] - self.domega*self.xk[3] + self.beta_m*self.xk[0] + self.xk[0]*kmod*math.cos(kphase) - self.xk[1]*kmod*math.sin(kphase)
+                self.fx[2] =-self.omega_f*self.gamma*self.xk[2] - self.domega*self.xk[3] + self.beta_m*self.xk[0] + self.xk[0]*self.kmod*math.cos(self.kphase) - self.xk[1]*self.kmod*math.sin(self.kphase)
 
-                self.fx[3] = -self.omega_f*self.gamma*self.xk[3] + self.domega*self.xk[2] + self.beta_m*self.xk[1] + self.xk[0]*kmod*math.sin(kphase) + self.xk[1]*kmod*math.cos(kphase)
+                self.fx[3] = -self.omega_f*self.gamma*self.xk[3] + self.domega*self.xk[2] + self.beta_m*self.xk[1] + self.xk[0]*self.kmod*math.sin(self.kphase) + self.xk[1]*self.kmod*math.cos(self.kphase)
 
                 # Update
                 self.integrator.update(self.x, self.xk, self.fx, j, self.dt)
@@ -192,6 +186,7 @@ class vortex(gym.Env):
             self.t += self.dt
             self.hx = np.append(self.hx, np.array([self.x]), axis=0)
             self.ht = np.append(self.ht, np.array([self.t]), axis=0)
+            self.ha = np.append(self.ha, np.array([[self.kmod, self.kphase]]), axis=0)
 
     # Retrieve observations
     def get_obs(self):
@@ -210,7 +205,11 @@ class vortex(gym.Env):
         self.yp = self.y
         self.y  = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
                        self.x[3]*math.sin(self.omega_f*self.t))
-        rwd = 2.0*self.omega_s*self.gamma*((self.y - self.yp)/self.dt)**2
+
+        cost = 2.0*self.u[0]*math.cos(self.u[1])*(self.x[2]*math.cos(self.omega_f*self.t) - self.x[3]*math.sin(self.omega_f*self.t)) - 2.0*self.u[0]*math.sin(self.u[1])*(self.x[3]*math.cos(self.omega_f*self.t) + self.x[2]*math.sin(self.omega_f*self.t))
+        cost = 0.5*cost**2
+        rwd  = 2.0*self.omega_s*self.gamma*((self.y - self.yp)/self.dt)**2
+        rwd  = rwd - self.weight*cost
 
         return rwd
 
@@ -223,69 +222,50 @@ class vortex(gym.Env):
             os.makedirs(self.path, exist_ok=True)
             os.makedirs(self.path+"/gif", exist_ok=True)
 
-        # Full plot at the end of the episode
-        if (self.stp == self.n_act):
+        if (self.stp_plot == self.n_act-1):
+            # Plot multiple pngs to generate gif
             plt.clf()
             plt.cla()
-            fig, ax = plt.subplots(figsize=(8,2))
-            fig.tight_layout()
-            plt.plot(self.ht[:], self.hx[:,0])
-            ax.set_xlim([0.0, self.t_max])
-            ax.set_ylim([-20.0, 20.0])
+            fig = plt.figure()#tight_layout=True)
+            ax  = fig.add_subplot(30, 1, (1,26))
+            ax.set_xlim([-0.1, 0.1])
+            ax.set_ylim([-0.1, 0.1])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.plot(self.hx[:,0],
+                    self.hx[:,1],
+                    linewidth=1)
 
-            filename = self.path+"/history.png"
-            plt.grid()
-            plt.savefig(filename, dpi=100)
+            # Plot control
+            ax = fig.add_subplot(30, 1, (27,28))
+            ax.set_xlim([-1.0, 1.0])
+            ax.set_ylim([ 0.0, 0.2])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            x = 0.0
+            y = 0.05
+            color = 'r' if self.u[0] > 0.0 else 'b'
+            ax.add_patch(Rectangle((x, y), 0.98*self.u[0], 0.1,
+                                   color=color, fill=True, lw=2))
+
+            ax = fig.add_subplot(30, 1, (29,30))
+            ax.set_xlim([-1.0, 1.0])
+            ax.set_ylim([ 0.0, 0.2])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            x = 0.0
+            y = 0.05
+            color = 'r' if self.u[1] > 0.0 else 'b'
+            ax.add_patch(Rectangle((x, y), 0.98*self.u[1], 0.1,
+                                   color=color, fill=True, lw=2))
+
+            # Save figure
+            filename = self.path+"/gif/"+str(self.stp_plot)+".png"
+            plt.savefig(filename, dpi=100)#, bbox_inches="tight")
             plt.close()
 
-        # Plot multiple pngs to generate gif
-        plt.clf()
-        plt.cla()
-        fig = plt.figure(tight_layout=True)
-        ax  = fig.add_subplot(15, 1, (1,14))#, projection='3d')
-        ax.set_axis_off()
-        fig.tight_layout()
-        #ax.set_xlim([-1.0, 1.0])
-        #ax.set_ylim([-1.0, 1.0])
-        #ax.set_zlim([  0.0, 40.0])
-
-        #if (len(self.ht) > 2):
-        #    fx = interp1d(self.ht, self.hx[:,0], kind="quadratic")
-        #    fy = interp1d(self.ht, self.hx[:,1], kind="quadratic")
-            #fz = interp1d(self.ht, self.hx[:,2], kind="quadratic")
-
-        #    n  = len(self.ht)
-        #    tt = np.linspace(self.ht[0], self.ht[-1], 5*n)
-        #    hhx = fx(tt)
-        #    hhy = fy(tt)
-            #hhz = fz(tt)
-
-        #    ax.plot(hhx, hhy, linewidth=1)
-        #else:
-        ax.plot(self.hx[:,0],
-                self.hx[:,1],
-                linewidth=1)
-
-        # Plot control
-        ax = fig.add_subplot(15, 1, 15)
-        fig.tight_layout()
-        ax.set_xlim([-1.0, 1.0])
-        ax.set_ylim([ 0.0, 0.2])
-        ax.set_xticks([])
-        ax.set_yticks([])
-        x = 0.0
-        y = 0.05
-        #color = 'r' if self.u > 0.0 else 'b'
-        #ax.add_patch(Rectangle((x, y), 0.98*self.actions[self.u], 0.1,
-        #                       color=color, fill=True, lw=2))
-
-        # Save figure
-        filename = self.path+"/gif/"+str(self.stp_plot)+".png"
-        plt.savefig(filename, dpi=100, bbox_inches="tight")
-        plt.close()
-
-        # Dump
-        if dump: self.dump(self.path+"/vortex.dat")
+            # Dump
+            if dump: self.dump(self.path+"/vortex.dat")
 
         self.stp_plot += 1
 
@@ -297,6 +277,8 @@ class vortex(gym.Env):
         array = np.vstack((array, self.hx[:,1]))
         array = np.vstack((array, self.hx[:,2]))
         array = np.vstack((array, self.hx[:,3]))
+        array = np.vstack((array, self.ha[:,0]))
+        array = np.vstack((array, self.ha[:,1]))
         array = np.transpose(array)
 
         np.savetxt(filename, array, fmt='%.5e')
