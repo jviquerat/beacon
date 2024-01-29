@@ -24,8 +24,8 @@ class mixing(gym.Env):
         # Main parameters
         self.L           = L                # length of the domain
         self.H           = H                # height of the domain
-        self.nx          = 100*int(self.L)  # nb of pts in x direction
-        self.ny          = 100*int(self.H)  # nb of pts in y direction
+        self.nx          = int(100*self.L)  # nb of pts in x direction
+        self.ny          = int(100*self.H)  # nb of pts in y direction
         self.re          = re               # reynolds number
         self.pe          = pe               # peclet number
         self.C0          = C0               # initial concentration in patch

@@ -21,18 +21,21 @@ class sloshing(gym.Env):
 
         # Main parameters
         self.L          = L                # length of domain
-        self.nx         = 100*int(L)       # nb of discretization points
+        self.nx         = int(80*L)        # nb of discretization points
         self.dt         = 0.001            # timestep
         self.dt_act     = 0.05             # action timestep
         self.t_warmup   = 2.0              # warmup time
         self.t_act      = 10.0             # action time after warmup
         self.g          = g                # gravity
-        self.n_obs      = int(self.nx/2)   # nb of obs pts
         self.amp        = amp              # amplitude scaling
         self.alpha      = alpha            # control penalization
         self.u_interp   = 0.01             # time on which action is interpolated
         self.blowup_rwd =-1.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
+
+        # Compute nb of observations
+        self.obs_smpl = 1                  # sub-sampling level
+        self.n_obs = self.nx//self.obs_smpl + (1 if (self.nx%self.obs_smpl !=0) else 0)
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -225,8 +228,9 @@ class sloshing(gym.Env):
     # Retrieve observations
     def get_obs(self):
 
+        #print(self.q)
         obs = self.q.copy()[1:-1]
-        obs = obs[::2]
+        obs = obs[::self.obs_smpl]
 
         return obs
 
