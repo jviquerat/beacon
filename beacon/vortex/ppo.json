@@ -13,10 +13,10 @@
     },
     "n_avg": 2,
     "n_cpu": 1,
-    "n_stp_max": 1000000,
+    "n_stp_max": 2000000,
     "trainer": {
         "style": "buffer",
-        "buff_size": 12000,
+        "buff_size": 8000,
         "n_buff": 1,
         "batch_frac": 0.5,
         "n_epochs": 32,
@@ -48,7 +48,7 @@
             "loss": {
                 "type": "surrogate",
                 "pol_clip": 0.2,
-                "ent_coef": 0.005
+                "ent_coef": 0.01
             }
         },
         "value": {

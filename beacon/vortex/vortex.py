@@ -41,12 +41,12 @@ class vortex(gym.Env):
 
         self.gamma      = 0.023
         self.mass       = 10.0
-        self.weight     = 0.0
+        self.weight     = 0.1
         self.beta_m     = self.beta/(self.omega_f*self.mass)
 
         self.dt         = 0.1   # timestep
         self.dt_act     = 0.5   # action timestep
-        self.t_max      = 300.0 # total simulation time
+        self.t_max      = 400.0 # total simulation time
 
         # Deduced parameters
         self.n_obs      = 8                           # total nb of observations
@@ -65,7 +65,7 @@ class vortex(gym.Env):
 
         # Define action space
         self.mod_min   = 0.0
-        self.mod_max   = 0.4
+        self.mod_max   = 0.3
         self.phase_min =-math.pi
         self.phase_max = math.pi
         self.action_space = gsp.Box(low   =-1.0,
