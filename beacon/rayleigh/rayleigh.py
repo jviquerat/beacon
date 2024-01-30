@@ -23,8 +23,8 @@ class rayleigh(gym.Env):
         # Main parameters
         self.L           = L                # length of the domain
         self.H           = H                # height of the domain
-        self.nx          = 50*int(self.L)   # nb of pts in x direction
-        self.ny          = 50*int(self.H)   # nb of pts in y direction
+        self.nx          = int(50*self.L)   # nb of pts in x direction
+        self.ny          = int(50*self.H)   # nb of pts in y direction
         self.ra          = ra               # rayleigh number
         self.pr          = 0.71             # prandtl number
         self.Tc          =-0.5              # top plate temperature
