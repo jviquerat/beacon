@@ -11,7 +11,6 @@ import matplotlib.cm     as cm
 import numba             as nb
 
 from   matplotlib.patches import Rectangle
-from   scipy.interpolate  import interp1d
 
 ###############################################
 ### Vortex environment
@@ -220,10 +219,10 @@ class vortex(gym.Env):
         # Plot multiple pngs to generate gif
         plt.clf()
         plt.cla()
-        fig = plt.figure()#tight_layout=True)
+        fig = plt.figure()
         ax  = fig.add_subplot(30, 1, (1,26))
-        ax.set_xlim([-0.1, 0.1])
-        ax.set_ylim([-0.1, 0.1])
+        ax.set_xlim([-0.04, 0.04])
+        ax.set_ylim([-0.04, 0.04])
         ax.set_xticks([])
         ax.set_yticks([])
         ax.plot(self.hx[:,0],
@@ -255,7 +254,7 @@ class vortex(gym.Env):
 
         # Save figure
         filename = self.path+"/gif/"+str(self.stp_plot)+".png"
-        plt.savefig(filename, dpi=100)#, bbox_inches="tight")
+        plt.savefig(filename, dpi=100)
         plt.close()
 
         # Dump

@@ -25,7 +25,6 @@ for i in range(n):
     end="\r"
     if (i==n-1): end="\n"
     print("# Iteration "+str(i)+", rwd = "+str(rwd)+"          ",end=end)
-    #if (i%plt_freq == 0): l.render(show=show, dump=False)
 
 l.render(show=show)
 e_time = time.time()
