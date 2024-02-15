@@ -113,3 +113,20 @@ The agent controls a forcing term corresponding to an actuator located in the mi
 </p>
 
 The agent controls the acceleration of a tank containing a fluid in order to damp the sloshing movement initiated during an excitation pahse. State vector is a downsampled mass flow rate vector. One episode represents 200 actions, and the training is made on 200000 transitions.
+
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+
+## `vortex`
+
+<p align="center">
+  <img align="right" width="350" alt="" src="beacon/msc/vortex.gif">
+</p>
+
+The agent controls the amplitude and phase of a forcing term acting on a model representing a cylinder attached to the wall with a damper-spring, immersed in a flow at Reynolds 50. One episode represents 800 actions, and the training is made on 1000000 transitions.
