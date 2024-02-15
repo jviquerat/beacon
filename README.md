@@ -15,6 +15,8 @@ TO COMPLETE
 <br />
 <br />
 <br />
+<br />
+<br />
 
 ## `shkadov`
 
@@ -24,6 +26,9 @@ The agent actuates several jets to damp the instabilities of a falling fluid fil
   <img width="700" alt="" src="beacon/msc/shkadov.gif">
 </p>
 
+<br />
+<br />
+
 ## `rayleigh`
 
 <p align="center">
@@ -32,6 +37,8 @@ The agent actuates several jets to damp the instabilities of a falling fluid fil
 
 The agent learns to disable the convection in a Rayleigh-Benard cell by locally modifying the temperature of different segments on the bottom plate (original approach was from Beintema et al. in <a href="https://www.tandfonline.com/doi/full/10.1080/14685248.2020.1797059">this paper</a>.) States are the temperature and velocities collected at probe points in the domain. One episode represents 100 actions, and the training is made on 600000 transitions.
 
+<br />
+<br />
 <br />
 <br />
 <br />
@@ -91,6 +98,7 @@ The agent learns to lock the Lorenz attractor in the `x<0` quadrant by acting on
 <br />
 <br />
 <br />
+<br />
 
 ## `burgers`
 
@@ -104,7 +112,6 @@ The agent controls a forcing term corresponding to an actuator located in the mi
 <br />
 <br />
 <br />
-<br />
 
 ## `sloshing`
 
@@ -114,6 +121,8 @@ The agent controls a forcing term corresponding to an actuator located in the mi
 
 The agent controls the acceleration of a tank containing a fluid in order to damp the sloshing movement initiated during an excitation pahse. State vector is a downsampled mass flow rate vector. One episode represents 200 actions, and the training is made on 200000 transitions.
 
+<br />
+<br />
 <br />
 <br />
 <br />
