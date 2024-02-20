@@ -19,7 +19,7 @@ class vortex(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0,
-                 re=50.0, weight=10.0):
+                 re=50.0, weight=50.0):
 
         # Main parameters
         self.lmbda_re   = 9.153
@@ -165,10 +165,10 @@ class vortex(gym.Env):
             for j in range(self.integrator.steps()):
 
                 # Compute rhs
-                self.fx[0] = self.ire*(self.lmbda_re*self.xk[0] - self.lmbda_cx*self.xk[1]) - (self.mu_re*self.xk[0] - self.mu_cx*self.xk[1])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[2] - self.alpha_cx*self.xk[3])
-                self.fx[1] = self.ire*(self.lmbda_re*self.xk[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.xk[1] + self.mu_cx*self.xk[0])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[3] + self.alpha_cx*self.xk[2])
-                self.fx[2] =-self.omega_f*self.gamma*self.xk[2] - self.domega*self.xk[3] + self.beta_m*self.xk[0] + self.xk[0]*self.kmod*math.cos(self.kphase) - self.xk[1]*self.kmod*math.sin(self.kphase)
-                self.fx[3] =-self.omega_f*self.gamma*self.xk[3] + self.domega*self.xk[2] + self.beta_m*self.xk[1] + self.xk[0]*self.kmod*math.sin(self.kphase) + self.xk[1]*self.kmod*math.cos(self.kphase)
+                self.fx[0] = self.ire*(self.lmbda_re*self.xk[0] - self.lmbda_cx*self.xk[1]) - (self.mu_re*self.xk[0] - self.mu_cx*self.xk[1])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[2] - self.alpha_cx*self.xk[3]) + self.xk[0]*self.kmod*math.cos(self.kphase) - self.xk[1]*self.kmod*math.sin(self.kphase)
+                self.fx[1] = self.ire*(self.lmbda_re*self.xk[1] + self.lmbda_cx*self.xk[0]) - (self.mu_re*self.xk[1] + self.mu_cx*self.xk[0])*(self.xk[0]**2 + self.xk[1]**2) + (self.alpha_re*self.xk[3] + self.alpha_cx*self.xk[2]) + self.xk[0]*self.kmod*math.sin(self.kphase) + self.xk[1]*self.kmod*math.cos(self.kphase)
+                self.fx[2] =-self.omega_f*self.gamma*self.xk[2] - self.domega*self.xk[3] + self.beta_m*self.xk[0]
+                self.fx[3] =-self.omega_f*self.gamma*self.xk[3] + self.domega*self.xk[2] + self.beta_m*self.xk[1]
 
                 # Update
                 self.integrator.update(self.x, self.xk, self.fx, j, self.dt)
@@ -200,7 +200,7 @@ class vortex(gym.Env):
         self.y  = 2.0*(self.x[2]*math.cos(self.omega_f*self.t) -
                        self.x[3]*math.sin(self.omega_f*self.t))
 
-        cost = 2.0*self.u[0]*math.cos(self.u[1])*(self.x[2]*math.cos(self.omega_f*self.t) - self.x[3]*math.sin(self.omega_f*self.t)) - 2.0*self.u[0]*math.sin(self.u[1])*(self.x[3]*math.cos(self.omega_f*self.t) + self.x[2]*math.sin(self.omega_f*self.t))
+        cost = 2.0*self.kmod*math.cos(self.kphase)*(self.x[0]*math.cos(self.omega_f*self.t) - self.x[1]*math.sin(self.omega_f*self.t)) - 2.0*self.kmod*math.sin(self.kphase)*(self.x[1]*math.cos(self.omega_f*self.t) + self.x[0]*math.sin(self.omega_f*self.t))
         cost = 0.5*cost**2
         rwd  = 2.0*self.omega_s*self.gamma*((self.y - self.yp)/self.dt)**2
         rwd  = rwd - self.weight*cost

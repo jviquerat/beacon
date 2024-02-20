@@ -19,12 +19,13 @@ plt_freq = 1000    # plotting frequency
 show     = False # set to True to show while running
 
 for i in range(n):
-    act = np.zeros(2)
+    act = np.array([-1.0, 0.0])
     obs, rwd, done, trunc, _ = l.step(act)
     sum_rwd += rwd
     end="\r"
     if (i==n-1): end="\n"
     print("# Iteration "+str(i)+", rwd = "+str(rwd)+"          ",end=end)
+    l.render(show=show)
 
 l.render(show=show)
 e_time = time.time()
