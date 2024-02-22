@@ -8,6 +8,8 @@ This repository proposes benchmark cases for DRL-based flow control. The conside
 
 TO COMPLETE
 
+The latter paper also serves as a documentation for the library.
+
 <br />
 <br />
 <br />
