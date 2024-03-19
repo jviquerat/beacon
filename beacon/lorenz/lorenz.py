@@ -50,11 +50,7 @@ class lorenz(gym.Env):
         self.actions = np.array([-1.0, 0.0, 1.0])
 
         # Define observation space
-        high      = np.ones((self.n_obs))
-        high[0]  *= 10.0
-        high[1]  *= 20.0
-        high[2]  *= 40.0
-        high[3:] *= 100.0
+        high = np.ones((self.n_obs))
         self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
                                          shape = (self.n_obs,),
