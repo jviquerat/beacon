@@ -78,10 +78,9 @@ class rayleigh(gym.Env):
                                     dtype = np.float32)
 
         # Define observation space
-        low  = np.ones(self.n_obs_tot)*self.Tc
-        high = np.ones(self.n_obs_tot)*(self.Th + self.C)
+        high = np.ones(self.n_obs_tot)
 
-        self.observation_space = gsp.Box(low   = low,
+        self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
                                          shape = (self.n_obs_tot,),
                                          dtype = np.float32)
