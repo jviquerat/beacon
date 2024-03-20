@@ -30,7 +30,7 @@ class sloshing(gym.Env):
         self.amp        = amp              # amplitude scaling
         self.alpha      = alpha            # control penalization
         self.u_interp   = 0.01             # time on which action is interpolated
-        self.blowup_rwd =-1.0              # reward in case of blow-up
+        self.blowup_rwd =-10.0              # reward in case of blow-up
         self.init_file  = "init_field.dat" # initialization file
 
         # Compute nb of observations
