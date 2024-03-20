@@ -78,11 +78,9 @@ class sloshing(gym.Env):
         # Define observation space
         self.h_min =-1.0
         self.h_max = 1.0
+        high       = np.ones((self.n_obs))
 
-        low  = np.ones((self.n_obs))*self.h_min
-        high = np.ones((self.n_obs))*self.h_max
-
-        self.observation_space = gsp.Box(low   =-low,
+        self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
                                          shape = (self.n_obs,),
                                          dtype = np.float32)
