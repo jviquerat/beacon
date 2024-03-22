@@ -62,7 +62,7 @@ class mixing(gym.Env):
         self.actions      = np.array([-self.u_max, self.u_max])
 
         # Define observation space
-        high = np.ones(self.n_obs_tot)*self.u_max
+        high = np.ones(self.n_obs_tot)
 
         self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
