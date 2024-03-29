@@ -94,10 +94,8 @@ class shkadov(gym.Env):
         self.q_max = 5.0
         self.h_max = 5.0
 
-        low  = np.ones((self.n_obs*self.n_jets))*self.q_min
-        high = np.ones((self.n_obs*self.n_jets))*self.q_max
-
-        self.observation_space = gsp.Box(low   = low,
+        high = np.ones((self.n_obs*self.n_jets))
+        self.observation_space = gsp.Box(low   =-high,
                                          high  = high,
                                          shape = (self.n_obs*self.n_jets,),
                                          dtype = np.float32)
