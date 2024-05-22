@@ -6,9 +6,9 @@
 
 This repository proposes benchmark cases for DRL-based flow control. The considered cases are voluntarily limited in CPU requirements, so they can be used for prototyping on local machines while still presenting realistic flow control aspects. If you use this library in the context of your research work, please consider citing:
 
-*Beacon, a lightweight deep reinforcement learning benchmark library for flow control*, J. Viquerat, P. Meliga, P. Jeken, E. Hachem, 2024 (<a href="https://arxiv.org/abs/2402.17402">pre-print</a>)
+*Beacon, a lightweight deep reinforcement learning benchmark library for flow control*, J. Viquerat, P. Meliga, P. Jeken, E. Hachem, 2024 (<a href="https://arxiv.org/abs/2402.17402">pre-print</a> and <a href="https://www.mdpi.com/2076-3417/14/9/3561">paper</a>)
 
-The latter paper also serves as a documentation for the library.
+Pull requests with new cases are welcome !
 
 <br/>
 <br/>
