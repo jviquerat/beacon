@@ -3,8 +3,8 @@ import os
 import time
 import math
 import random
-import gym
-import gym.spaces        as gsp
+import gymnasium         as gym
+import gymnasium.spaces  as gsp
 import numpy             as np
 import matplotlib.pyplot as plt
 import numba             as nb
