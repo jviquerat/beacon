@@ -18,30 +18,31 @@ class shkadov(gym.Env):
 
     # Initialize instance
     def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1):
+                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1, render_style="dynamic"):
 
         # Main parameters
-        self.L          = L0 + jet_space*(n_jets+2) # length of domain in mm
-        self.nx         = int(5*self.L)    # nb of discretization points
-        self.dt         = 0.001            # timestep
-        self.dt_act     = 0.05             # action timestep
-        self.t_warmup   = 200.0            # warmup time
-        self.t_act      = 20.0             # action time after warmup
-        self.sigma      = 5.0e-4           # input noise
-        self.delta      = delta            # shkadov parameter
-        self.n_jets     = n_jets           # nb of jets
-        self.jet_amp    = 5.0              # jet amplitude scaling
-        self.jet_pos    = jet_pos          # position of first jet
-        self.jet_hw     = 2.0              # jet half-width
-        self.jet_space  = jet_space        # spacing between jets
-        self.l_obs      = 10.0             # length for upstream observations
-        self.l_rwd      = 10.0             # length for downstream reward
-        self.u_interp   = 0.02             # time on which action is interpolated
-        self.blowup_rwd =-1.0              # reward in case of blow-up
-        self.eps        = 1.0e-8           # avoid division by zero
-        self.init_file  = "init_field.dat" # initialization file
-        self.rand_init  = True             # random initialization
-        self.rand_steps = 400              # nb of rand. steps for random initialization
+        self.L            = L0 + jet_space*(n_jets+2) # length of domain in mm
+        self.nx           = int(5*self.L)    # nb of discretization points
+        self.dt           = 0.001            # timestep
+        self.dt_act       = 0.05             # action timestep
+        self.t_warmup     = 200.0            # warmup time
+        self.t_act        = 20.0             # action time after warmup
+        self.sigma        = 5.0e-4           # input noise
+        self.delta        = delta            # shkadov parameter
+        self.n_jets       = n_jets           # nb of jets
+        self.jet_amp      = 5.0              # jet amplitude scaling
+        self.jet_pos      = jet_pos          # position of first jet
+        self.jet_hw       = 2.0              # jet half-width
+        self.jet_space    = jet_space        # spacing between jets
+        self.l_obs        = 10.0             # length for upstream observations
+        self.l_rwd        = 10.0             # length for downstream reward
+        self.u_interp     = 0.02             # time on which action is interpolated
+        self.blowup_rwd   =-1.0              # reward in case of blow-up
+        self.eps          = 1.0e-8           # avoid division by zero
+        self.init_file    = "init_field.dat" # initialization file
+        self.rand_init    = True             # random initialization
+        self.rand_steps   = 400              # nb of rand. steps for random initialization
+        self.render_style = render_style     # rendering style
 
         # Deduced parameters
         self.t_max      = self.t_warmup + self.t_act     # total simulation time
@@ -257,57 +258,86 @@ class shkadov(gym.Env):
     # Render environment
     def render(self, mode="human", show=False, dump=True):
 
-        # Open directories
-        if (self.stp_plot == 0):
-            self.path        = "render"
-            self.height_path = self.path+"/height"
-            self.field_path  = self.path+"/field"
-            self.action_path = self.path+"/action"
-            os.makedirs(self.path,        exist_ok=True)
-            os.makedirs(self.height_path, exist_ok=True)
-            os.makedirs(self.field_path,  exist_ok=True)
-            os.makedirs(self.action_path, exist_ok=True)
+        if self.render_style == "dynamic":
+            # Open directories
+            if (self.stp_plot == 0):
+                self.path        = "render"
+                self.height_path = self.path+"/height"
+                self.field_path  = self.path+"/field"
+                self.action_path = self.path+"/action"
+                os.makedirs(self.path,        exist_ok=True)
+                os.makedirs(self.height_path, exist_ok=True)
+                os.makedirs(self.field_path,  exist_ok=True)
+                os.makedirs(self.action_path, exist_ok=True)
 
-        # Plot field
-        plt.clf()
-        plt.cla()
-        fig = plt.figure(figsize=(10,3))
-        ax  = fig.add_subplot(20, 1, (1,15))
-        ax.set_xlim([0.0,self.L])
-        ax.set_ylim([0.0,2.0])
-        ax.set_xticks([])
-        ax.set_yticks([])
+            # Plot field
+            plt.clf()
+            plt.cla()
+            fig = plt.figure(figsize=(10,3))
+            ax  = fig.add_subplot(20, 1, (1,15))
+            ax.set_xlim([0.0,self.L])
+            ax.set_ylim([0.0,2.0])
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-        plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
-        plt.plot(self.x,self.h)
+            plt.plot(np.ones_like(self.x), color='k', lw=1, linestyle='dashed')
+            plt.plot(self.x,self.h)
 
-        # Plot control
-        ax = fig.add_subplot(20, 1, (17,20))
-        ax.set_xlim([ 0.0, self.L])
-        ax.set_ylim([-1.0, 1.0])
-        ax.set_xticks([])
-        ax.set_yticks([])
-        plt.plot(np.zeros_like(self.x), color='k', lw=1, linestyle='dashed')
+            # Plot control
+            ax = fig.add_subplot(20, 1, (17,20))
+            ax.set_xlim([ 0.0, self.L])
+            ax.set_ylim([-1.0, 1.0])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            plt.plot(np.zeros_like(self.x), color='k', lw=1, linestyle='dashed')
 
-        for i in range(self.n_jets):
-            x = (self.jet_pos + i*self.jet_space - self.jet_hw)*self.dx
-            y = 0.0
-            s = (self.jet_hw+1)*self.dx
-            color = 'r' if self.u[i] > 0.0 else 'b'
-            ax.add_patch(Rectangle((x,y), s, self.u[i],
-                                   color=color, fill=True, lw=1))
+            for i in range(self.n_jets):
+                x = (self.jet_pos + i*self.jet_space - self.jet_hw)*self.dx
+                y = 0.0
+                s = (self.jet_hw+1)*self.dx
+                color = 'r' if self.u[i] > 0.0 else 'b'
+                ax.add_patch(Rectangle((x,y), s, self.u[i],
+                                       color=color, fill=True, lw=1))
 
-        # Save figure
-        filename = self.height_path+'/'+str(self.stp_plot)+'.png'
-        fig.savefig(filename, bbox_inches='tight')
-        if show: plt.pause(0.0001)
-        plt.close()
+            # Save figure
+            filename = self.height_path+'/'+str(self.stp_plot)+'.png'
+            fig.savefig(filename, bbox_inches='tight')
+            if show: plt.pause(0.0001)
+            plt.close()
 
-        # Dump
-        if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
-                           self.action_path+"/jet_"+str(self.stp_plot)+".dat")
+            # Dump
+            if dump: self.dump(self.field_path+"/field_"+str(self.stp_plot)+".dat",
+                               self.action_path+"/jet_"+str(self.stp_plot)+".dat")
 
-        self.stp_plot += 1
+            self.stp_plot += 1
+
+        if self.render_style == "static":
+            if (self.stp_plot == 0):
+                self.path = "render"
+                os.makedirs(self.path, exist_ok=True)
+                self.h_store = self.h.copy().reshape(1,-1)
+            else:
+                self.h_store = np.vstack((self.h_store, self.h.copy().reshape(1,-1)))
+
+            if (self.stp_plot == self.n_act-1):
+                plt.clf()
+                plt.cla()
+                fig, ax = plt.subplots(figsize=(10,3))
+                im = ax.imshow(
+                    self.h_store,
+                    vmin=0.6,
+                    vmax=1.4,
+                    aspect='auto',
+                    origin='lower',
+                    cmap="RdBu_r",
+                    extent=[0, self.L, 0, self.stp_plot]
+                )
+
+                filename = self.path+'/'+str(self.stp_plot)+'.png'
+                fig.savefig(filename, bbox_inches='tight')
+                plt.close()
+
+            self.stp_plot += 1
 
     # Dump (h,q)
     def dump(self, field_name, jet_name):
