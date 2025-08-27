@@ -17,8 +17,16 @@ class shkadov(gym.Env):
     metadata = {'render.modes': ['human']}
 
     # Initialize instance
-    def __init__(self, cpu=0, init=True,
-                 L0=150.0, n_jets=5, jet_pos=150.0, jet_space=10.0, delta=0.1, render_style="dynamic"):
+    def __init__(self,
+                 cpu=0,
+                 init=True,
+                 L0=150.0,
+                 n_jets=5,
+                 jet_pos=150.0,
+                 jet_space=10.0,
+                 delta=0.1,
+                 t_act=20.0,
+                 render_style="dynamic"):
 
         # Main parameters
         self.L            = L0 + jet_space*(n_jets+2) # length of domain in mm
@@ -26,7 +34,7 @@ class shkadov(gym.Env):
         self.dt           = 0.001            # timestep
         self.dt_act       = 0.05             # action timestep
         self.t_warmup     = 200.0            # warmup time
-        self.t_act        = 20.0             # action time after warmup
+        self.t_act        = t_act            # action time after warmup
         self.sigma        = 5.0e-4           # input noise
         self.delta        = delta            # shkadov parameter
         self.n_jets       = n_jets           # nb of jets
@@ -332,6 +340,8 @@ class shkadov(gym.Env):
                     cmap="RdBu_r",
                     extent=[0, self.L, 0, self.stp_plot]
                 )
+                ax.set_xticks([])
+                ax.set_yticks([])
 
                 filename = self.path+'/'+str(self.stp_plot)+'.png'
                 fig.savefig(filename, bbox_inches='tight')
@@ -360,6 +370,115 @@ class shkadov(gym.Env):
     # Closing
     def close(self):
         pass
+
+###############################################
+### Separable shkadov environment
+class shkadov_separable(shkadov):
+    metadata = {'render.modes': ['human']}
+
+    # Initialize instance
+    def __init__(self,
+                 cpu=0,
+                 init=True,
+                 L0=150.0,
+                 n_jets=5,
+                 jet_pos=150.0,
+                 jet_space=10.0,
+                 delta=0.1,
+                 t_act=20.0,
+                 render_style="dynamic"):
+
+        super().__init__(cpu, init, L0, n_jets, jet_pos, jet_space, delta, t_act, render_style)
+
+        # Specific to the separable case
+        high = np.ones((self.n_obs))
+        self.observation_space = gsp.Box(low   =-high,
+                                         high  = high,
+                                         shape = (self.n_obs,),
+                                         dtype = np.float32)
+
+        self.count = 0
+        self.act   = np.zeros(self.n_jets)
+
+    # Reset environment
+    def reset(self):
+
+        if (self.count == 0):
+            self.reset_fields()
+            self.h[:] = self.h_init[:]
+            self.q[:] = self.q_init[:]
+
+            if (self.rand_init):
+                n = random.randint(0,self.rand_steps)
+                for i in range(n):
+                    self.solve(self.u)
+                self.stp = 0
+
+        obs = self.get_obs(self.count)
+
+        if (self.count == self.n_jets-1): self.count = 0
+        else: self.count += 1
+
+        return obs, None
+
+    # Step
+    def step(self, u=None):
+
+        # Run solver
+        if (self.count == 0): self.solve(u)
+
+        # Retrieve data
+        # Here rwd is a vector of rewards
+        obs = self.get_obs(self.count)
+        rwd = self.get_rwd(self.count)
+
+        # Check end of episode
+        done  = False
+        trunc = False
+        if (self.stp == self.n_act-1):
+            done  = True
+            trunc = True
+        if (np.any((self.h < -5.0*self.h_max) | (self.h > 5.0*self.h_max))):
+            print("Blowup")
+            done  = True
+            trunc = False
+            rwd   = self.blowup_rwd
+
+        if (self.count == self.n_jets-1):
+            self.count = 0
+            self.stp  += 1
+        else: self.count += 1
+
+        return obs, rwd, done, trunc, None
+
+    # Retrieve observations
+    def get_obs(self, i):
+
+        obs = np.array([])
+        tmp = np.zeros((self.n_obs))
+
+        s = self.jet_pos + i*self.jet_space - self.l_obs
+        e = s + self.l_obs
+        stp = int(1.0/self.dx)
+        tmp[:self.n_obs] = self.q[s:e:stp]
+        obs = np.append(obs, tmp)
+
+        return obs
+
+    # Compute reward
+    def get_rwd(self, i):
+
+        rwd = 0.0
+        #for i in range(self.n_jets):
+
+        hdiff    = np.zeros((self.l_rwd))
+        s        = self.jet_pos + i*self.jet_space
+        e        = s + self.l_rwd
+        hdiff[:] = self.h[s:e] - 1.0
+        rwd     -= np.sum(np.square(hdiff))*self.dx
+        rwd     /= self.n_jets*self.l_rwd
+
+        return rwd
 
 ###############################################
 # 3rd derivative, 2nd order upwind
