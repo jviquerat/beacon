@@ -227,7 +227,7 @@ class burgers(gym.Env):
 
 ###############################################
 # 1st derivative tvd scheme
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def derx(u, du, nx, dx):
 
     fp        = np.zeros((nx))
@@ -243,13 +243,13 @@ def derx(u, du, nx, dx):
     du[1:nx-1] = (fp[1:nx-1] - fm[1:nx-1])/dx
 
 # time derivative
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def dert(u, up, upp, rhs, nx, dt):
 
     u[1:nx-1] = (4.0*up[1:nx-1] - upp[1:nx-1] - 2.0*dt*rhs[1:nx-1])/3.0
 
 # time derivative
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def rhs(u, du, r, nx):
 
     r[1:nx-1] = u[1:nx-1]*du[1:nx-1]

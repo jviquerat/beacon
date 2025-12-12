@@ -319,13 +319,13 @@ class sloshing(gym.Env):
 
 ###############################################
 # rusanov flux
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def rusanov(f, fug, fud, ug, ud, c):
 
     f[:] = 0.5*(fug[:] + fud[:]) - 0.5*c[:]*(ud[:] - ug[:])
 
 # 2nd order adams-bashforth update in time
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def adams(u, rhs, rhsp, nx, dt):
 
     u[1:nx+1] += 0.5*dt*(-3.0*rhs[1:nx+1] + rhsp[1:nx+1])
