@@ -482,7 +482,7 @@ class shkadov_separable(shkadov):
 
 ###############################################
 # 3rd derivative, 2nd order upwind
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def d3o2u(u, du, nx, dx):
 
     du[1:nx-3] = (-u[4:nx] + 6.0*u[3:nx-1] - 12.0*u[2:nx-2]
@@ -491,7 +491,7 @@ def d3o2u(u, du, nx, dx):
     du[nx-2]   = (-u[nx-4] + 3.0*u[nx-3] - 3.0*u[nx-2] + u[nx-1])/(dx*dx*dx)
 
 # 1st derivative tvd scheme
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def d1tvd(u, du, nx, dx):
 
     phi         = np.zeros((nx))
@@ -504,7 +504,7 @@ def d1tvd(u, du, nx, dx):
     du[1:nx-1] /= dx
 
 # rhs computation for q
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def rhsq(dq2h, h, dddh, q, rhsq, nx, delta, eps):
 
     p            = 1.0/(5.0*delta)
@@ -512,7 +512,7 @@ def rhsq(dq2h, h, dddh, q, rhsq, nx, delta, eps):
                                          - q[1:nx-1]/(h[1:nx-1]*h[1:nx-1] + eps))
 
 # 2nd order adams-bashforth update in time
-@nb.njit(cache=True)
+@nb.njit(cache=False)
 def adams(u, rhs, rhsp, nx, dt):
 
     u[1:nx-1] += 0.5*dt*(-3.0*rhs[1:nx-1] + rhsp[1:nx-1])
